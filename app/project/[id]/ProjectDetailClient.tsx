@@ -21,6 +21,7 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
   const [project, setProject] = useState<Project | null>(null);
   const [estimates, setEstimates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedEstimate, setExpandedEstimate] = useState<string | null>(null);
 
   useEffect(() => {
     checkUser();
@@ -162,6 +163,8 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
                       };
                       const scenario = scenarioLabels[estimate.scenario_type] || { label: estimate.scenario_type, color: 'bg-gray-100' };
 
+                      const isExpanded = expandedEstimate === estimate.id;
+
                       return (
                         <Card key={estimate.id} className="hover:shadow-md transition-shadow">
                           <CardHeader>
@@ -180,10 +183,20 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
                               <p className="text-sm text-gray-600 font-medium mb-3">
                                 {estimate.line_items?.length || 0} postes de travaux
                               </p>
-                              {estimate.line_items?.slice(0, 3).map((item: any, idx: number) => (
-                                <div key={idx} className="flex justify-between text-sm">
-                                  <span className="text-gray-700">{item.description}</span>
-                                  <span className="text-gray-900 font-medium">
+                              {(isExpanded ? estimate.line_items : estimate.line_items?.slice(0, 3))?.map((item: any, idx: number) => (
+                                <div key={idx} className="flex justify-between text-sm py-2 border-b last:border-b-0">
+                                  <div className="flex-1">
+                                    <span className="text-gray-700 font-medium">{item.description}</span>
+                                    {isExpanded && (
+                                      <div className="text-xs text-gray-500 mt-1">
+                                        {item.quantity} × {new Intl.NumberFormat('fr-FR', {
+                                          style: 'currency',
+                                          currency: 'EUR',
+                                        }).format(item.unit_price)}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <span className="text-gray-900 font-medium ml-4">
                                     {new Intl.NumberFormat('fr-FR', {
                                       style: 'currency',
                                       currency: 'EUR',
@@ -191,14 +204,31 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
                                   </span>
                                 </div>
                               ))}
-                              {estimate.line_items?.length > 3 && (
-                                <p className="text-sm text-gray-500 italic">
+                              {!isExpanded && estimate.line_items?.length > 3 && (
+                                <p className="text-sm text-gray-500 italic pt-2">
                                   + {estimate.line_items.length - 3} autres postes
                                 </p>
                               )}
+                              {isExpanded && (
+                                <div className="pt-4 mt-4 border-t-2 border-gray-300">
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-lg font-bold text-gray-900">Total</span>
+                                    <span className="text-xl font-bold text-blue-600">
+                                      {new Intl.NumberFormat('fr-FR', {
+                                        style: 'currency',
+                                        currency: 'EUR',
+                                      }).format(estimate.total_amount)}
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
                             </div>
-                            <Button variant="outline" className="w-full mt-4">
-                              Voir le devis détaillé
+                            <Button
+                              variant="outline"
+                              className="w-full mt-4"
+                              onClick={() => setExpandedEstimate(isExpanded ? null : estimate.id)}
+                            >
+                              {isExpanded ? 'Masquer les détails' : 'Voir le devis détaillé'}
                             </Button>
                           </CardContent>
                         </Card>
