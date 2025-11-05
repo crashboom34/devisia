@@ -86,7 +86,7 @@ Deno.serve(async (req: Request) => {
       premium: "premium avec des matériaux haut de gamme et des finitions luxueuses",
     };
 
-    const prompt = `Tu es un expert en devis de construction. Génère un devis détaillé pour le projet suivant:
+    const prompt = `Tu es un expert en devis de construction. Génère un devis détaillé et bien organisé pour le projet suivant:
 
 Titre: ${project.title}
 Description: ${project.description}
@@ -95,19 +95,32 @@ Type de devis: ${scenarioDescriptions[scenarioType]}
 Génère un devis JSON avec cette structure exacte:
 {
   "total_amount": nombre_total,
-  "line_items": [
+  "categories": [
     {
-      "description": "Description du poste",
-      "quantity": nombre,
-      "unit": "unité (m², pièce, ml, etc.)",
-      "unit_price": prix_unitaire,
-      "total": total_ligne
+      "name": "Nom de la catégorie (ex: Gros Œuvre, Second Œuvre, Finitions)",
+      "description": "Brève description de cette phase",
+      "items": [
+        {
+          "description": "Description détaillée du poste",
+          "quantity": nombre,
+          "unit": "unité (m², pièce, ml, etc.)",
+          "unit_price": prix_unitaire,
+          "total": total_ligne
+        }
+      ],
+      "subtotal": total_categorie
     }
   ]
 }
 
-Inclus tous les postes pertinents: démolition, gros œuvre, second œuvre, finitions, etc.
-Les prix doivent être réalistes pour le marché français en 2025.
+IMPORTANT: Organise TOUS les postes par catégories logiques:
+- Gros Œuvre (démolition, fondations, murs porteurs, charpente, toiture)
+- Second Œuvre (menuiseries, plomberie, électricité, isolation, cloisons)
+- Finitions (revêtements sols/murs, peinture, carrelage)
+- Équipements (cuisine, sanitaires, chauffage, climatisation)
+- Frais Annexes (coordination, études, assurances, marge)
+
+Sois très détaillé dans les descriptions et quantités. Les prix doivent être réalistes pour le marché français en 2025.
 Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
 
     const llmApiUrl = provider === "openrouter"
@@ -168,13 +181,22 @@ Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
       throw new Error(`Failed to parse LLM response: ${parseError.message}`);
     }
 
+    const lineItems = estimateData.categories?.flatMap((cat: any) =>
+      cat.items.map((item: any) => ({
+        ...item,
+        category: cat.name,
+        category_description: cat.description,
+      }))
+    ) || estimateData.line_items || [];
+
     const { data: estimate, error: insertError } = await supabase
       .from("estimates")
       .insert({
         project_id: projectId,
         scenario_type: scenarioType,
         total_amount: estimateData.total_amount,
-        line_items: estimateData.line_items,
+        line_items: lineItems,
+        categories: estimateData.categories,
       })
       .select()
       .single();
