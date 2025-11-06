@@ -20,6 +20,7 @@ export default function VoiceRecorder({ onTranscriptComplete, placeholder, initi
   const [isSupported, setIsSupported] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [isValidated, setIsValidated] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string>('');
 
   const recognitionRef = useRef<any>(null);
 
@@ -68,6 +69,24 @@ export default function VoiceRecorder({ onTranscriptComplete, placeholder, initi
         if (event.error === 'no-speech') {
           return;
         }
+
+        let message = '';
+        switch (event.error) {
+          case 'not-allowed':
+          case 'permission-denied':
+            message = 'Accès au microphone refusé. Veuillez autoriser l\'accès dans les paramètres de votre navigateur.';
+            break;
+          case 'network':
+            message = 'Erreur réseau. Vérifiez votre connexion internet.';
+            break;
+          case 'aborted':
+            message = 'Reconnaissance vocale interrompue.';
+            break;
+          default:
+            message = `Erreur: ${event.error}. Sur mobile, HTTPS est requis pour la reconnaissance vocale.`;
+        }
+
+        setErrorMessage(message);
         setIsListening(false);
       };
 
@@ -93,9 +112,15 @@ export default function VoiceRecorder({ onTranscriptComplete, placeholder, initi
       setInterimTranscript('');
       setIsValidated(false);
       setIsEditing(false);
-      recognitionRef.current.start();
-      setIsListening(true);
-      setIsPaused(false);
+      setErrorMessage('');
+      try {
+        recognitionRef.current.start();
+        setIsListening(true);
+        setIsPaused(false);
+      } catch (error) {
+        console.error('Failed to start recognition:', error);
+        setErrorMessage('Impossible de démarrer la reconnaissance vocale. Assurez-vous d\'être en HTTPS sur mobile.');
+      }
     }
   };
 
@@ -160,9 +185,12 @@ export default function VoiceRecorder({ onTranscriptComplete, placeholder, initi
     return (
       <Card className="bg-amber-50 border-amber-200">
         <CardContent className="pt-6">
-          <p className="text-sm text-amber-800">
+          <p className="text-sm text-amber-800 mb-2">
             La reconnaissance vocale n'est pas supportée par votre navigateur.
-            Veuillez utiliser Chrome, Edge ou Safari pour cette fonctionnalité.
+          </p>
+          <p className="text-xs text-amber-700">
+            Navigateurs compatibles: Chrome/Edge (Android), Safari 14.5+ (iOS).
+            HTTPS est requis sur mobile.
           </p>
         </CardContent>
       </Card>
@@ -173,6 +201,18 @@ export default function VoiceRecorder({ onTranscriptComplete, placeholder, initi
 
   return (
     <div className="space-y-4">
+      {errorMessage && (
+        <Card className="bg-red-50 border-red-200">
+          <CardContent className="pt-6">
+            <p className="text-sm text-red-800">{errorMessage}</p>
+            {errorMessage.includes('HTTPS') && (
+              <p className="text-xs text-red-700 mt-2">
+                Pour utiliser la dictée vocale sur mobile, déployez l'application sur Vercel (HTTPS automatique) ou utilisez un tunnel HTTPS local.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
       <Card className={`transition-all ${
         isListening ? 'ring-2 ring-red-500 ring-offset-2' :
         isValidated ? 'ring-2 ring-green-500 ring-offset-2' : ''
