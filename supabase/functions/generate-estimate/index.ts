@@ -113,13 +113,25 @@ Deno.serve(async (req: Request) => {
 
     const multiplier = priceMultipliers[scenarioType];
 
-    const prompt = `En tant qu'expert métreur BTP, génère un devis détaillé pour le projet suivant.
+    const prompt = `En tant qu'expert métreur BTP français, génère un devis détaillé et RÉALISTE pour le projet suivant.
 
 Description du projet:
 ${projectDescription}
 
 Type de devis: ${scenarioType.toUpperCase()}
 Multiplicateur de prix: ${multiplier}x
+
+IMPORTANT - TARIFS MARCHÉ FRANÇAIS 2024:
+- Main d'œuvre artisan: 40-60€/h (éco) | 50-80€/h (standard) | 70-120€/h (premium)
+- Peinture intérieure: 20-30€/m² (éco) | 30-50€/m² (standard) | 50-80€/m² (premium)
+- Carrelage pose comprise: 40-60€/m² (éco) | 60-90€/m² (standard) | 90-150€/m² (premium)
+- Électricité complète maison: 80-100€/m² (éco) | 100-150€/m² (standard) | 150-250€/m² (premium)
+- Plomberie complète: 100-150€/m² (éco) | 150-250€/m² (standard) | 250-400€/m² (premium)
+- Isolation combles: 30-50€/m² (éco) | 50-80€/m² (standard) | 80-120€/m² (premium)
+- Fenêtres PVC double vitrage: 300-500€/unité (éco) | 500-800€/unité (standard) | 800-1500€/unité (premium)
+- Porte d'entrée: 800-1500€ (éco) | 1500-3000€ (standard) | 3000-6000€ (premium)
+
+Utilise ces tarifs de référence et applique le multiplicateur ${multiplier}x pour le scénario ${scenarioType}.
 
 Génère un devis professionnel structuré en JSON avec cette structure EXACTE:
 
@@ -390,6 +402,7 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide et complet.`;
         total_ttc: totalTTC,
         discount_amount: estimateData.discount_amount || 0,
         discount_percent: estimateData.discount_percent || 0,
+        model_used: usedModel.display_name,
       })
       .select()
       .single();

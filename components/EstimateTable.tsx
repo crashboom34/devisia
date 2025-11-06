@@ -51,6 +51,7 @@ interface EstimateData {
   total_ttc: number;
   discount_amount?: number;
   discount_percent?: number;
+  model_used?: string;
 }
 
 interface EstimateTableProps {
@@ -157,6 +158,11 @@ export default function EstimateTable({ estimate, projectTitle }: EstimateTableP
                 <span><span className="font-semibold">N° Devis:</span> {estimate.estimate_number}</span>
                 <span><span className="font-semibold">Date:</span> {formatDate(estimate.estimate_date)}</span>
                 <span><span className="font-semibold">Validité:</span> {estimate.validity_days || 30} jours</span>
+              </CardDescription>
+            )}
+            {estimate.model_used && (
+              <CardDescription className="text-xs sm:text-sm">
+                <span className="font-semibold">Généré par:</span> {estimate.model_used}
               </CardDescription>
             )}
           </div>
