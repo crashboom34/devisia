@@ -197,7 +197,7 @@ IMPORTANT:
     }
 
     const llmRequestBody = {
-      model: modelId,
+      model: model.model_id,
       messages: [
         {
           role: "system",
