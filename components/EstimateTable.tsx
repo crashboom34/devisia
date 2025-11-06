@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Eye, EyeOff, Download } from 'lucide-react';
+import { Eye, EyeOff, Download, ChevronDown, ChevronUp } from 'lucide-react';
 
 type ViewMode = 'client' | 'detailed' | 'internal';
 
@@ -60,6 +60,17 @@ interface EstimateTableProps {
 
 export default function EstimateTable({ estimate, projectTitle }: EstimateTableProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('detailed');
+  const [expandedCategories, setExpandedCategories] = useState<Set<number>>(new Set([0]));
+
+  const toggleCategory = (index: number) => {
+    const newExpanded = new Set(expandedCategories);
+    if (newExpanded.has(index)) {
+      newExpanded.delete(index);
+    } else {
+      newExpanded.add(index);
+    }
+    setExpandedCategories(newExpanded);
+  };
 
   const getScenarioLabel = (type: string) => {
     switch (type) {
@@ -127,165 +138,255 @@ export default function EstimateTable({ estimate, projectTitle }: EstimateTableP
 
   return (
     <Card className="w-full">
-      <CardHeader>
-        <div className="flex items-start justify-between">
+      <CardHeader className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
           <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <CardTitle>Scénario {getScenarioLabel(estimate.scenario_type)}</CardTitle>
-              <Badge className={getScenarioBadgeColor(estimate.scenario_type)}>
+            <div className="flex flex-wrap items-center gap-2">
+              <CardTitle className="text-lg sm:text-xl">Scénario {getScenarioLabel(estimate.scenario_type)}</CardTitle>
+              <Badge className={`${getScenarioBadgeColor(estimate.scenario_type)} text-sm sm:text-base whitespace-nowrap`}>
                 {formatCurrency(estimate.total_ttc)}
               </Badge>
             </div>
             {projectTitle && (
-              <CardDescription className="text-base">
+              <CardDescription className="text-sm sm:text-base">
                 <span className="font-semibold">Projet:</span> {projectTitle}
               </CardDescription>
             )}
             {estimate.estimate_number && (
-              <CardDescription>
-                <span className="font-semibold">N° Devis:</span> {estimate.estimate_number} |
-                <span className="font-semibold ml-2">Date:</span> {formatDate(estimate.estimate_date)} |
-                <span className="font-semibold ml-2">Validité:</span> {estimate.validity_days || 30} jours
+              <CardDescription className="text-xs sm:text-sm flex flex-col sm:flex-row sm:gap-2">
+                <span><span className="font-semibold">N° Devis:</span> {estimate.estimate_number}</span>
+                <span><span className="font-semibold">Date:</span> {formatDate(estimate.estimate_date)}</span>
+                <span><span className="font-semibold">Validité:</span> {estimate.validity_days || 30} jours</span>
               </CardDescription>
             )}
           </div>
         </div>
 
-        <div className="flex items-center gap-2 mt-4">
-          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)} className="w-full">
-            <div className="flex items-center justify-between">
-              <TabsList>
-                <TabsTrigger value="client">Vue Client</TabsTrigger>
-                <TabsTrigger value="detailed">Vue Détaillée</TabsTrigger>
-                <TabsTrigger value="internal">Vue Interne</TabsTrigger>
-              </TabsList>
-              <Button variant="outline" size="sm">
-                <Download className="h-4 w-4 mr-2" />
-                Exporter PDF
-              </Button>
-            </div>
-          </Tabs>
-        </div>
+        <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)} className="w-full">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <TabsList className="grid w-full sm:w-auto grid-cols-3 sm:grid-cols-3">
+              <TabsTrigger value="client" className="text-xs sm:text-sm">Client</TabsTrigger>
+              <TabsTrigger value="detailed" className="text-xs sm:text-sm">Détaillée</TabsTrigger>
+              <TabsTrigger value="internal" className="text-xs sm:text-sm">Interne</TabsTrigger>
+            </TabsList>
+            <Button variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
+              <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+              Exporter PDF
+            </Button>
+          </div>
+        </Tabs>
       </CardHeader>
 
-      <CardContent className="space-y-6">
-        {estimate.categories.map((category, catIndex) => (
-          <div key={catIndex} className="space-y-3">
-            <div className="bg-gray-100 px-4 py-2 rounded-md">
-              <h3 className="font-bold text-lg">{category.name}</h3>
-              {category.description && (
-                <p className="text-sm text-gray-600">{category.description}</p>
+      <CardContent className="space-y-4 sm:space-y-6 px-2 sm:px-6">
+        {estimate.categories.map((category, catIndex) => {
+          const isExpanded = expandedCategories.has(catIndex);
+
+          return (
+            <div key={catIndex} className="space-y-2 sm:space-y-3">
+              <button
+                onClick={() => toggleCategory(catIndex)}
+                className="w-full bg-gray-100 px-3 sm:px-4 py-2 sm:py-3 rounded-md hover:bg-gray-200 transition-colors"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="text-left flex-1">
+                    <h3 className="font-bold text-sm sm:text-lg">{category.name}</h3>
+                    {category.description && (
+                      <p className="text-xs sm:text-sm text-gray-600 mt-0.5 sm:mt-1">{category.description}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <span className="font-bold text-xs sm:text-base text-blue-700 whitespace-nowrap">
+                      {formatCurrency(category.subtotal_ttc)}
+                    </span>
+                    {isExpanded ? (
+                      <ChevronUp className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                    )}
+                  </div>
+                </div>
+              </button>
+
+              {isExpanded && (
+                <>
+                  {/* Desktop Table View */}
+                  <div className="hidden lg:block overflow-x-auto">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="bg-gray-50 border-b-2 border-gray-200">
+                          <th className="text-left p-3 font-semibold text-sm">Poste</th>
+                          {viewMode !== 'client' && (
+                            <>
+                              <th className="text-left p-3 font-semibold text-sm">Description</th>
+                              <th className="text-center p-3 font-semibold text-sm">Qté</th>
+                              <th className="text-center p-3 font-semibold text-sm">Unité</th>
+                              <th className="text-right p-3 font-semibold text-sm">PU HT</th>
+                              <th className="text-right p-3 font-semibold text-sm">Montant HT</th>
+                              <th className="text-center p-3 font-semibold text-sm">TVA</th>
+                            </>
+                          )}
+                          <th className="text-right p-3 font-semibold text-sm">Montant TTC</th>
+                          {viewMode === 'internal' && (
+                            <>
+                              <th className="text-right p-3 font-semibold text-sm">Marge €</th>
+                              <th className="text-right p-3 font-semibold text-sm">Marge %</th>
+                            </>
+                          )}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {category.items.map((item, itemIndex) => {
+                          const margin = viewMode === 'internal' ? calculateMargin(item) : null;
+                          return (
+                            <tr
+                              key={itemIndex}
+                              className={`border-b ${itemIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 transition-colors`}
+                            >
+                              <td className="p-3 font-medium text-sm">{item.poste}</td>
+                              {viewMode !== 'client' && (
+                                <>
+                                  <td className="p-3 text-sm max-w-xs">
+                                    {item.description}
+                                    {viewMode === 'detailed' && (item.materials_cost || item.labor_cost) && (
+                                      <div className="text-xs text-gray-500 mt-1 space-y-0.5">
+                                        {item.materials_cost && (
+                                          <div>Matériaux: {formatCurrency(item.materials_cost)}</div>
+                                        )}
+                                        {item.labor_cost && (
+                                          <div>Main-d'œuvre: {formatCurrency(item.labor_cost)}</div>
+                                        )}
+                                      </div>
+                                    )}
+                                  </td>
+                                  <td className="p-3 text-center text-sm">{item.quantity}</td>
+                                  <td className="p-3 text-center text-xs">{item.unit}</td>
+                                  <td className="p-3 text-right text-sm">{formatCurrency(item.unit_price_ht)}</td>
+                                  <td className="p-3 text-right font-semibold text-sm">{formatCurrency(item.amount_ht)}</td>
+                                  <td className="p-3 text-center text-xs">{item.tva_percent}%</td>
+                                </>
+                              )}
+                              <td className="p-3 text-right font-bold text-blue-700 text-sm">
+                                {formatCurrency(item.amount_ttc)}
+                              </td>
+                              {viewMode === 'internal' && margin && (
+                                <>
+                                  <td className="p-3 text-right text-green-700 font-semibold text-sm">
+                                    {formatCurrency(margin.margin)}
+                                  </td>
+                                  <td className="p-3 text-right text-green-700 font-semibold text-sm">
+                                    {margin.marginPercent.toFixed(1)}%
+                                  </td>
+                                </>
+                              )}
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Mobile Card View */}
+                  <div className="lg:hidden space-y-2">
+                    {category.items.map((item, itemIndex) => {
+                      const margin = viewMode === 'internal' ? calculateMargin(item) : null;
+                      return (
+                        <div
+                          key={itemIndex}
+                          className="bg-white border border-gray-200 rounded-lg p-3 space-y-2"
+                        >
+                          <div className="flex justify-between items-start gap-2">
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-sm truncate">{item.poste}</h4>
+                              {viewMode !== 'client' && (
+                                <p className="text-xs text-gray-600 mt-1 line-clamp-2">{item.description}</p>
+                              )}
+                            </div>
+                            <span className="font-bold text-blue-700 text-sm whitespace-nowrap">
+                              {formatCurrency(item.amount_ttc)}
+                            </span>
+                          </div>
+
+                          {viewMode !== 'client' && (
+                            <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t">
+                              <div>
+                                <span className="text-gray-500">Quantité:</span>
+                                <span className="ml-1 font-medium">{item.quantity} {item.unit}</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-500">PU HT:</span>
+                                <span className="ml-1 font-medium">{formatCurrency(item.unit_price_ht)}</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-500">Montant HT:</span>
+                                <span className="ml-1 font-medium">{formatCurrency(item.amount_ht)}</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-500">TVA:</span>
+                                <span className="ml-1 font-medium">{item.tva_percent}%</span>
+                              </div>
+                            </div>
+                          )}
+
+                          {viewMode === 'detailed' && (item.materials_cost || item.labor_cost) && (
+                            <div className="text-xs text-gray-500 pt-2 border-t space-y-1">
+                              {item.materials_cost && (
+                                <div>Matériaux: {formatCurrency(item.materials_cost)}</div>
+                              )}
+                              {item.labor_cost && (
+                                <div>Main-d'œuvre: {formatCurrency(item.labor_cost)}</div>
+                              )}
+                            </div>
+                          )}
+
+                          {viewMode === 'internal' && margin && (
+                            <div className="text-xs pt-2 border-t grid grid-cols-2 gap-2">
+                              <div>
+                                <span className="text-gray-500">Marge:</span>
+                                <span className="ml-1 font-semibold text-green-700">
+                                  {formatCurrency(margin.margin)}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-gray-500">Marge %:</span>
+                                <span className="ml-1 font-semibold text-green-700">
+                                  {margin.marginPercent.toFixed(1)}%
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="bg-gray-100 px-3 sm:px-4 py-2 sm:py-3 rounded font-bold border-t-2 border-gray-300">
+                    <div className="flex justify-between items-center text-sm sm:text-base">
+                      <span>Sous-total {category.name}</span>
+                      <div className="flex flex-col items-end gap-0.5 sm:gap-1">
+                        {viewMode !== 'client' && (
+                          <div className="text-xs sm:text-sm text-gray-600">
+                            HT: {formatCurrency(category.subtotal_ht)} + TVA: {formatCurrency(category.subtotal_tva)}
+                          </div>
+                        )}
+                        <span className="text-blue-700">{formatCurrency(category.subtotal_ttc)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </>
               )}
             </div>
+          );
+        })}
 
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="bg-gray-50 border-b-2 border-gray-200">
-                    <th className="text-left p-3 font-semibold text-sm">Poste</th>
-                    {viewMode !== 'client' && (
-                      <>
-                        <th className="text-left p-3 font-semibold text-sm">Description</th>
-                        <th className="text-center p-3 font-semibold text-sm">Qté</th>
-                        <th className="text-center p-3 font-semibold text-sm">Unité</th>
-                        <th className="text-right p-3 font-semibold text-sm">PU HT</th>
-                        <th className="text-right p-3 font-semibold text-sm">Montant HT</th>
-                        <th className="text-center p-3 font-semibold text-sm">TVA</th>
-                      </>
-                    )}
-                    <th className="text-right p-3 font-semibold text-sm">Montant TTC</th>
-                    {viewMode === 'internal' && (
-                      <>
-                        <th className="text-right p-3 font-semibold text-sm">Marge €</th>
-                        <th className="text-right p-3 font-semibold text-sm">Marge %</th>
-                      </>
-                    )}
-                  </tr>
-                </thead>
-                <tbody>
-                  {category.items.map((item, itemIndex) => {
-                    const margin = viewMode === 'internal' ? calculateMargin(item) : null;
-                    return (
-                      <tr
-                        key={itemIndex}
-                        className={`border-b ${itemIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 transition-colors`}
-                      >
-                        <td className="p-3 font-medium">{item.poste}</td>
-                        {viewMode !== 'client' && (
-                          <>
-                            <td className="p-3 text-sm max-w-xs">
-                              {item.description}
-                              {viewMode === 'detailed' && (item.materials_cost || item.labor_cost) && (
-                                <div className="text-xs text-gray-500 mt-1 space-y-0.5">
-                                  {item.materials_cost && (
-                                    <div>Matériaux: {formatCurrency(item.materials_cost)}</div>
-                                  )}
-                                  {item.labor_cost && (
-                                    <div>Main-d'œuvre: {formatCurrency(item.labor_cost)}</div>
-                                  )}
-                                </div>
-                              )}
-                            </td>
-                            <td className="p-3 text-center">{item.quantity}</td>
-                            <td className="p-3 text-center text-sm">{item.unit}</td>
-                            <td className="p-3 text-right">{formatCurrency(item.unit_price_ht)}</td>
-                            <td className="p-3 text-right font-semibold">{formatCurrency(item.amount_ht)}</td>
-                            <td className="p-3 text-center text-sm">{item.tva_percent}%</td>
-                          </>
-                        )}
-                        <td className="p-3 text-right font-bold text-blue-700">
-                          {formatCurrency(item.amount_ttc)}
-                        </td>
-                        {viewMode === 'internal' && margin && (
-                          <>
-                            <td className="p-3 text-right text-green-700 font-semibold">
-                              {formatCurrency(margin.margin)}
-                            </td>
-                            <td className="p-3 text-right text-green-700 font-semibold">
-                              {margin.marginPercent.toFixed(1)}%
-                            </td>
-                          </>
-                        )}
-                      </tr>
-                    );
-                  })}
-                </tbody>
-                <tfoot>
-                  <tr className="bg-gray-100 font-bold border-t-2 border-gray-300">
-                    <td className="p-3" colSpan={viewMode === 'client' ? 1 : viewMode === 'detailed' ? 5 : 7}>
-                      Sous-total {category.name}
-                    </td>
-                    {viewMode !== 'client' && (
-                      <>
-                        <td className="p-3 text-right">{formatCurrency(category.subtotal_ht)}</td>
-                        <td className="p-3 text-center">-</td>
-                      </>
-                    )}
-                    <td className="p-3 text-right text-blue-700">
-                      {formatCurrency(category.subtotal_ttc)}
-                    </td>
-                    {viewMode === 'internal' && (
-                      <>
-                        <td className="p-3"></td>
-                        <td className="p-3"></td>
-                      </>
-                    )}
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          </div>
-        ))}
-
-        <div className="bg-blue-50 p-6 rounded-lg border-2 border-blue-200 space-y-3">
-          <h3 className="font-bold text-xl mb-4">Récapitulatif</h3>
+        <div className="bg-blue-50 p-4 sm:p-6 rounded-lg border-2 border-blue-200 space-y-2 sm:space-y-3">
+          <h3 className="font-bold text-lg sm:text-xl mb-3 sm:mb-4">Récapitulatif</h3>
           {viewMode !== 'client' && (
             <>
-              <div className="flex justify-between text-lg">
+              <div className="flex justify-between text-sm sm:text-lg">
                 <span>Total HT:</span>
                 <span className="font-semibold">{formatCurrency(estimate.total_ht)}</span>
               </div>
-              <div className="flex justify-between text-lg">
+              <div className="flex justify-between text-sm sm:text-lg">
                 <span>Total TVA:</span>
                 <span className="font-semibold">{formatCurrency(estimate.total_tva)}</span>
               </div>
@@ -293,19 +394,19 @@ export default function EstimateTable({ estimate, projectTitle }: EstimateTableP
           )}
           {estimate.discount_amount && estimate.discount_amount > 0 && (
             <>
-              <div className="flex justify-between text-lg text-green-700">
+              <div className="flex justify-between text-sm sm:text-lg text-green-700">
                 <span>Remise ({estimate.discount_percent}%):</span>
                 <span className="font-semibold">- {formatCurrency(estimate.discount_amount)}</span>
               </div>
               <div className="border-t pt-2"></div>
             </>
           )}
-          <div className="flex justify-between text-2xl font-bold text-blue-700 pt-2 border-t-2 border-blue-300">
+          <div className="flex justify-between text-xl sm:text-2xl font-bold text-blue-700 pt-2 border-t-2 border-blue-300">
             <span>Total TTC:</span>
             <span>{formatCurrency(estimate.total_ttc - (estimate.discount_amount || 0))}</span>
           </div>
           {viewMode === 'internal' && totalMargin() && (
-            <div className="flex justify-between text-lg text-green-700 pt-2 border-t">
+            <div className="flex justify-between text-sm sm:text-lg text-green-700 pt-2 border-t">
               <span>Marge totale:</span>
               <span className="font-semibold">
                 {formatCurrency(totalMargin()!.margin)} ({totalMargin()!.marginPercent.toFixed(1)}%)
@@ -315,30 +416,30 @@ export default function EstimateTable({ estimate, projectTitle }: EstimateTableP
         </div>
 
         {(estimate.payment_terms || estimate.execution_delay || estimate.deposit_required || estimate.special_conditions) && (
-          <div className="bg-gray-50 p-6 rounded-lg space-y-3">
-            <h3 className="font-bold text-lg mb-3">Informations Devis</h3>
+          <div className="bg-gray-50 p-4 sm:p-6 rounded-lg space-y-2 sm:space-y-3">
+            <h3 className="font-bold text-base sm:text-lg mb-2 sm:mb-3">Informations Devis</h3>
             {estimate.payment_terms && (
-              <div>
+              <div className="text-sm sm:text-base">
                 <span className="font-semibold">Conditions de paiement:</span>
-                <p className="text-gray-700">{estimate.payment_terms}</p>
+                <p className="text-gray-700 mt-1">{estimate.payment_terms}</p>
               </div>
             )}
             {estimate.execution_delay && (
-              <div>
+              <div className="text-sm sm:text-base">
                 <span className="font-semibold">Délai d'exécution:</span>
-                <p className="text-gray-700">{estimate.execution_delay}</p>
+                <p className="text-gray-700 mt-1">{estimate.execution_delay}</p>
               </div>
             )}
             {estimate.deposit_required && estimate.deposit_required > 0 && (
-              <div>
+              <div className="text-sm sm:text-base">
                 <span className="font-semibold">Acompte demandé:</span>
-                <p className="text-gray-700">{estimate.deposit_required}% à la commande</p>
+                <p className="text-gray-700 mt-1">{estimate.deposit_required}% à la commande</p>
               </div>
             )}
             {estimate.special_conditions && (
-              <div>
+              <div className="text-sm sm:text-base">
                 <span className="font-semibold">Conditions particulières:</span>
-                <p className="text-gray-700">{estimate.special_conditions}</p>
+                <p className="text-gray-700 mt-1">{estimate.special_conditions}</p>
               </div>
             )}
           </div>

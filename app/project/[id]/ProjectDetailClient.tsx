@@ -190,30 +190,30 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+      <header className="bg-white border-b sticky top-0 z-10">
+        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
             <Link href="/dashboard">
-              <Button variant="ghost" size="icon">
-                <ArrowLeft className="h-5 w-5" />
+              <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0">
+                <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
               </Button>
             </Link>
-            <div className="flex items-center gap-2">
-              <FileText className="h-8 w-8 text-blue-600" />
-              <span className="text-2xl font-bold text-gray-900">Aide Devis IA</span>
+            <div className="flex items-center gap-1 sm:gap-2 min-w-0">
+              <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 flex-shrink-0" />
+              <span className="text-lg sm:text-2xl font-bold text-gray-900 truncate">Aide Devis IA</span>
             </div>
           </div>
           <UserMenu />
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 max-w-6xl">
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-3xl font-bold text-gray-900">{project.title}</h1>
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-6xl">
+        <div className="mb-6 sm:mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 sm:mb-4 gap-2">
+            <h1 className="text-xl sm:text-3xl font-bold text-gray-900 break-words">{project.title}</h1>
             {getStatusBadge(project.status)}
           </div>
-          <p className="text-gray-600">
+          <p className="text-sm sm:text-base text-gray-600">
             Créé le {new Date(project.created_at).toLocaleDateString('fr-FR', {
               day: 'numeric',
               month: 'long',
@@ -222,8 +222,8 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+          <div className="lg:col-span-2 space-y-4 sm:space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle>Description du Projet</CardTitle>
@@ -275,35 +275,35 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
             )}
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Actions</CardTitle>
+                <CardTitle className="text-lg sm:text-xl">Actions</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-2 sm:space-y-3">
                 <Button
                   variant="outline"
-                  className="w-full"
+                  className="w-full text-sm sm:text-base"
                   onClick={handleEditProject}
                 >
-                  <Pencil className="h-4 w-4 mr-2" />
+                  <Pencil className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
                   Modifier le Projet
                 </Button>
                 <Button
                   variant="outline"
-                  className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
+                  className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 text-sm sm:text-base"
                   onClick={() => setShowDeleteDialog(true)}
                 >
-                  <Trash2 className="h-4 w-4 mr-2" />
+                  <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
                   Supprimer le Projet
                 </Button>
               </CardContent>
             </Card>
 
             <Card className="bg-blue-50 border-blue-200">
-              <CardContent className="pt-6">
-                <h3 className="font-semibold mb-2 text-blue-900">Prochaines Étapes</h3>
-                <ol className="text-sm text-gray-700 space-y-2">
+              <CardContent className="pt-4 sm:pt-6">
+                <h3 className="font-semibold mb-2 text-blue-900 text-sm sm:text-base">Prochaines Étapes</h3>
+                <ol className="text-xs sm:text-sm text-gray-700 space-y-1 sm:space-y-2">
                   <li>1. Sélectionnez votre modèle IA préféré</li>
                   <li>2. Générez des devis selon vos besoins</li>
                   <li>3. Comparez les différents scénarios</li>

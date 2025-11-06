@@ -113,54 +113,56 @@ export default function NewProjectPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+      <header className="bg-white border-b sticky top-0 z-10">
+        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
             <Link href="/dashboard">
-              <Button variant="ghost" size="icon">
-                <ArrowLeft className="h-5 w-5" />
+              <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0">
+                <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
               </Button>
             </Link>
-            <div className="flex items-center gap-2">
-              <FileText className="h-8 w-8 text-blue-600" />
-              <span className="text-2xl font-bold text-gray-900">Aide Devis IA</span>
+            <div className="flex items-center gap-1 sm:gap-2 min-w-0">
+              <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 flex-shrink-0" />
+              <span className="text-lg sm:text-2xl font-bold text-gray-900 truncate">Aide Devis IA</span>
             </div>
           </div>
           <UserMenu />
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 max-w-3xl">
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Nouveau Projet</h1>
-          <p className="text-gray-600">
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-3xl">
+        <div className="mb-6 sm:mb-8 text-center">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Nouveau Projet</h1>
+          <p className="text-sm sm:text-base text-gray-600">
             Dictez ou écrivez votre projet de construction
           </p>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Décrivez Votre Projet</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-lg sm:text-xl">Décrivez Votre Projet</CardTitle>
+            <CardDescription className="text-sm sm:text-base">
               Choisissez votre méthode de saisie préférée
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-3 sm:px-6">
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'voice' | 'text')}>
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="voice" className="flex items-center gap-2">
-                  <Mic className="h-4 w-4" />
-                  Dictée Vocale
+              <TabsList className="grid w-full grid-cols-2 mb-4 sm:mb-6">
+                <TabsTrigger value="voice" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+                  <Mic className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden xs:inline">Dictée Vocale</span>
+                  <span className="xs:hidden">Voix</span>
                 </TabsTrigger>
-                <TabsTrigger value="text" className="flex items-center gap-2">
-                  <Keyboard className="h-4 w-4" />
-                  Saisie Texte
+                <TabsTrigger value="text" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+                  <Keyboard className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden xs:inline">Saisie Texte</span>
+                  <span className="xs:hidden">Texte</span>
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="voice" className="space-y-6">
-                <div className="space-y-3">
-                  <Label>Titre du Projet</Label>
+              <TabsContent value="voice" className="space-y-4 sm:space-y-6">
+                <div className="space-y-2 sm:space-y-3">
+                  <Label className="text-sm sm:text-base">Titre du Projet</Label>
                   <VoiceRecorder
                     key={`title-${formData.title}`}
                     initialValue={formData.title}
@@ -169,8 +171,8 @@ export default function NewProjectPage() {
                   />
                 </div>
 
-                <div className="space-y-3">
-                  <Label>Description du Projet</Label>
+                <div className="space-y-2 sm:space-y-3">
+                  <Label className="text-sm sm:text-base">Description du Projet</Label>
                   <VoiceRecorder
                     key={`description-${formData.description}`}
                     initialValue={formData.description}
@@ -179,35 +181,35 @@ export default function NewProjectPage() {
                   />
                 </div>
 
-                <div className="flex gap-3 pt-4">
-                  <Link href="/dashboard" className="flex-1">
-                    <Button type="button" variant="outline" className="w-full" disabled={loading}>
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-3 sm:pt-4">
+                  <Link href="/dashboard" className="w-full sm:flex-1">
+                    <Button type="button" variant="outline" className="w-full text-sm sm:text-base" disabled={loading}>
                       Annuler
                     </Button>
                   </Link>
                   <Button
                     onClick={handleSubmit}
                     disabled={loading || !formData.title || !formData.description}
-                    className={`flex-1 relative overflow-hidden transition-all ${
+                    className={`w-full sm:flex-1 relative overflow-hidden transition-all text-sm sm:text-base ${
                       loading ? 'bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-[length:200%_100%] animate-gradient' : ''
                     }`}
                   >
                     {loading ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <Sparkles className="h-4 w-4 animate-pulse" />
-                        {getLoadingText()}
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                      <span className="flex items-center justify-center gap-1 sm:gap-2">
+                        <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 animate-pulse flex-shrink-0" />
+                        <span className="truncate text-xs sm:text-sm">{getLoadingText()}</span>
+                        <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin flex-shrink-0" />
                       </span>
                     ) : (
-                      'Créer le Projet et Générer les Devis'
+                      <span className="text-xs sm:text-base">Créer et Générer les Devis</span>
                     )}
                   </Button>
                 </div>
               </TabsContent>
 
-              <TabsContent value="text" className="space-y-6">
+              <TabsContent value="text" className="space-y-4 sm:space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="title">
+                  <Label htmlFor="title" className="text-sm sm:text-base">
                     Titre du Projet <span className="text-red-600">*</span>
                   </Label>
                   <Input
@@ -216,11 +218,12 @@ export default function NewProjectPage() {
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     required
+                    className="text-sm sm:text-base"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="description">
+                  <Label htmlFor="description" className="text-sm sm:text-base">
                     Description du Projet <span className="text-red-600">*</span>
                   </Label>
                   <Textarea
@@ -230,33 +233,34 @@ export default function NewProjectPage() {
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     required
+                    className="text-sm sm:text-base"
                   />
-                  <p className="text-sm text-gray-500">
+                  <p className="text-xs sm:text-sm text-gray-500">
                     Plus votre description est détaillée, plus les devis générés seront précis.
                   </p>
                 </div>
 
-                <div className="flex gap-3 pt-4">
-                  <Link href="/dashboard" className="flex-1">
-                    <Button type="button" variant="outline" className="w-full" disabled={loading}>
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-3 sm:pt-4">
+                  <Link href="/dashboard" className="w-full sm:flex-1">
+                    <Button type="button" variant="outline" className="w-full text-sm sm:text-base" disabled={loading}>
                       Annuler
                     </Button>
                   </Link>
                   <Button
                     onClick={handleSubmit}
                     disabled={loading || !formData.title || !formData.description}
-                    className={`flex-1 relative overflow-hidden transition-all ${
+                    className={`w-full sm:flex-1 relative overflow-hidden transition-all text-sm sm:text-base ${
                       loading ? 'bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-[length:200%_100%] animate-gradient' : ''
                     }`}
                   >
                     {loading ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <Sparkles className="h-4 w-4 animate-pulse" />
-                        {getLoadingText()}
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                      <span className="flex items-center justify-center gap-1 sm:gap-2">
+                        <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 animate-pulse flex-shrink-0" />
+                        <span className="truncate text-xs sm:text-sm">{getLoadingText()}</span>
+                        <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin flex-shrink-0" />
                       </span>
                     ) : (
-                      'Créer le Projet et Générer les Devis'
+                      <span className="text-xs sm:text-base">Créer et Générer les Devis</span>
                     )}
                   </Button>
                 </div>
@@ -265,10 +269,10 @@ export default function NewProjectPage() {
           </CardContent>
         </Card>
 
-        <Card className="mt-6 bg-blue-50 border-blue-200">
-          <CardContent className="pt-6">
-            <h3 className="font-semibold mb-2 text-blue-900">Conseils pour une bonne description</h3>
-            <ul className="text-sm text-gray-700 space-y-1">
+        <Card className="mt-4 sm:mt-6 bg-blue-50 border-blue-200">
+          <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
+            <h3 className="font-semibold mb-2 text-blue-900 text-sm sm:text-base">Conseils pour une bonne description</h3>
+            <ul className="text-xs sm:text-sm text-gray-700 space-y-1">
               <li>• Précisez le type de travaux (construction, rénovation, extension...)</li>
               <li>• Indiquez les dimensions et surfaces concernées</li>
               <li>• Mentionnez les matériaux et finitions souhaités</li>

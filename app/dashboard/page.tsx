@@ -62,67 +62,67 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <FileText className="h-8 w-8 text-blue-600" />
-            <span className="text-2xl font-bold text-gray-900">Aide Devis IA</span>
+      <header className="bg-white border-b sticky top-0 z-10">
+        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 min-w-0">
+            <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 flex-shrink-0" />
+            <span className="text-lg sm:text-2xl font-bold text-gray-900 truncate">Aide Devis IA</span>
           </div>
           <UserMenu />
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 max-w-6xl">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Mes Projets</h1>
-            <p className="text-gray-600">
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-6xl">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 gap-3">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">Mes Projets</h1>
+            <p className="text-sm sm:text-base text-gray-600 truncate">
               {user?.email}
             </p>
           </div>
-          <Link href="/project/new">
-            <Button size="lg">
-              <Plus className="h-5 w-5 mr-2" />
+          <Link href="/project/new" className="w-full sm:w-auto">
+            <Button size="lg" className="w-full sm:w-auto text-sm sm:text-base">
+              <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
               Nouveau Projet
             </Button>
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           <div className="lg:col-span-2">
             {loading ? (
               <div className="flex justify-center items-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
               </div>
             ) : projects.length === 0 ? (
-              <Card className="text-center py-12">
-                <CardContent>
-                  <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold mb-2">Aucun projet</h3>
-                  <p className="text-gray-600 mb-6">
+              <Card className="text-center py-8 sm:py-12">
+                <CardContent className="px-3 sm:px-6">
+                  <FileText className="h-12 w-12 sm:h-16 sm:w-16 text-gray-400 mx-auto mb-3 sm:mb-4" />
+                  <h3 className="text-lg sm:text-xl font-semibold mb-2">Aucun projet</h3>
+                  <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">
                     Créez votre premier projet pour générer des devis
                   </p>
-                  <Link href="/project/new">
-                    <Button size="lg">
-                      <Plus className="h-5 w-5 mr-2" />
+                  <Link href="/project/new" className="inline-block">
+                    <Button size="lg" className="text-sm sm:text-base">
+                      <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
                       Créer un projet
                     </Button>
                   </Link>
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
             {projects.map((project) => (
               <Link key={project.id} href={`/project/${project.id}`}>
                 <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
-                  <CardHeader>
-                    <div className="flex items-start justify-between mb-2">
-                      <CardTitle className="text-lg">{project.title}</CardTitle>
+                  <CardHeader className="pb-3 sm:pb-6">
+                    <div className="flex items-start justify-between mb-2 gap-2">
+                      <CardTitle className="text-base sm:text-lg flex-1 break-words">{project.title}</CardTitle>
                       {getStatusBadge(project.status)}
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm text-gray-600 line-clamp-3 mb-4">
+                    <p className="text-xs sm:text-sm text-gray-600 line-clamp-3 mb-3 sm:mb-4">
                       {project.description}
                     </p>
                     <p className="text-xs text-gray-500">
@@ -139,7 +139,7 @@ export default function DashboardPage() {
               </div>
             )}
           </div>
-          <div>
+          <div className="lg:sticky lg:top-20">
             <ModelSelector />
           </div>
         </div>
