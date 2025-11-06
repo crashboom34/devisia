@@ -39,15 +39,14 @@ supabase functions deploy generate-estimate
 
 ## Modèles gratuits disponibles
 
-L'application utilise par défaut **Llama 3.1 8B Instruct** qui est:
-- ✅ Complètement gratuit
-- ✅ Rapide
-- ✅ Performant pour la génération de devis
+L'application utilise par défaut **Gemini 2.0 Flash (GRATUIT)** qui est:
+- ✅ Complètement gratuit via OpenRouter
+- ✅ Ultra-rapide (génération en quelques secondes)
+- ✅ Excellent pour la génération de devis structurés
+- ✅ Support JSON natif et fiable
 
 D'autres modèles gratuits sont disponibles:
-- Mistral 7B Instruct
-- Gemma 2 9B
-- Llama 3.2 3B
+- Qwen 2 7B Instruct (gratuit)
 
 ## Vérification
 
@@ -67,7 +66,13 @@ Pour vérifier que tout fonctionne:
 ### Erreur "No AI model available"
 
 - Vérifiez qu'au moins un modèle est actif dans la base de données
-- La migration devrait avoir configuré Llama 3.1 8B comme modèle par défaut
+- Le système devrait avoir configuré Gemini 2.0 Flash comme modèle par défaut
+
+### Erreur "No endpoints found for [model]"
+
+- Certains modèles gratuits deviennent parfois indisponibles
+- Le système utilise maintenant Gemini 2.0 Flash qui est stable et rapide
+- Si le problème persiste, contactez le support
 
 ### Erreur de parsing JSON
 
