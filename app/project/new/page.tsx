@@ -89,6 +89,7 @@ export default function NewProjectPage() {
           },
           body: JSON.stringify({
             projectId: project.id,
+            projectDescription: formData.description,
             scenarioType,
           }),
         });
