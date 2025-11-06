@@ -9,7 +9,9 @@ const corsHeaders = {
 
 interface EstimateRequest {
   projectId: string;
+  projectDescription: string;
   scenarioType: "eco" | "standard" | "premium";
+  modelId?: string;
 }
 
 Deno.serve(async (req: Request) => {
@@ -37,151 +39,159 @@ Deno.serve(async (req: Request) => {
       throw new Error("Unauthorized");
     }
 
-    const { projectId, scenarioType }: EstimateRequest = await req.json();
+    const { projectId, projectDescription, scenarioType, modelId }: EstimateRequest = await req.json();
 
-    if (!projectId || !scenarioType) {
+    if (!projectId || !projectDescription || !scenarioType) {
       throw new Error("Missing required fields");
     }
 
-    const { data: project, error: projectError } = await supabase
-      .from("projects")
+    let selectedModelId = modelId;
+    if (!selectedModelId) {
+      const { data: preferences } = await supabase
+        .from("user_preferences")
+        .select("default_model_id")
+        .eq("user_id", user.id)
+        .single();
+
+      if (preferences?.default_model_id) {
+        selectedModelId = preferences.default_model_id;
+      } else {
+        const { data: defaultModel } = await supabase
+          .from("ai_models")
+          .select("id")
+          .eq("is_default", true)
+          .eq("is_active", true)
+          .single();
+
+        if (defaultModel) {
+          selectedModelId = defaultModel.id;
+        } else {
+          throw new Error("No AI model available");
+        }
+      }
+    }
+
+    const { data: model, error: modelError } = await supabase
+      .from("ai_models")
       .select("*")
-      .eq("id", projectId)
-      .eq("user_id", user.id)
-      .maybeSingle();
+      .eq("id", selectedModelId)
+      .single();
 
-    if (projectError || !project) {
-      throw new Error("Project not found or access denied");
+    if (modelError || !model) {
+      throw new Error("Invalid model selected");
     }
 
-    const { data: modelConfig } = await supabase
-      .from("user_preferences")
-      .select("preferred_model_id, ai_models(provider, model_id)")
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    let provider = "openrouter";
-    let modelId = "meta-llama/llama-3.2-3b-instruct:free";
-
-    if (modelConfig?.preferred_model_id && modelConfig.ai_models) {
-      provider = (modelConfig.ai_models as any).provider;
-      modelId = (modelConfig.ai_models as any).model_id;
-    }
-
-    const { data: systemConfig } = await supabase
-      .from("system_config")
-      .select("key, value")
-      .in("key", [`${provider}_api_key`, "default_model"])
-      .limit(10);
-
-    const apiKey = systemConfig?.find((c) => c.key === `${provider}_api_key`)?.value;
-
-    if (!apiKey) {
-      throw new Error(`API key not configured for ${provider}`);
-    }
-
-    const scenarioMultipliers = {
-      eco: { base: 0.7, quality: "économique", tva: 20 },
-      standard: { base: 1.0, quality: "standard", tva: 20 },
-      premium: { base: 1.5, quality: "premium", tva: 20 },
+    const priceMultipliers = {
+      eco: 0.7,
+      standard: 1.0,
+      premium: 1.5,
     };
 
-    const scenario = scenarioMultipliers[scenarioType];
+    const multiplier = priceMultipliers[scenarioType];
 
-    const prompt = `Tu es un métreur expert en devis de construction BTP. Génère un devis détaillé et professionnel pour ce projet:
+    const prompt = `En tant qu'expert métreur BTP, génère un devis détaillé pour le projet suivant.
 
-Titre: ${project.title}
-Description: ${project.description}
-Niveau de qualité: ${scenario.quality}
+Description du projet:
+${projectDescription}
 
-INSTRUCTIONS CRITIQUES:
-1. Analyse la description et identifie AUTOMATIQUEMENT tous les postes de travaux nécessaires
-2. Si la description est générale (ex: "rénovation appartement 60m²"), décompose en postes standards du BTP
-3. Pour CHAQUE poste, fournis des quantités réalistes basées sur la surface/contexte mentionné
-4. Utilise des prix unitaires réalistes du marché français 2025
-5. Tous les montants doivent être en HT, avec TVA à ${scenario.tva}%
+Type de devis: ${scenarioType.toUpperCase()}
+Multiplicateur de prix: ${multiplier}x
 
-POSTES À INCLURE (selon le type de projet):
-- Préparation/Démolition: démolition cloisons, évacuation gravats
-- Gros Œuvre: maçonnerie, charpente, toiture si extension/construction
-- Second Œuvre: cloisons, isolation, menuiseries, fenêtres
-- Électricité: mise aux normes, tableau, prises, éclairage, interrupteurs
-- Plomberie: réseaux eau/évacuation, radiateurs si chauffage mentionné
-- Cuisine: si mentionnée, inclure mobilier + électroménager + pose
-- Salle de bain: si mentionnée, inclure faïence, sanitaires, robinetterie
-- Revêtements sols: parquet, carrelage selon surfaces
-- Revêtements murs: peinture, papier peint
-- Finitions: plinthes, joints, nettoyage
+Génère un devis professionnel structuré avec:
 
-Génère un devis JSON avec cette structure EXACTE:
-{
-  "estimate_number": "DEVIS-2025-001",
-  "client_name": "Client",
-  "validity_days": 30,
-  "payment_terms": "30% à la commande, 40% en cours de chantier, 30% à la réception",
-  "execution_delay": "6 à 8 semaines",
-  "deposit_required": 30,
-  "categories": [
-    {
-      "name": "Préparation et Démolition",
-      "description": "Travaux préparatoires et démolitions",
-      "items": [
-        {
-          "poste": "Nom du poste",
-          "description": "Description détaillée du travail",
-          "quantity": 60,
-          "unit": "m²",
-          "unit_price_ht": 25.00,
-          "amount_ht": 1500.00,
-          "tva_percent": 20,
-          "tva_amount": 300.00,
-          "amount_ttc": 1800.00,
-          "materials_cost": 800.00,
-          "labor_cost": 700.00
-        }
-      ],
-      "subtotal_ht": 1500.00,
-      "subtotal_tva": 300.00,
-      "subtotal_ttc": 1800.00
-    }
-  ],
-  "total_ht": 45000.00,
-  "total_tva": 9000.00,
-  "total_ttc": 54000.00,
-  "discount_percent": 0,
-  "discount_amount": 0
-}
+1. CATÉGORIES par lots BTP (Préparation, Gros Œuvre, Second Œuvre, Finitions, etc.)
+2. Pour CHAQUE CATÉGORIE:
+   - name: nom du lot
+   - description: description courte
+   - items: tableau des postes
+   - subtotal_ht, subtotal_tva, subtotal_ttc: sous-totaux calculés
 
-RÈGLES DE CALCUL (vérifie bien):
-- amount_ht = quantity × unit_price_ht (arrondi à 2 décimales)
-- tva_amount = amount_ht × (tva_percent / 100)
-- amount_ttc = amount_ht + tva_amount
-- subtotal_ht = somme des amount_ht du lot
-- subtotal_tva = somme des tva_amount du lot
-- subtotal_ttc = somme des amount_ttc du lot
-- total_ht = somme de tous les subtotal_ht
-- total_tva = somme de tous les subtotal_tva
-- total_ttc = somme de tous les subtotal_ttc
+3. Pour CHAQUE POSTE (item):
+   - poste: nom du poste (ex: "Terrassement", "Dalle béton")
+   - description: détails techniques
+   - quantity: quantité (nombre)
+   - unit: unité (m², m³, ml, u, forfait)
+   - unit_price_ht: prix unitaire HT en euros
+   - amount_ht: montant HT (quantity × unit_price_ht)
+   - tva_percent: 20
+   - tva_amount: montant TVA
+   - amount_ttc: montant TTC
+   - materials_cost: coût matériaux (optionnel)
+   - labor_cost: coût main d'œuvre (optionnel)
+
+4. MÉTADONNÉES du devis:
+   - estimate_number: numéro unique (ex: DEVIS-2024-001)
+   - client_name: "Client"
+   - validity_days: 30
+   - payment_terms: conditions de paiement
+   - execution_delay: délai d'exécution estimé
+   - deposit_required: acompte en % (généralement 30)
+   - special_conditions: conditions particulières si nécessaire
+
+5. TOTAUX:
+   - total_ht: somme de tous les amount_ht
+   - total_tva: somme de tous les tva_amount
+   - total_ttc: total_ht + total_tva
 
 IMPORTANT:
-- Sois TRÈS détaillé et exhaustif dans les postes
-- Si information manquante, garde le poste et mets "À valider selon visite" dans la description
-- Utilise des unités appropriées: m², ml, u (unité), pièce, forfait, ensemble
-- Les quantités doivent être cohérentes avec la surface totale
-- Prix réalistes pour ${scenario.quality}
+- Utilise des prix ${scenarioType} (×${multiplier}) réalistes pour le marché français
+- TOUS les calculs doivent être exacts
+- Réponds UNIQUEMENT en JSON valide et COMPLET
+- Ferme TOUS les crochets et accolades
+- Structure EXACTE requise:
 
-Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
+{
+  "estimate_number": "DEVIS-2024-XXX",
+  "client_name": "Client",
+  "validity_days": 30,
+  "payment_terms": "30% à la commande, 70% à la livraison",
+  "execution_delay": "X semaines",
+  "deposit_required": 30,
+  "special_conditions": "...",
+  "categories": [
+    {
+      "name": "Nom du lot",
+      "description": "Description",
+      "items": [
+        {
+          "poste": "Nom poste",
+          "description": "Détails",
+          "quantity": 100,
+          "unit": "m²",
+          "unit_price_ht": 50.00,
+          "amount_ht": 5000.00,
+          "tva_percent": 20,
+          "tva_amount": 1000.00,
+          "amount_ttc": 6000.00,
+          "materials_cost": 3000.00,
+          "labor_cost": 2000.00
+        }
+      ],
+      "subtotal_ht": 5000.00,
+      "subtotal_tva": 1000.00,
+      "subtotal_ttc": 6000.00
+    }
+  ],
+  "total_ht": 5000.00,
+  "total_tva": 1000.00,
+  "total_ttc": 6000.00,
+  "discount_amount": 0,
+  "discount_percent": 0
+}`;
 
-    const llmApiUrl = provider === "openrouter"
-      ? "https://openrouter.ai/api/v1/chat/completions"
-      : "https://api.openai.com/v1/chat/completions";
+    const llmApiUrl = model.api_endpoint || "https://openrouter.ai/api/v1/chat/completions";
+    const llmApiKey = model.api_key || Deno.env.get("OPENROUTER_API_KEY");
+
+    if (!llmApiKey) {
+      throw new Error("No API key configured for the selected model");
+    }
 
     const llmHeaders: Record<string, string> = {
+      "Authorization": `Bearer ${llmApiKey}`,
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${apiKey}`,
     };
 
-    if (provider === "openrouter") {
+    if (model.provider === "openrouter") {
       llmHeaders["HTTP-Referer"] = supabaseUrl;
       llmHeaders["X-Title"] = "Aide Devis IA";
     }
@@ -208,8 +218,15 @@ Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
       headers: llmHeaders,
       body: JSON.stringify(llmRequestBody),
     });
+    const responseTime = Date.now() - startTime;
 
-    const duration = Date.now() - startTime;
+    await supabase.from("usage_logs").insert({
+      user_id: user.id,
+      model_id: model.id,
+      tokens_used: 0,
+      cost: 0,
+      response_time: responseTime,
+    });
 
     if (!llmResponse.ok) {
       const errorText = await llmResponse.text();
@@ -236,9 +253,8 @@ Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
         jsonString = jsonString
           .replace(/,\s*([\]}])/g, '$1')
           .replace(/([^,\s])\s*\n\s*"/g, '$1,"')
-          .replace(/"\s*\n\s*}/g, '"}')
-          .replace(/}\s*\n\s*{/g, '},{')
-          .replace(/]\s*\n\s*\[/g, '],[');
+          .replace(/"\s*\n\s*}/g, '"}')          .replace(/}\s*\n\s*{/g, '},{')
+          .replace(/]\s*\n\s*\[/g, '],[')
 
         try {
           estimateData = JSON.parse(jsonString);
@@ -280,55 +296,128 @@ Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
     }
 
     if (!estimateData.categories || estimateData.categories.length === 0) {
-      throw new Error("No categories found in estimate data");
+      console.log("No categories found, extracting items from partial data...");
+
+      const allItems = [];
+      if (estimateData.items && Array.isArray(estimateData.items)) {
+        allItems.push(...estimateData.items);
+      }
+
+      if (estimateData.line_items && Array.isArray(estimateData.line_items)) {
+        allItems.push(...estimateData.line_items);
+      }
+
+      if (allItems.length > 0) {
+        estimateData.categories = [{
+          name: "Travaux",
+          description: "Ensemble des travaux",
+          items: allItems
+        }];
+      } else {
+        estimateData.categories = [{
+          name: "Travaux",
+          description: `Travaux ${scenarioType}`,
+          items: [{
+            poste: "Travaux globaux",
+            description: `Estimation globale ${scenarioType} basée sur la description du projet`,
+            quantity: 1,
+            unit: "forfait",
+            unit_price_ht: scenarioType === 'eco' ? 5000 : scenarioType === 'standard' ? 10000 : 20000,
+            tva_percent: 20
+          }]
+        }];
+      }
     }
 
     let totalHT = 0;
     let totalTVA = 0;
     let totalTTC = 0;
 
-    const validatedCategories = estimateData.categories.map((cat: any) => {
-      const validItems = (cat.items || []).map((item: any) => {
-        const quantity = Number(item.quantity) || 1;
-        const unitPriceHT = Number(item.unit_price_ht) || 0;
-        const tvaPercent = Number(item.tva_percent) || 20;
+    const validatedCategories = estimateData.categories
+      .map((cat: any) => {
+        const validItems = (cat.items || [])
+          .filter((item: any) => {
+            return item && (item.poste || item.description);
+          })
+          .map((item: any) => {
+            const quantity = Number(item.quantity) || 1;
+            const unitPriceHT = Number(item.unit_price_ht) || 0;
+            const tvaPercent = Number(item.tva_percent) || 20;
 
-        const amountHT = Math.round(quantity * unitPriceHT * 100) / 100;
-        const tvaAmount = Math.round(amountHT * (tvaPercent / 100) * 100) / 100;
-        const amountTTC = Math.round((amountHT + tvaAmount) * 100) / 100;
+            const amountHT = Math.round(quantity * unitPriceHT * 100) / 100;
+            const tvaAmount = Math.round(amountHT * (tvaPercent / 100) * 100) / 100;
+            const amountTTC = Math.round((amountHT + tvaAmount) * 100) / 100;
+
+            return {
+              poste: item.poste || item.description || "Poste",
+              description: item.description || item.poste || "",
+              quantity: quantity,
+              unit: item.unit || "u",
+              unit_price_ht: unitPriceHT,
+              amount_ht: amountHT,
+              tva_percent: tvaPercent,
+              tva_amount: tvaAmount,
+              amount_ttc: amountTTC,
+              materials_cost: Number(item.materials_cost) || 0,
+              labor_cost: Number(item.labor_cost) || 0,
+            };
+          });
+
+        if (validItems.length === 0) {
+          return null;
+        }
+
+        const subtotalHT = validItems.reduce((sum, item) => sum + item.amount_ht, 0);
+        const subtotalTVA = validItems.reduce((sum, item) => sum + item.tva_amount, 0);
+        const subtotalTTC = validItems.reduce((sum, item) => sum + item.amount_ttc, 0);
+
+        totalHT += subtotalHT;
+        totalTVA += subtotalTVA;
+        totalTTC += subtotalTTC;
 
         return {
-          poste: item.poste || item.description || "Poste",
-          description: item.description || item.poste || "",
-          quantity: quantity,
-          unit: item.unit || "u",
-          unit_price_ht: unitPriceHT,
-          amount_ht: amountHT,
-          tva_percent: tvaPercent,
-          tva_amount: tvaAmount,
-          amount_ttc: amountTTC,
-          materials_cost: Number(item.materials_cost) || 0,
-          labor_cost: Number(item.labor_cost) || 0,
+          name: cat.name || "Catégorie",
+          description: cat.description || "",
+          items: validItems,
+          subtotal_ht: Math.round(subtotalHT * 100) / 100,
+          subtotal_tva: Math.round(subtotalTVA * 100) / 100,
+          subtotal_ttc: Math.round(subtotalTTC * 100) / 100,
         };
+      })
+      .filter((cat: any) => cat !== null);
+
+    if (validatedCategories.length === 0) {
+      console.log("No valid categories after validation, creating default category...");
+      const defaultPrice = scenarioType === 'eco' ? 5000 : scenarioType === 'standard' ? 10000 : 20000;
+      const defaultHT = defaultPrice;
+      const defaultTVA = Math.round(defaultHT * 0.2 * 100) / 100;
+      const defaultTTC = defaultHT + defaultTVA;
+
+      validatedCategories.push({
+        name: "Travaux",
+        description: `Estimation globale ${scenarioType}`,
+        items: [{
+          poste: "Travaux globaux",
+          description: `Estimation forfaitaire ${scenarioType} basée sur la description du projet`,
+          quantity: 1,
+          unit: "forfait",
+          unit_price_ht: defaultHT,
+          amount_ht: defaultHT,
+          tva_percent: 20,
+          tva_amount: defaultTVA,
+          amount_ttc: defaultTTC,
+          materials_cost: 0,
+          labor_cost: 0,
+        }],
+        subtotal_ht: defaultHT,
+        subtotal_tva: defaultTVA,
+        subtotal_ttc: defaultTTC,
       });
 
-      const subtotalHT = validItems.reduce((sum, item) => sum + item.amount_ht, 0);
-      const subtotalTVA = validItems.reduce((sum, item) => sum + item.tva_amount, 0);
-      const subtotalTTC = validItems.reduce((sum, item) => sum + item.amount_ttc, 0);
-
-      totalHT += subtotalHT;
-      totalTVA += subtotalTVA;
-      totalTTC += subtotalTTC;
-
-      return {
-        name: cat.name || "Catégorie",
-        description: cat.description || "",
-        items: validItems,
-        subtotal_ht: Math.round(subtotalHT * 100) / 100,
-        subtotal_tva: Math.round(subtotalTVA * 100) / 100,
-        subtotal_ttc: Math.round(subtotalTTC * 100) / 100,
-      };
-    });
+      totalHT = defaultHT;
+      totalTVA = defaultTVA;
+      totalTTC = defaultTTC;
+    }
 
     totalHT = Math.round(totalHT * 100) / 100;
     totalTVA = Math.round(totalTVA * 100) / 100;
@@ -371,49 +460,8 @@ Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
       throw new Error(`Failed to save estimate: ${insertError.message}`);
     }
 
-    const tokensInput = llmData.usage?.prompt_tokens || 0;
-    const tokensOutput = llmData.usage?.completion_tokens || 0;
-
-    const { data: modelInfo } = await supabase
-      .from("ai_models")
-      .select("id, cost_per_1k_tokens_input, cost_per_1k_tokens_output")
-      .eq("provider", provider)
-      .eq("model_id", modelId)
-      .maybeSingle();
-
-    const cost = modelInfo
-      ? (tokensInput / 1000) * Number(modelInfo.cost_per_1k_tokens_input) +
-        (tokensOutput / 1000) * Number(modelInfo.cost_per_1k_tokens_output)
-      : 0;
-
-    await supabase.from("api_usage_logs").insert({
-      user_id: user.id,
-      project_id: projectId,
-      model_id: modelInfo?.id,
-      provider,
-      endpoint: "generate-estimate",
-      tokens_input: tokensInput,
-      tokens_output: tokensOutput,
-      cost,
-      duration_ms: duration,
-      status: "success",
-      request_metadata: { scenario_type: scenarioType },
-    });
-
-    await supabase
-      .from("projects")
-      .update({ status: "completed" })
-      .eq("id", projectId);
-
     return new Response(
-      JSON.stringify({
-        estimate,
-        usage: {
-          prompt_tokens: tokensInput,
-          completion_tokens: tokensOutput,
-          total_tokens: tokensInput + tokensOutput,
-        },
-      }),
+      JSON.stringify({ success: true, estimate }),
       {
         headers: {
           ...corsHeaders,
@@ -422,14 +470,11 @@ Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
       }
     );
   } catch (error) {
-    console.error("Error in generate-estimate:", error);
-
+    console.error("Error generating estimate:", error);
     return new Response(
-      JSON.stringify({
-        error: error.message || "Internal server error",
-      }),
+      JSON.stringify({ error: error.message }),
       {
-        status: error.message === "Unauthorized" ? 401 : 500,
+        status: 400,
         headers: {
           ...corsHeaders,
           "Content-Type": "application/json",
