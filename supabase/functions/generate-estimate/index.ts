@@ -191,15 +191,15 @@ Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
       messages: [
         {
           role: "system",
-          content: "Tu es un métreur expert en BTP. Tu génères des devis détaillés et précis avec des calculs HT/TTC exacts. Tu réponds UNIQUEMENT en JSON valide.",
+          content: "Tu es un métreur expert en BTP. Tu génères des devis détaillés et précis avec des calculs HT/TTC exacts. Tu réponds UNIQUEMENT en JSON valide et COMPLET. IMPORTANT: Termine toujours ton JSON correctement avec tous les crochets et accolades fermés.",
         },
         {
           role: "user",
           content: prompt,
         },
       ],
-      temperature: 0.7,
-      max_tokens: 3000,
+      temperature: 0.5,
+      max_tokens: 4000,
     };
 
     const startTime = Date.now();
@@ -221,42 +221,146 @@ Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
 
     let estimateData;
     try {
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      let jsonMatch = content.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
         throw new Error("No JSON found in response");
       }
-      estimateData = JSON.parse(jsonMatch[0]);
+
+      let jsonString = jsonMatch[0];
+
+      try {
+        estimateData = JSON.parse(jsonString);
+      } catch (firstError) {
+        console.log("First parse attempt failed, trying to repair JSON...");
+
+        jsonString = jsonString
+          .replace(/,\s*([\]}])/g, '$1')
+          .replace(/([^,\s])\s*\n\s*"/g, '$1,"')
+          .replace(/"\s*\n\s*}/g, '"}')
+          .replace(/}\s*\n\s*{/g, '},{')
+          .replace(/]\s*\n\s*\[/g, '],[');
+
+        try {
+          estimateData = JSON.parse(jsonString);
+        } catch (secondError) {
+          console.log("Second parse attempt failed, truncating at error position...");
+
+          const errorMatch = secondError.message.match(/position (\d+)/);
+          if (errorMatch) {
+            const errorPos = parseInt(errorMatch[1]);
+            jsonString = jsonString.substring(0, errorPos);
+
+            let braceCount = 0;
+            let bracketCount = 0;
+            for (const char of jsonString) {
+              if (char === '{') braceCount++;
+              if (char === '}') braceCount--;
+              if (char === '[') bracketCount++;
+              if (char === ']') bracketCount--;
+            }
+
+            while (bracketCount > 0) {
+              jsonString += ']';
+              bracketCount--;
+            }
+            while (braceCount > 0) {
+              jsonString += '}';
+              braceCount--;
+            }
+
+            estimateData = JSON.parse(jsonString);
+          } else {
+            throw secondError;
+          }
+        }
+      }
     } catch (parseError) {
+      console.error("All JSON parse attempts failed:", parseError);
       throw new Error(`Failed to parse LLM response: ${parseError.message}`);
     }
 
-    const lineItems = estimateData.categories?.flatMap((cat: any) =>
+    if (!estimateData.categories || estimateData.categories.length === 0) {
+      throw new Error("No categories found in estimate data");
+    }
+
+    let totalHT = 0;
+    let totalTVA = 0;
+    let totalTTC = 0;
+
+    const validatedCategories = estimateData.categories.map((cat: any) => {
+      const validItems = (cat.items || []).map((item: any) => {
+        const quantity = Number(item.quantity) || 1;
+        const unitPriceHT = Number(item.unit_price_ht) || 0;
+        const tvaPercent = Number(item.tva_percent) || 20;
+
+        const amountHT = Math.round(quantity * unitPriceHT * 100) / 100;
+        const tvaAmount = Math.round(amountHT * (tvaPercent / 100) * 100) / 100;
+        const amountTTC = Math.round((amountHT + tvaAmount) * 100) / 100;
+
+        return {
+          poste: item.poste || item.description || "Poste",
+          description: item.description || item.poste || "",
+          quantity: quantity,
+          unit: item.unit || "u",
+          unit_price_ht: unitPriceHT,
+          amount_ht: amountHT,
+          tva_percent: tvaPercent,
+          tva_amount: tvaAmount,
+          amount_ttc: amountTTC,
+          materials_cost: Number(item.materials_cost) || 0,
+          labor_cost: Number(item.labor_cost) || 0,
+        };
+      });
+
+      const subtotalHT = validItems.reduce((sum, item) => sum + item.amount_ht, 0);
+      const subtotalTVA = validItems.reduce((sum, item) => sum + item.tva_amount, 0);
+      const subtotalTTC = validItems.reduce((sum, item) => sum + item.amount_ttc, 0);
+
+      totalHT += subtotalHT;
+      totalTVA += subtotalTVA;
+      totalTTC += subtotalTTC;
+
+      return {
+        name: cat.name || "Catégorie",
+        description: cat.description || "",
+        items: validItems,
+        subtotal_ht: Math.round(subtotalHT * 100) / 100,
+        subtotal_tva: Math.round(subtotalTVA * 100) / 100,
+        subtotal_ttc: Math.round(subtotalTTC * 100) / 100,
+      };
+    });
+
+    totalHT = Math.round(totalHT * 100) / 100;
+    totalTVA = Math.round(totalTVA * 100) / 100;
+    totalTTC = Math.round(totalTTC * 100) / 100;
+
+    const lineItems = validatedCategories.flatMap((cat: any) =>
       cat.items.map((item: any) => ({
         ...item,
         category: cat.name,
         category_description: cat.description,
       }))
-    ) || [];
+    );
 
     const { data: estimate, error: insertError } = await supabase
       .from("estimates")
       .insert({
         project_id: projectId,
         scenario_type: scenarioType,
-        total_amount: estimateData.total_ttc || estimateData.total_amount,
+        total_amount: totalTTC,
         line_items: lineItems,
-        categories: estimateData.categories,
-        estimate_number: estimateData.estimate_number,
-        client_name: estimateData.client_name,
+        categories: validatedCategories,
+        estimate_number: estimateData.estimate_number || `DEVIS-${Date.now()}`,
+        client_name: estimateData.client_name || "Client",
         estimate_date: new Date().toISOString(),
         validity_days: estimateData.validity_days || 30,
-        payment_terms: estimateData.payment_terms,
-        execution_delay: estimateData.execution_delay,
-        deposit_required: estimateData.deposit_required || 0,
+        payment_terms: estimateData.payment_terms || "30% à la commande, 70% à la livraison",
+        execution_delay: estimateData.execution_delay || "À définir",
+        deposit_required: estimateData.deposit_required || 30,
         special_conditions: estimateData.special_conditions,
-        total_ht: estimateData.total_ht,
-        total_tva: estimateData.total_tva,
-        total_ttc: estimateData.total_ttc,
+        total_ht: totalHT,
+        total_tva: totalTVA,
+        total_ttc: totalTTC,
         discount_amount: estimateData.discount_amount || 0,
         discount_percent: estimateData.discount_percent || 0,
       })
