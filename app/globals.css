@@ -20,6 +20,18 @@
   }
 }
 
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
 .animate-pulse.delay-75 {
   animation: pulse-delay-75 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   animation-delay: 75ms;
@@ -28,6 +40,10 @@
 .animate-pulse.delay-150 {
   animation: pulse-delay-150 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   animation-delay: 150ms;
+}
+
+.animate-gradient {
+  animation: gradient 3s ease infinite;
 }
 
 :root {

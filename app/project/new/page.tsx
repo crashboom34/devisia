@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, FileText, Mic, Keyboard } from 'lucide-react';
+import { ArrowLeft, FileText, Mic, Keyboard, Loader2, Sparkles } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import UserMenu from '@/components/UserMenu';
 import VoiceRecorder from '@/components/VoiceRecorder';
@@ -18,6 +18,7 @@ export default function NewProjectPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [loadingStage, setLoadingStage] = useState<'creating' | 'eco' | 'standard' | 'premium' | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -37,9 +38,25 @@ export default function NewProjectPage() {
     }
   };
 
+  const getLoadingText = () => {
+    switch (loadingStage) {
+      case 'creating':
+        return 'Création du projet...';
+      case 'eco':
+        return 'Génération du devis Économique...';
+      case 'standard':
+        return 'Génération du devis Standard...';
+      case 'premium':
+        return 'Génération du devis Premium...';
+      default:
+        return 'Génération des devis...';
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setLoadingStage('creating');
 
     try {
       const { data: project, error } = await supabase
@@ -61,7 +78,9 @@ export default function NewProjectPage() {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const scenarios: Array<'eco' | 'standard' | 'premium'> = ['eco', 'standard', 'premium'];
 
-      const estimatePromises = scenarios.map(async (scenarioType) => {
+      for (const scenarioType of scenarios) {
+        setLoadingStage(scenarioType);
+
         const response = await fetch(`${supabaseUrl}/functions/v1/generate-estimate`, {
           method: 'POST',
           headers: {
@@ -79,10 +98,8 @@ export default function NewProjectPage() {
           throw new Error(`Failed to generate ${scenarioType} estimate: ${errorData.error}`);
         }
 
-        return response.json();
-      });
-
-      await Promise.all(estimatePromises);
+        await response.json();
+      }
 
       router.push(`/project/${project.id}`);
     } catch (err) {
@@ -90,6 +107,7 @@ export default function NewProjectPage() {
       alert('Erreur lors de la création du projet: ' + (err instanceof Error ? err.message : 'Erreur inconnue'));
     } finally {
       setLoading(false);
+      setLoadingStage(null);
     }
   };
 
@@ -163,16 +181,26 @@ export default function NewProjectPage() {
 
                 <div className="flex gap-3 pt-4">
                   <Link href="/dashboard" className="flex-1">
-                    <Button type="button" variant="outline" className="w-full">
+                    <Button type="button" variant="outline" className="w-full" disabled={loading}>
                       Annuler
                     </Button>
                   </Link>
                   <Button
                     onClick={handleSubmit}
                     disabled={loading || !formData.title || !formData.description}
-                    className="flex-1"
+                    className={`flex-1 relative overflow-hidden transition-all ${
+                      loading ? 'bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-[length:200%_100%] animate-gradient' : ''
+                    }`}
                   >
-                    {loading ? 'Génération des devis...' : 'Créer le Projet et Générer les Devis'}
+                    {loading ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <Sparkles className="h-4 w-4 animate-pulse" />
+                        {getLoadingText()}
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      </span>
+                    ) : (
+                      'Créer le Projet et Générer les Devis'
+                    )}
                   </Button>
                 </div>
               </TabsContent>
@@ -210,16 +238,26 @@ export default function NewProjectPage() {
 
                 <div className="flex gap-3 pt-4">
                   <Link href="/dashboard" className="flex-1">
-                    <Button type="button" variant="outline" className="w-full">
+                    <Button type="button" variant="outline" className="w-full" disabled={loading}>
                       Annuler
                     </Button>
                   </Link>
                   <Button
                     onClick={handleSubmit}
                     disabled={loading || !formData.title || !formData.description}
-                    className="flex-1"
+                    className={`flex-1 relative overflow-hidden transition-all ${
+                      loading ? 'bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-[length:200%_100%] animate-gradient' : ''
+                    }`}
                   >
-                    {loading ? 'Génération des devis...' : 'Créer le Projet et Générer les Devis'}
+                    {loading ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <Sparkles className="h-4 w-4 animate-pulse" />
+                        {getLoadingText()}
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      </span>
+                    ) : (
+                      'Créer le Projet et Générer les Devis'
+                    )}
                   </Button>
                 </div>
               </TabsContent>
