@@ -39,14 +39,22 @@ supabase functions deploy generate-estimate
 
 ## Modèles gratuits disponibles
 
-L'application utilise par défaut **Gemini 2.0 Flash (GRATUIT)** qui est:
+L'application utilise par défaut **Qwen 2 7B Instruct (GRATUIT)** qui est:
 - ✅ Complètement gratuit via OpenRouter
-- ✅ Ultra-rapide (génération en quelques secondes)
+- ✅ Stable et fiable (pas de rate limiting)
 - ✅ Excellent pour la génération de devis structurés
-- ✅ Support JSON natif et fiable
+- ✅ Contexte de 32K tokens
 
 D'autres modèles gratuits sont disponibles:
-- Qwen 2 7B Instruct (gratuit)
+- Gemini 2.0 Flash (gratuit mais peut être rate-limité)
+
+## Système de Fallback Automatique
+
+L'application dispose d'un **système de fallback automatique**:
+- Si votre modèle est rate-limité ou indisponible
+- Le système essaie automatiquement d'autres modèles gratuits/économiques
+- Votre devis est généré sans interruption
+- Voir `MODEL_FALLBACK.md` pour plus de détails
 
 ## Vérification
 

@@ -22,10 +22,13 @@ supabase functions deploy generate-estimate
 ## Modifications apportées
 
 La fonction mise à jour inclut:
+- **Système de fallback automatique**: Essaie plusieurs modèles si le premier échoue (voir `MODEL_FALLBACK.md`)
+- **Gestion du rate limiting**: Détection automatique des erreurs 429 et basculement vers un autre modèle
 - Utilisation de `preferred_model_id` (cohérent avec l'interface)
 - Utilisation de `.maybeSingle()` pour éviter les erreurs
 - Prompt simplifié pour plus de fiabilité
 - Meilleure gestion des erreurs
+- **Nouveau modèle par défaut**: Qwen 2 7B (plus stable que Gemini 2.0 Flash)
 
 ## Test après redéploiement
 

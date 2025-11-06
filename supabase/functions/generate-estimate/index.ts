@@ -45,6 +45,19 @@ Deno.serve(async (req: Request) => {
       throw new Error("Missing required fields");
     }
 
+    // Fonction pour obtenir les modèles de fallback (gratuits ou très économiques)
+    const getFallbackModels = async () => {
+      const { data: fallbackModels } = await supabase
+        .from("ai_models")
+        .select("*")
+        .eq("is_active", true)
+        .lte("cost_per_1k_tokens_input", 0.001)
+        .order("cost_per_1k_tokens_input", { ascending: true })
+        .limit(5);
+
+      return fallbackModels || [];
+    };
+
     let selectedModelId = modelId;
     if (!selectedModelId) {
       const { data: preferences } = await supabase
@@ -79,6 +92,17 @@ Deno.serve(async (req: Request) => {
 
     if (modelError || !model) {
       throw new Error("Invalid model selected");
+    }
+
+    // Liste des modèles à essayer (modèle sélectionné + fallbacks)
+    let modelsToTry = [model];
+    const fallbackModels = await getFallbackModels();
+
+    // Ajouter les fallbacks qui ne sont pas déjà le modèle sélectionné
+    for (const fallback of fallbackModels) {
+      if (fallback.id !== model.id) {
+        modelsToTry.push(fallback);
+      }
     }
 
     const priceMultipliers = {
@@ -135,54 +159,91 @@ Génère un devis professionnel structuré en JSON avec cette structure EXACTE:
 
 IMPORTANT: Réponds UNIQUEMENT avec du JSON valide et complet.`;
 
-    const llmApiUrl = model.api_endpoint || "https://openrouter.ai/api/v1/chat/completions";
-    const llmApiKey = model.api_key || Deno.env.get("OPENROUTER_API_KEY");
+    // Essayer les modèles avec fallback automatique
+    let llmData;
+    let content;
+    let responseTime = 0;
+    let usedModel = model;
+    let lastError = null;
 
-    if (!llmApiKey) {
-      throw new Error("No API key configured for the selected model");
+    for (const currentModel of modelsToTry) {
+      try {
+        console.log(`Trying model: ${currentModel.display_name} (${currentModel.model_id})`);
+
+        const llmApiUrl = currentModel.api_endpoint || "https://openrouter.ai/api/v1/chat/completions";
+        const llmApiKey = currentModel.api_key || Deno.env.get("OPENROUTER_API_KEY");
+
+        if (!llmApiKey) {
+          console.log(`No API key for ${currentModel.display_name}, skipping...`);
+          continue;
+        }
+
+        const llmHeaders: Record<string, string> = {
+          "Authorization": `Bearer ${llmApiKey}`,
+          "Content-Type": "application/json",
+        };
+
+        if (currentModel.provider === "openrouter") {
+          llmHeaders["HTTP-Referer"] = supabaseUrl;
+          llmHeaders["X-Title"] = "Aide Devis IA";
+        }
+
+        const llmRequestBody = {
+          model: currentModel.model_id,
+          messages: [
+            {
+              role: "system",
+              content: "Tu es un métreur expert en BTP. Tu génères des devis détaillés et précis en JSON valide uniquement.",
+            },
+            {
+              role: "user",
+              content: prompt,
+            },
+          ],
+          temperature: 0.5,
+          max_tokens: 4000,
+        };
+
+        const startTime = Date.now();
+        const llmResponse = await fetch(llmApiUrl, {
+          method: "POST",
+          headers: llmHeaders,
+          body: JSON.stringify(llmRequestBody),
+        });
+        responseTime = Date.now() - startTime;
+
+        if (!llmResponse.ok) {
+          const errorText = await llmResponse.text();
+          lastError = errorText;
+
+          // Vérifier si c'est une erreur de rate limit (429)
+          if (llmResponse.status === 429) {
+            console.log(`Model ${currentModel.display_name} is rate-limited, trying next model...`);
+            continue;
+          }
+
+          // Pour d'autres erreurs, essayer quand même le modèle suivant
+          console.log(`Model ${currentModel.display_name} failed: ${errorText}`);
+          continue;
+        }
+
+        llmData = await llmResponse.json();
+        content = llmData.choices[0].message.content;
+        usedModel = currentModel;
+        console.log(`Successfully used model: ${currentModel.display_name}`);
+        break;
+
+      } catch (error) {
+        console.error(`Error with model ${currentModel.display_name}:`, error);
+        lastError = error.message;
+        continue;
+      }
     }
 
-    const llmHeaders: Record<string, string> = {
-      "Authorization": `Bearer ${llmApiKey}`,
-      "Content-Type": "application/json",
-    };
-
-    if (model.provider === "openrouter") {
-      llmHeaders["HTTP-Referer"] = supabaseUrl;
-      llmHeaders["X-Title"] = "Aide Devis IA";
+    // Si aucun modèle n'a fonctionné
+    if (!content) {
+      throw new Error(`All models failed. Last error: ${lastError || "Unknown error"}`);
     }
-
-    const llmRequestBody = {
-      model: model.model_id,
-      messages: [
-        {
-          role: "system",
-          content: "Tu es un métreur expert en BTP. Tu génères des devis détaillés et précis en JSON valide uniquement.",
-        },
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-      temperature: 0.5,
-      max_tokens: 4000,
-    };
-
-    const startTime = Date.now();
-    const llmResponse = await fetch(llmApiUrl, {
-      method: "POST",
-      headers: llmHeaders,
-      body: JSON.stringify(llmRequestBody),
-    });
-    const responseTime = Date.now() - startTime;
-
-    if (!llmResponse.ok) {
-      const errorText = await llmResponse.text();
-      throw new Error(`LLM API error: ${errorText}`);
-    }
-
-    const llmData = await llmResponse.json();
-    const content = llmData.choices[0].message.content;
 
     let estimateData;
     try {
@@ -339,7 +400,7 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide et complet.`;
 
     await supabase.from("usage_logs").insert({
       user_id: user.id,
-      model_id: model.id,
+      model_id: usedModel.id,
       tokens_used: 0,
       cost: 0,
       response_time: responseTime,
