@@ -6,7 +6,27 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, FileText, Loader2 } from 'lucide-react';
+import { ArrowLeft, FileText, Loader2, Pencil, Trash2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { supabase } from '@/lib/supabase';
 import UserMenu from '@/components/UserMenu';
 import type { Project } from '@/lib/supabase';
@@ -22,6 +42,12 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
   const [estimates, setEstimates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedEstimate, setExpandedEstimate] = useState<string | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     checkUser();
@@ -81,6 +107,71 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
         return <Badge variant="outline" className="bg-green-100 text-green-700">Terminé</Badge>;
       default:
         return null;
+    }
+  };
+
+  const handleEditProject = () => {
+    if (project) {
+      setEditTitle(project.title);
+      setEditDescription(project.description);
+      setShowEditDialog(true);
+    }
+  };
+
+  const handleSaveProject = async () => {
+    if (!project || !editTitle.trim() || !editDescription.trim()) return;
+
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .update({
+          title: editTitle.trim(),
+          description: editDescription.trim(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', project.id);
+
+      if (error) throw error;
+
+      setProject({
+        ...project,
+        title: editTitle.trim(),
+        description: editDescription.trim(),
+      });
+      setShowEditDialog(false);
+    } catch (err) {
+      console.error('Error updating project:', err);
+      alert('Erreur lors de la mise à jour du projet');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteProject = async () => {
+    if (!project) return;
+
+    setIsDeleting(true);
+    try {
+      const { error: estimatesError } = await supabase
+        .from('estimates')
+        .delete()
+        .eq('project_id', project.id);
+
+      if (estimatesError) throw estimatesError;
+
+      const { error: projectError } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', project.id);
+
+      if (projectError) throw projectError;
+
+      router.push('/dashboard');
+    } catch (err) {
+      console.error('Error deleting project:', err);
+      alert('Erreur lors de la suppression du projet');
+      setIsDeleting(false);
     }
   };
 
@@ -354,10 +445,20 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
                 <CardTitle>Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button variant="outline" className="w-full" disabled>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleEditProject}
+                >
+                  <Pencil className="h-4 w-4 mr-2" />
                   Modifier le Projet
                 </Button>
-                <Button variant="outline" className="w-full text-red-600 hover:text-red-700" disabled>
+                <Button
+                  variant="outline"
+                  className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
+                  onClick={() => setShowDeleteDialog(true)}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
                   Supprimer le Projet
                 </Button>
               </CardContent>
@@ -377,6 +478,88 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
           </div>
         </div>
       </main>
+
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Modifier le Projet</DialogTitle>
+            <DialogDescription>
+              Mettez à jour les informations de votre projet
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Titre du projet</Label>
+              <Input
+                id="title"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                placeholder="Ex: Rénovation salle de bain"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                placeholder="Décrivez votre projet en détail..."
+                rows={8}
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setShowEditDialog(false)}
+              disabled={isSaving}
+            >
+              Annuler
+            </Button>
+            <Button
+              onClick={handleSaveProject}
+              disabled={isSaving || !editTitle.trim() || !editDescription.trim()}
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Enregistrement...
+                </>
+              ) : (
+                'Enregistrer'
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Êtes-vous sûr?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est irréversible. Le projet et tous ses devis seront définitivement supprimés.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteProject}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Suppression...
+                </>
+              ) : (
+                'Supprimer'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
