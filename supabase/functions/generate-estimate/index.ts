@@ -49,19 +49,19 @@ Deno.serve(async (req: Request) => {
     if (!selectedModelId) {
       const { data: preferences } = await supabase
         .from("user_preferences")
-        .select("default_model_id")
+        .select("preferred_model_id")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
 
-      if (preferences?.default_model_id) {
-        selectedModelId = preferences.default_model_id;
+      if (preferences?.preferred_model_id) {
+        selectedModelId = preferences.preferred_model_id;
       } else {
         const { data: defaultModel } = await supabase
           .from("ai_models")
           .select("id")
           .eq("is_default", true)
           .eq("is_active", true)
-          .single();
+          .maybeSingle();
 
         if (defaultModel) {
           selectedModelId = defaultModel.id;
@@ -89,7 +89,7 @@ Deno.serve(async (req: Request) => {
 
     const multiplier = priceMultipliers[scenarioType];
 
-    const prompt = `En tant qu'expert métreur BTP, génère un devis détaillé pour le projet suivant.
+    const prompt = `En tant qu'expert m\u00e9treur BTP, g\u00e9n\u00e8re un devis d\u00e9taill\u00e9 pour le projet suivant.
 
 Description du projet:
 ${projectDescription}
@@ -97,36 +97,36 @@ ${projectDescription}
 Type de devis: ${scenarioType.toUpperCase()}
 Multiplicateur de prix: ${multiplier}x
 
-Génère un devis professionnel structuré avec:
+G\u00e9n\u00e8re un devis professionnel structur\u00e9 avec:
 
-1. CATÉGORIES par lots BTP (Préparation, Gros Œuvre, Second Œuvre, Finitions, etc.)
-2. Pour CHAQUE CATÉGORIE:
+1. CAT\u00c9GORIES par lots BTP (Pr\u00e9paration, Gros \u0152uvre, Second \u0152uvre, Finitions, etc.)
+2. Pour CHAQUE CAT\u00c9GORIE:
    - name: nom du lot
    - description: description courte
    - items: tableau des postes
-   - subtotal_ht, subtotal_tva, subtotal_ttc: sous-totaux calculés
+   - subtotal_ht, subtotal_tva, subtotal_ttc: sous-totaux calcul\u00e9s
 
 3. Pour CHAQUE POSTE (item):
-   - poste: nom du poste (ex: "Terrassement", "Dalle béton")
-   - description: détails techniques
-   - quantity: quantité (nombre)
-   - unit: unité (m², m³, ml, u, forfait)
+   - poste: nom du poste (ex: "Terrassement", "Dalle b\u00e9ton")
+   - description: d\u00e9tails techniques
+   - quantity: quantit\u00e9 (nombre)
+   - unit: unit\u00e9 (m\u00b2, m\u00b3, ml, u, forfait)
    - unit_price_ht: prix unitaire HT en euros
-   - amount_ht: montant HT (quantity × unit_price_ht)
+   - amount_ht: montant HT (quantity \u00d7 unit_price_ht)
    - tva_percent: 20
    - tva_amount: montant TVA
    - amount_ttc: montant TTC
-   - materials_cost: coût matériaux (optionnel)
-   - labor_cost: coût main d'œuvre (optionnel)
+   - materials_cost: co\u00fbt mat\u00e9riaux (optionnel)
+   - labor_cost: co\u00fbt main d'\u0153uvre (optionnel)
 
-4. MÉTADONNÉES du devis:
-   - estimate_number: numéro unique (ex: DEVIS-2024-001)
+4. M\u00c9TADONN\u00c9ES du devis:
+   - estimate_number: num\u00e9ro unique (ex: DEVIS-2024-001)
    - client_name: "Client"
    - validity_days: 30
    - payment_terms: conditions de paiement
-   - execution_delay: délai d'exécution estimé
-   - deposit_required: acompte en % (généralement 30)
-   - special_conditions: conditions particulières si nécessaire
+   - execution_delay: d\u00e9lai d'ex\u00e9cution estim\u00e9
+   - deposit_required: acompte en % (g\u00e9n\u00e9ralement 30)
+   - special_conditions: conditions particuli\u00e8res si n\u00e9cessaire
 
 5. TOTAUX:
    - total_ht: somme de tous les amount_ht
@@ -134,9 +134,9 @@ Génère un devis professionnel structuré avec:
    - total_ttc: total_ht + total_tva
 
 IMPORTANT:
-- Utilise des prix ${scenarioType} (×${multiplier}) réalistes pour le marché français
-- TOUS les calculs doivent être exacts
-- Réponds UNIQUEMENT en JSON valide et COMPLET
+- Utilise des prix ${scenarioType} (\u00d7${multiplier}) r\u00e9alistes pour le march\u00e9 fran\u00e7ais
+- TOUS les calculs doivent \u00eatre exacts
+- R\u00e9ponds UNIQUEMENT en JSON valide et COMPLET
 - Ferme TOUS les crochets et accolades
 - Structure EXACTE requise:
 
@@ -144,7 +144,7 @@ IMPORTANT:
   "estimate_number": "DEVIS-2024-XXX",
   "client_name": "Client",
   "validity_days": 30,
-  "payment_terms": "30% à la commande, 70% à la livraison",
+  "payment_terms": "30% \u00e0 la commande, 70% \u00e0 la livraison",
   "execution_delay": "X semaines",
   "deposit_required": 30,
   "special_conditions": "...",
@@ -155,9 +155,9 @@ IMPORTANT:
       "items": [
         {
           "poste": "Nom poste",
-          "description": "Détails",
+          "description": "D\u00e9tails",
           "quantity": 100,
-          "unit": "m²",
+          "unit": "m\u00b2",
           "unit_price_ht": 50.00,
           "amount_ht": 5000.00,
           "tva_percent": 20,
@@ -201,7 +201,7 @@ IMPORTANT:
       messages: [
         {
           role: "system",
-          content: "Tu es un métreur expert en BTP. Tu génères des devis détaillés et précis avec des calculs HT/TTC exacts. Tu réponds UNIQUEMENT en JSON valide et COMPLET. IMPORTANT: Termine toujours ton JSON correctement avec tous les crochets et accolades fermés.",
+          content: "Tu es un m\u00e9treur expert en BTP. Tu g\u00e9n\u00e8res des devis d\u00e9taill\u00e9s et pr\u00e9cis avec des calculs HT/TTC exacts. Tu r\u00e9ponds UNIQUEMENT en JSON valide et COMPLET. IMPORTANT: Termine toujours ton JSON correctement avec tous les crochets et accolades ferm\u00e9s.",
         },
         {
           role: "user",
@@ -238,7 +238,7 @@ IMPORTANT:
 
     let estimateData;
     try {
-      let jsonMatch = content.match(/\{[\s\S]*\}/);
+      let jsonMatch = content.match(/\\{[\\s\\S]*\\}/);
       if (!jsonMatch) {
         throw new Error("No JSON found in response");
       }
@@ -251,17 +251,17 @@ IMPORTANT:
         console.log("First parse attempt failed, trying to repair JSON...");
 
         jsonString = jsonString
-          .replace(/,\s*([\]}])/g, '$1')
-          .replace(/([^,\s])\s*\n\s*"/g, '$1,"')
-          .replace(/"\s*\n\s*}/g, '"}')          .replace(/}\s*\n\s*{/g, '},{')
-          .replace(/]\s*\n\s*\[/g, '],[')
+          .replace(/,\\s*([\\]}])/g, '$1')
+          .replace(/([^,\\s])\\s*\\n\\s*"/g, '$1,"')
+          .replace(/"\\s*\\n\\s*}/g, '"}')          .replace(/}\\s*\\n\\s*{/g, '},{')
+          .replace(/]\\s*\\n\\s*\\[/g, '],[')
 
         try {
           estimateData = JSON.parse(jsonString);
         } catch (secondError) {
           console.log("Second parse attempt failed, truncating at error position...");
 
-          const errorMatch = secondError.message.match(/position (\d+)/);
+          const errorMatch = secondError.message.match(/position (\\d+)/);
           if (errorMatch) {
             const errorPos = parseInt(errorMatch[1]);
             jsonString = jsonString.substring(0, errorPos);
@@ -319,7 +319,7 @@ IMPORTANT:
           description: `Travaux ${scenarioType}`,
           items: [{
             poste: "Travaux globaux",
-            description: `Estimation globale ${scenarioType} basée sur la description du projet`,
+            description: `Estimation globale ${scenarioType} bas\u00e9e sur la description du projet`,
             quantity: 1,
             unit: "forfait",
             unit_price_ht: scenarioType === 'eco' ? 5000 : scenarioType === 'standard' ? 10000 : 20000,
@@ -376,7 +376,7 @@ IMPORTANT:
         totalTTC += subtotalTTC;
 
         return {
-          name: cat.name || "Catégorie",
+          name: cat.name || "Cat\u00e9gorie",
           description: cat.description || "",
           items: validItems,
           subtotal_ht: Math.round(subtotalHT * 100) / 100,
@@ -398,7 +398,7 @@ IMPORTANT:
         description: `Estimation globale ${scenarioType}`,
         items: [{
           poste: "Travaux globaux",
-          description: `Estimation forfaitaire ${scenarioType} basée sur la description du projet`,
+          description: `Estimation forfaitaire ${scenarioType} bas\u00e9e sur la description du projet`,
           quantity: 1,
           unit: "forfait",
           unit_price_ht: defaultHT,
@@ -443,8 +443,8 @@ IMPORTANT:
         client_name: estimateData.client_name || "Client",
         estimate_date: new Date().toISOString(),
         validity_days: estimateData.validity_days || 30,
-        payment_terms: estimateData.payment_terms || "30% à la commande, 70% à la livraison",
-        execution_delay: estimateData.execution_delay || "À définir",
+        payment_terms: estimateData.payment_terms || "30% \u00e0 la commande, 70% \u00e0 la livraison",
+        execution_delay: estimateData.execution_delay || "\u00c0 d\u00e9finir",
         deposit_required: estimateData.deposit_required || 30,
         special_conditions: estimateData.special_conditions,
         total_ht: totalHT,

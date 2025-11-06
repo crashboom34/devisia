@@ -129,8 +129,17 @@ export default function ModelSelector() {
           <div className="p-4 bg-gray-50 rounded-lg space-y-3">
             <div className="flex items-start gap-2">
               <Sparkles className="h-4 w-4 text-gray-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-sm font-medium text-gray-900">{selectedModel.display_name}</p>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium text-gray-900">{selectedModel.display_name}</p>
+                  {selectedModel.cost_per_1k_tokens_input === 0 ? (
+                    <Badge variant="default" className="bg-green-600">GRATUIT</Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-xs">
+                      {((selectedModel.cost_per_1k_tokens_input + selectedModel.cost_per_1k_tokens_output) / 2).toFixed(5)}$/1K tokens
+                    </Badge>
+                  )}
+                </div>
                 <p className="text-xs text-gray-600 mt-1">{selectedModel.description}</p>
               </div>
             </div>

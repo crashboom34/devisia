@@ -80,12 +80,39 @@ Pour vérifier que tout fonctionne:
 - L'application a des mécanismes de réparation automatique
 - Si le problème persiste, essayez un modèle payant comme GPT-4 ou Claude 3.5
 
-## Coûts
+## Modèles disponibles
 
-- **Modèles gratuits**: 0€
-- **Modèles payants**: Facturation à l'usage via OpenRouter
-  - GPT-4: ~0.03-0.06$ / 1K tokens
-  - Claude 3.5 Sonnet: ~0.003-0.015$ / 1K tokens
-  - Llama 3.1 70B: ~0.0004$ / 1K tokens
+### Modèles gratuits (0€)
+- **Gemini 2.0 Flash** (par défaut) - Ultra-rapide, excellent pour les devis
+- **Qwen 2 7B Instruct** - Performant et rapide
 
-Vous pouvez ajouter des crédits sur OpenRouter si vous souhaitez utiliser des modèles payants.
+### Modèles économiques (< 0.001$ / 1K tokens)
+- **DeepSeek Chat** - 0.00021$ / 1K tokens
+- **GPT-4o Mini** - 0.00038$ / 1K tokens
+- **Claude 3 Haiku** - 0.00075$ / 1K tokens
+- **Llama 3.1 70B** - 0.0004$ / 1K tokens
+
+### Modèles premium (0.001-0.01$ / 1K tokens)
+- **Mixtral 8x22B** - 0.0009$ / 1K tokens
+- **Gemini Pro 1.5** - 0.00313$ / 1K tokens
+- **GPT-4o** - 0.00625$ / 1K tokens
+- **Claude 3.5 Sonnet** - 0.009$ / 1K tokens
+
+### Modèles très puissants (> 0.01$ / 1K tokens)
+- **Claude 3 Opus** - 0.045$ / 1K tokens
+- **GPT-4** - 0.045$ / 1K tokens
+
+## Sélection du modèle
+
+Vous pouvez choisir votre modèle préféré:
+1. Dans la page **Paramètres** → Section "Modèle IA"
+2. Ou lors de la création d'un nouveau projet
+
+Le modèle sélectionné sera utilisé pour tous vos futurs devis.
+
+## Coûts et crédits
+
+Les modèles payants sont facturés à l'usage via OpenRouter. Vous pouvez:
+- Consulter votre consommation dans l'onglet **Usage** (admin)
+- Ajouter des crédits sur [OpenRouter Dashboard](https://openrouter.ai/credits)
+- Utiliser exclusivement les modèles gratuits pour une utilisation sans frais

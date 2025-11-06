@@ -12,6 +12,7 @@ import { ArrowLeft, FileText, Mic, Keyboard, Loader2, Sparkles } from 'lucide-re
 import { supabase } from '@/lib/supabase';
 import UserMenu from '@/components/UserMenu';
 import VoiceRecorder from '@/components/VoiceRecorder';
+import ModelSelector from '@/components/ModelSelector';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function NewProjectPage() {
@@ -269,6 +270,10 @@ export default function NewProjectPage() {
             </Tabs>
           </CardContent>
         </Card>
+
+        <div className="mt-4 sm:mt-6">
+          <ModelSelector />
+        </div>
 
         <Card className="mt-4 sm:mt-6 bg-blue-50 border-blue-200">
           <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
