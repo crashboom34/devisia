@@ -80,47 +80,96 @@ Deno.serve(async (req: Request) => {
       throw new Error(`API key not configured for ${provider}`);
     }
 
-    const scenarioDescriptions = {
-      eco: "économique avec des matériaux standards et des finitions simples",
-      standard: "standard avec des matériaux de qualité moyenne et des finitions correctes",
-      premium: "premium avec des matériaux haut de gamme et des finitions luxueuses",
+    const scenarioMultipliers = {
+      eco: { base: 0.7, quality: "économique", tva: 20 },
+      standard: { base: 1.0, quality: "standard", tva: 20 },
+      premium: { base: 1.5, quality: "premium", tva: 20 },
     };
 
-    const prompt = `Tu es un expert en devis de construction. Génère un devis détaillé et bien organisé pour le projet suivant:
+    const scenario = scenarioMultipliers[scenarioType];
+
+    const prompt = `Tu es un métreur expert en devis de construction BTP. Génère un devis détaillé et professionnel pour ce projet:
 
 Titre: ${project.title}
 Description: ${project.description}
-Type de devis: ${scenarioDescriptions[scenarioType]}
+Niveau de qualité: ${scenario.quality}
 
-Génère un devis JSON avec cette structure exacte:
+INSTRUCTIONS CRITIQUES:
+1. Analyse la description et identifie AUTOMATIQUEMENT tous les postes de travaux nécessaires
+2. Si la description est générale (ex: "rénovation appartement 60m²"), décompose en postes standards du BTP
+3. Pour CHAQUE poste, fournis des quantités réalistes basées sur la surface/contexte mentionné
+4. Utilise des prix unitaires réalistes du marché français 2025
+5. Tous les montants doivent être en HT, avec TVA à ${scenario.tva}%
+
+POSTES À INCLURE (selon le type de projet):
+- Préparation/Démolition: démolition cloisons, évacuation gravats
+- Gros Œuvre: maçonnerie, charpente, toiture si extension/construction
+- Second Œuvre: cloisons, isolation, menuiseries, fenêtres
+- Électricité: mise aux normes, tableau, prises, éclairage, interrupteurs
+- Plomberie: réseaux eau/évacuation, radiateurs si chauffage mentionné
+- Cuisine: si mentionnée, inclure mobilier + électroménager + pose
+- Salle de bain: si mentionnée, inclure faïence, sanitaires, robinetterie
+- Revêtements sols: parquet, carrelage selon surfaces
+- Revêtements murs: peinture, papier peint
+- Finitions: plinthes, joints, nettoyage
+
+Génère un devis JSON avec cette structure EXACTE:
 {
-  "total_amount": nombre_total,
+  "estimate_number": "DEVIS-2025-001",
+  "client_name": "Client",
+  "validity_days": 30,
+  "payment_terms": "30% à la commande, 40% en cours de chantier, 30% à la réception",
+  "execution_delay": "6 à 8 semaines",
+  "deposit_required": 30,
   "categories": [
     {
-      "name": "Nom de la catégorie (ex: Gros Œuvre, Second Œuvre, Finitions)",
-      "description": "Brève description de cette phase",
+      "name": "Préparation et Démolition",
+      "description": "Travaux préparatoires et démolitions",
       "items": [
         {
-          "description": "Description détaillée du poste",
-          "quantity": nombre,
-          "unit": "unité (m², pièce, ml, etc.)",
-          "unit_price": prix_unitaire,
-          "total": total_ligne
+          "poste": "Nom du poste",
+          "description": "Description détaillée du travail",
+          "quantity": 60,
+          "unit": "m²",
+          "unit_price_ht": 25.00,
+          "amount_ht": 1500.00,
+          "tva_percent": 20,
+          "tva_amount": 300.00,
+          "amount_ttc": 1800.00,
+          "materials_cost": 800.00,
+          "labor_cost": 700.00
         }
       ],
-      "subtotal": total_categorie
+      "subtotal_ht": 1500.00,
+      "subtotal_tva": 300.00,
+      "subtotal_ttc": 1800.00
     }
-  ]
+  ],
+  "total_ht": 45000.00,
+  "total_tva": 9000.00,
+  "total_ttc": 54000.00,
+  "discount_percent": 0,
+  "discount_amount": 0
 }
 
-IMPORTANT: Organise TOUS les postes par catégories logiques:
-- Gros Œuvre (démolition, fondations, murs porteurs, charpente, toiture)
-- Second Œuvre (menuiseries, plomberie, électricité, isolation, cloisons)
-- Finitions (revêtements sols/murs, peinture, carrelage)
-- Équipements (cuisine, sanitaires, chauffage, climatisation)
-- Frais Annexes (coordination, études, assurances, marge)
+RÈGLES DE CALCUL (vérifie bien):
+- amount_ht = quantity × unit_price_ht (arrondi à 2 décimales)
+- tva_amount = amount_ht × (tva_percent / 100)
+- amount_ttc = amount_ht + tva_amount
+- subtotal_ht = somme des amount_ht du lot
+- subtotal_tva = somme des tva_amount du lot
+- subtotal_ttc = somme des amount_ttc du lot
+- total_ht = somme de tous les subtotal_ht
+- total_tva = somme de tous les subtotal_tva
+- total_ttc = somme de tous les subtotal_ttc
 
-Sois très détaillé dans les descriptions et quantités. Les prix doivent être réalistes pour le marché français en 2025.
+IMPORTANT:
+- Sois TRÈS détaillé et exhaustif dans les postes
+- Si information manquante, garde le poste et mets "À valider selon visite" dans la description
+- Utilise des unités appropriées: m², ml, u (unité), pièce, forfait, ensemble
+- Les quantités doivent être cohérentes avec la surface totale
+- Prix réalistes pour ${scenario.quality}
+
 Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
 
     const llmApiUrl = provider === "openrouter"
@@ -142,7 +191,7 @@ Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
       messages: [
         {
           role: "system",
-          content: "Tu es un expert en devis de construction. Tu réponds toujours en JSON valide.",
+          content: "Tu es un métreur expert en BTP. Tu génères des devis détaillés et précis avec des calculs HT/TTC exacts. Tu réponds UNIQUEMENT en JSON valide.",
         },
         {
           role: "user",
@@ -150,7 +199,7 @@ Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
         },
       ],
       temperature: 0.7,
-      max_tokens: 2000,
+      max_tokens: 3000,
     };
 
     const startTime = Date.now();
@@ -187,16 +236,29 @@ Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
         category: cat.name,
         category_description: cat.description,
       }))
-    ) || estimateData.line_items || [];
+    ) || [];
 
     const { data: estimate, error: insertError } = await supabase
       .from("estimates")
       .insert({
         project_id: projectId,
         scenario_type: scenarioType,
-        total_amount: estimateData.total_amount,
+        total_amount: estimateData.total_ttc || estimateData.total_amount,
         line_items: lineItems,
         categories: estimateData.categories,
+        estimate_number: estimateData.estimate_number,
+        client_name: estimateData.client_name,
+        estimate_date: new Date().toISOString(),
+        validity_days: estimateData.validity_days || 30,
+        payment_terms: estimateData.payment_terms,
+        execution_delay: estimateData.execution_delay,
+        deposit_required: estimateData.deposit_required || 0,
+        special_conditions: estimateData.special_conditions,
+        total_ht: estimateData.total_ht,
+        total_tva: estimateData.total_tva,
+        total_ttc: estimateData.total_ttc,
+        discount_amount: estimateData.discount_amount || 0,
+        discount_percent: estimateData.discount_percent || 0,
       })
       .select()
       .single();

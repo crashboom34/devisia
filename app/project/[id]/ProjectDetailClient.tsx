@@ -29,6 +29,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/lib/supabase';
 import UserMenu from '@/components/UserMenu';
+import EstimateTable from '@/components/EstimateTable';
 import type { Project } from '@/lib/supabase';
 
 interface ProjectDetailClientProps {
@@ -232,211 +233,46 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Devis Générés</CardTitle>
-                <CardDescription>
-                  {estimates.length} devis disponibles
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {estimates.length === 0 ? (
+            {estimates.length === 0 ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Devis Générés</CardTitle>
+                  <CardDescription>Aucun devis disponible</CardDescription>
+                </CardHeader>
+                <CardContent>
                   <div className="text-center py-8">
                     <p className="text-gray-500 mb-4">Aucun devis généré pour l'instant</p>
                   </div>
-                ) : (
-                  <div className="space-y-4">
-                    {estimates.map((estimate) => {
-                      const scenarioLabels: Record<string, { label: string; color: string }> = {
-                        eco: { label: 'Scénario Économique', color: 'bg-green-100 text-green-700' },
-                        standard: { label: 'Scénario Standard', color: 'bg-blue-100 text-blue-700' },
-                        premium: { label: 'Scénario Premium', color: 'bg-amber-100 text-amber-700' },
-                      };
-                      const scenario = scenarioLabels[estimate.scenario_type] || { label: estimate.scenario_type, color: 'bg-gray-100' };
-
-                      const isExpanded = expandedEstimate === estimate.id;
-
-                      const categories = estimate.categories || [];
-                      const hasCategories = categories.length > 0;
-
-                      const groupedByCategory: Record<string, any[]> = {};
-                      if (!hasCategories && estimate.line_items) {
-                        estimate.line_items.forEach((item: any) => {
-                          const cat = item.category || 'Autres';
-                          if (!groupedByCategory[cat]) {
-                            groupedByCategory[cat] = [];
-                          }
-                          groupedByCategory[cat].push(item);
-                        });
-                      }
-
-                      return (
-                        <Card key={estimate.id} className="hover:shadow-md transition-shadow">
-                          <CardHeader>
-                            <div className="flex items-center justify-between">
-                              <CardTitle className="text-lg">{scenario.label}</CardTitle>
-                              <Badge className={scenario.color}>
-                                {new Intl.NumberFormat('fr-FR', {
-                                  style: 'currency',
-                                  currency: 'EUR',
-                                }).format(estimate.total_amount)}
-                              </Badge>
-                            </div>
-                          </CardHeader>
-                          <CardContent>
-                            {!isExpanded ? (
-                              <div className="space-y-2">
-                                <p className="text-sm text-gray-600 font-medium mb-3">
-                                  {hasCategories ? categories.length : Object.keys(groupedByCategory).length} catégories • {estimate.line_items?.length || 0} postes de travaux
-                                </p>
-                                {hasCategories ? (
-                                  categories.slice(0, 3).map((cat: any, idx: number) => (
-                                    <div key={idx} className="flex justify-between text-sm py-2 border-b">
-                                      <span className="text-gray-700 font-medium">{cat.name}</span>
-                                      <span className="text-gray-900 font-medium">
-                                        {new Intl.NumberFormat('fr-FR', {
-                                          style: 'currency',
-                                          currency: 'EUR',
-                                        }).format(cat.subtotal)}
-                                      </span>
-                                    </div>
-                                  ))
-                                ) : (
-                                  Object.entries(groupedByCategory).slice(0, 3).map(([catName, items]: [string, any], idx: number) => (
-                                    <div key={idx} className="flex justify-between text-sm py-2 border-b">
-                                      <span className="text-gray-700 font-medium">{catName}</span>
-                                      <span className="text-gray-900 font-medium">
-                                        {items.length} postes
-                                      </span>
-                                    </div>
-                                  ))
-                                )}
-                                {((hasCategories && categories.length > 3) || (!hasCategories && Object.keys(groupedByCategory).length > 3)) && (
-                                  <p className="text-sm text-gray-500 italic pt-2">
-                                    + {hasCategories ? categories.length - 3 : Object.keys(groupedByCategory).length - 3} autres catégories
-                                  </p>
-                                )}
-                              </div>
-                            ) : (
-                              <div className="space-y-6">
-                                {hasCategories ? (
-                                  categories.map((cat: any, catIdx: number) => (
-                                    <div key={catIdx} className="border-l-4 border-blue-500 pl-4">
-                                      <div className="mb-3">
-                                        <h3 className="text-lg font-bold text-gray-900">{cat.name}</h3>
-                                        {cat.description && (
-                                          <p className="text-sm text-gray-600 mt-1">{cat.description}</p>
-                                        )}
-                                      </div>
-                                      <div className="space-y-2">
-                                        {cat.items?.map((item: any, itemIdx: number) => (
-                                          <div key={itemIdx} className="bg-gray-50 rounded p-3">
-                                            <div className="flex justify-between items-start">
-                                              <div className="flex-1">
-                                                <p className="font-medium text-gray-900">{item.description}</p>
-                                                <p className="text-xs text-gray-500 mt-1">
-                                                  {item.quantity} {item.unit} × {new Intl.NumberFormat('fr-FR', {
-                                                    style: 'currency',
-                                                    currency: 'EUR',
-                                                  }).format(item.unit_price)}
-                                                </p>
-                                              </div>
-                                              <span className="text-gray-900 font-bold ml-4">
-                                                {new Intl.NumberFormat('fr-FR', {
-                                                  style: 'currency',
-                                                  currency: 'EUR',
-                                                }).format(item.total)}
-                                              </span>
-                                            </div>
-                                          </div>
-                                        ))}
-                                      </div>
-                                      <div className="flex justify-between items-center mt-3 pt-3 border-t-2">
-                                        <span className="font-bold text-gray-700">Sous-total {cat.name}</span>
-                                        <span className="font-bold text-blue-600">
-                                          {new Intl.NumberFormat('fr-FR', {
-                                            style: 'currency',
-                                            currency: 'EUR',
-                                          }).format(cat.subtotal)}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  ))
-                                ) : (
-                                  Object.entries(groupedByCategory).map(([catName, items]: [string, any], catIdx: number) => {
-                                    const subtotal = items.reduce((sum: number, item: any) => sum + (item.total || 0), 0);
-                                    return (
-                                      <div key={catIdx} className="border-l-4 border-blue-500 pl-4">
-                                        <div className="mb-3">
-                                          <h3 className="text-lg font-bold text-gray-900">{catName}</h3>
-                                          {items[0]?.category_description && (
-                                            <p className="text-sm text-gray-600 mt-1">{items[0].category_description}</p>
-                                          )}
-                                        </div>
-                                        <div className="space-y-2">
-                                          {items.map((item: any, itemIdx: number) => (
-                                            <div key={itemIdx} className="bg-gray-50 rounded p-3">
-                                              <div className="flex justify-between items-start">
-                                                <div className="flex-1">
-                                                  <p className="font-medium text-gray-900">{item.description}</p>
-                                                  <p className="text-xs text-gray-500 mt-1">
-                                                    {item.quantity} {item.unit} × {new Intl.NumberFormat('fr-FR', {
-                                                      style: 'currency',
-                                                      currency: 'EUR',
-                                                    }).format(item.unit_price)}
-                                                  </p>
-                                                </div>
-                                                <span className="text-gray-900 font-bold ml-4">
-                                                  {new Intl.NumberFormat('fr-FR', {
-                                                    style: 'currency',
-                                                    currency: 'EUR',
-                                                  }).format(item.total)}
-                                                </span>
-                                              </div>
-                                            </div>
-                                          ))}
-                                        </div>
-                                        <div className="flex justify-between items-center mt-3 pt-3 border-t-2">
-                                          <span className="font-bold text-gray-700">Sous-total {catName}</span>
-                                          <span className="font-bold text-blue-600">
-                                            {new Intl.NumberFormat('fr-FR', {
-                                              style: 'currency',
-                                              currency: 'EUR',
-                                            }).format(subtotal)}
-                                          </span>
-                                        </div>
-                                      </div>
-                                    );
-                                  })
-                                )}
-                                <div className="pt-4 mt-4 border-t-4 border-gray-900 bg-blue-50 rounded p-4">
-                                  <div className="flex justify-between items-center">
-                                    <span className="text-xl font-bold text-gray-900">TOTAL GÉNÉRAL</span>
-                                    <span className="text-2xl font-bold text-blue-600">
-                                      {new Intl.NumberFormat('fr-FR', {
-                                        style: 'currency',
-                                        currency: 'EUR',
-                                      }).format(estimate.total_amount)}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                            <Button
-                              variant="outline"
-                              className="w-full mt-4"
-                              onClick={() => setExpandedEstimate(isExpanded ? null : estimate.id)}
-                            >
-                              {isExpanded ? 'Masquer les détails' : 'Voir le devis détaillé'}
-                            </Button>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-6">
+                {estimates.map((estimate) => (
+                  <EstimateTable
+                    key={estimate.id}
+                    estimate={{
+                      id: estimate.id,
+                      scenario_type: estimate.scenario_type,
+                      estimate_number: estimate.estimate_number,
+                      client_name: estimate.client_name,
+                      estimate_date: estimate.estimate_date,
+                      validity_days: estimate.validity_days,
+                      payment_terms: estimate.payment_terms,
+                      execution_delay: estimate.execution_delay,
+                      deposit_required: estimate.deposit_required,
+                      special_conditions: estimate.special_conditions,
+                      categories: estimate.categories || [],
+                      total_ht: estimate.total_ht || 0,
+                      total_tva: estimate.total_tva || 0,
+                      total_ttc: estimate.total_ttc || estimate.total_amount || 0,
+                      discount_amount: estimate.discount_amount,
+                      discount_percent: estimate.discount_percent,
+                    }}
+                    projectTitle={project.title}
+                  />
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="space-y-6">
