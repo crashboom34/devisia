@@ -75,7 +75,7 @@ Deno.serve(async (req: Request) => {
       .from("ai_models")
       .select("*")
       .eq("id", selectedModelId)
-      .maybeSingle();
+      .single();
 
     if (modelError || !model) {
       throw new Error("Invalid model selected");
@@ -89,7 +89,7 @@ Deno.serve(async (req: Request) => {
 
     const multiplier = priceMultipliers[scenarioType];
 
-    const prompt = `En tant qu'expert métreur BTP, génère un devis détaillé pour le projet suivant.
+    const prompt = `En tant qu'expert m\u00e9treur BTP, g\u00e9n\u00e8re un devis d\u00e9taill\u00e9 pour le projet suivant.
 
 Description du projet:
 ${projectDescription}
@@ -97,30 +97,74 @@ ${projectDescription}
 Type de devis: ${scenarioType.toUpperCase()}
 Multiplicateur de prix: ${multiplier}x
 
-Génère un devis professionnel structuré en JSON avec cette structure EXACTE:
+G\u00e9n\u00e8re un devis professionnel structur\u00e9 avec:
+
+1. CAT\u00c9GORIES par lots BTP (Pr\u00e9paration, Gros \u0152uvre, Second \u0152uvre, Finitions, etc.)
+2. Pour CHAQUE CAT\u00c9GORIE:
+   - name: nom du lot
+   - description: description courte
+   - items: tableau des postes
+   - subtotal_ht, subtotal_tva, subtotal_ttc: sous-totaux calcul\u00e9s
+
+3. Pour CHAQUE POSTE (item):
+   - poste: nom du poste (ex: "Terrassement", "Dalle b\u00e9ton")
+   - description: d\u00e9tails techniques
+   - quantity: quantit\u00e9 (nombre)
+   - unit: unit\u00e9 (m\u00b2, m\u00b3, ml, u, forfait)
+   - unit_price_ht: prix unitaire HT en euros
+   - amount_ht: montant HT (quantity \u00d7 unit_price_ht)
+   - tva_percent: 20
+   - tva_amount: montant TVA
+   - amount_ttc: montant TTC
+   - materials_cost: co\u00fbt mat\u00e9riaux (optionnel)
+   - labor_cost: co\u00fbt main d'\u0153uvre (optionnel)
+
+4. M\u00c9TADONN\u00c9ES du devis:
+   - estimate_number: num\u00e9ro unique (ex: DEVIS-2024-001)
+   - client_name: "Client"
+   - validity_days: 30
+   - payment_terms: conditions de paiement
+   - execution_delay: d\u00e9lai d'ex\u00e9cution estim\u00e9
+   - deposit_required: acompte en % (g\u00e9n\u00e9ralement 30)
+   - special_conditions: conditions particuli\u00e8res si n\u00e9cessaire
+
+5. TOTAUX:
+   - total_ht: somme de tous les amount_ht
+   - total_tva: somme de tous les tva_amount
+   - total_ttc: total_ht + total_tva
+
+IMPORTANT:
+- Utilise des prix ${scenarioType} (\u00d7${multiplier}) r\u00e9alistes pour le march\u00e9 fran\u00e7ais
+- TOUS les calculs doivent \u00eatre exacts
+- R\u00e9ponds UNIQUEMENT en JSON valide et COMPLET
+- Ferme TOUS les crochets et accolades
+- Structure EXACTE requise:
 
 {
-  "estimate_number": "DEVIS-2024-001",
+  "estimate_number": "DEVIS-2024-XXX",
   "client_name": "Client",
   "validity_days": 30,
-  "payment_terms": "30% à la commande, 70% à la livraison",
-  "execution_delay": "4 semaines",
+  "payment_terms": "30% \u00e0 la commande, 70% \u00e0 la livraison",
+  "execution_delay": "X semaines",
   "deposit_required": 30,
+  "special_conditions": "...",
   "categories": [
     {
-      "name": "Nom du lot BTP",
-      "description": "Description du lot",
+      "name": "Nom du lot",
+      "description": "Description",
       "items": [
         {
-          "poste": "Nom du poste",
-          "description": "Détails techniques",
+          "poste": "Nom poste",
+          "description": "D\u00e9tails",
           "quantity": 100,
-          "unit": "m²",
+          "unit": "m\u00b2",
           "unit_price_ht": 50.00,
           "amount_ht": 5000.00,
           "tva_percent": 20,
           "tva_amount": 1000.00,
-          "amount_ttc": 6000.00
+          "amount_ttc": 6000.00,
+          "materials_cost": 3000.00,
+          "labor_cost": 2000.00
         }
       ],
       "subtotal_ht": 5000.00,
@@ -130,10 +174,10 @@ Génère un devis professionnel structuré en JSON avec cette structure EXACTE:
   ],
   "total_ht": 5000.00,
   "total_tva": 1000.00,
-  "total_ttc": 6000.00
-}
-
-IMPORTANT: Réponds UNIQUEMENT avec du JSON valide et complet.`;
+  "total_ttc": 6000.00,
+  "discount_amount": 0,
+  "discount_percent": 0
+}`;
 
     const llmApiUrl = model.api_endpoint || "https://openrouter.ai/api/v1/chat/completions";
     const llmApiKey = model.api_key || Deno.env.get("OPENROUTER_API_KEY");
@@ -157,7 +201,7 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide et complet.`;
       messages: [
         {
           role: "system",
-          content: "Tu es un métreur expert en BTP. Tu génères des devis détaillés et précis en JSON valide uniquement.",
+          content: "Tu es un m\u00e9treur expert en BTP. Tu g\u00e9n\u00e8res des devis d\u00e9taill\u00e9s et pr\u00e9cis avec des calculs HT/TTC exacts. Tu r\u00e9ponds UNIQUEMENT en JSON valide et COMPLET. IMPORTANT: Termine toujours ton JSON correctement avec tous les crochets et accolades ferm\u00e9s.",
         },
         {
           role: "user",
@@ -176,6 +220,14 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide et complet.`;
     });
     const responseTime = Date.now() - startTime;
 
+    await supabase.from("usage_logs").insert({
+      user_id: user.id,
+      model_id: model.id,
+      tokens_used: 0,
+      cost: 0,
+      response_time: responseTime,
+    });
+
     if (!llmResponse.ok) {
       const errorText = await llmResponse.text();
       throw new Error(`LLM API error: ${errorText}`);
@@ -186,29 +238,95 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide et complet.`;
 
     let estimateData;
     try {
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      let jsonMatch = content.match(/\\{[\\s\\S]*\\}/);
       if (!jsonMatch) {
         throw new Error("No JSON found in response");
       }
-      estimateData = JSON.parse(jsonMatch[0]);
+
+      let jsonString = jsonMatch[0];
+
+      try {
+        estimateData = JSON.parse(jsonString);
+      } catch (firstError) {
+        console.log("First parse attempt failed, trying to repair JSON...");
+
+        jsonString = jsonString
+          .replace(/,\\s*([\\]}])/g, '$1')
+          .replace(/([^,\\s])\\s*\\n\\s*"/g, '$1,"')
+          .replace(/"\\s*\\n\\s*}/g, '"}')          .replace(/}\\s*\\n\\s*{/g, '},{')
+          .replace(/]\\s*\\n\\s*\\[/g, '],[')
+
+        try {
+          estimateData = JSON.parse(jsonString);
+        } catch (secondError) {
+          console.log("Second parse attempt failed, truncating at error position...");
+
+          const errorMatch = secondError.message.match(/position (\\d+)/);
+          if (errorMatch) {
+            const errorPos = parseInt(errorMatch[1]);
+            jsonString = jsonString.substring(0, errorPos);
+
+            let braceCount = 0;
+            let bracketCount = 0;
+            for (const char of jsonString) {
+              if (char === '{') braceCount++;
+              if (char === '}') braceCount--;
+              if (char === '[') bracketCount++;
+              if (char === ']') bracketCount--;
+            }
+
+            while (bracketCount > 0) {
+              jsonString += ']';
+              bracketCount--;
+            }
+            while (braceCount > 0) {
+              jsonString += '}';
+              braceCount--;
+            }
+
+            estimateData = JSON.parse(jsonString);
+          } else {
+            throw secondError;
+          }
+        }
+      }
     } catch (parseError) {
-      console.error("JSON parse failed:", parseError);
+      console.error("All JSON parse attempts failed:", parseError);
       throw new Error(`Failed to parse LLM response: ${parseError.message}`);
     }
 
     if (!estimateData.categories || estimateData.categories.length === 0) {
-      estimateData.categories = [{
-        name: "Travaux",
-        description: `Travaux ${scenarioType}`,
-        items: [{
-          poste: "Travaux globaux",
-          description: `Estimation globale ${scenarioType}`,
-          quantity: 1,
-          unit: "forfait",
-          unit_price_ht: scenarioType === 'eco' ? 5000 : scenarioType === 'standard' ? 10000 : 20000,
-          tva_percent: 20
-        }]
-      }];
+      console.log("No categories found, extracting items from partial data...");
+
+      const allItems = [];
+      if (estimateData.items && Array.isArray(estimateData.items)) {
+        allItems.push(...estimateData.items);
+      }
+
+      if (estimateData.line_items && Array.isArray(estimateData.line_items)) {
+        allItems.push(...estimateData.line_items);
+      }
+
+      if (allItems.length > 0) {
+        estimateData.categories = [{
+          name: "Travaux",
+          description: "Ensemble des travaux",
+          items: allItems
+        }];
+      } else {
+        estimateData.categories = [{
+          name: "Travaux",
+          description: `Travaux ${scenarioType}`,
+          items: [{
+            poste: "Travaux globaux",
+            description: `Estimation globale ${scenarioType} bas\u00e9e sur la description du projet`,
+            quantity: 1,
+            unit: "forfait",
+            unit_price_ht: scenarioType === 'eco' ? 5000 : scenarioType === 'standard' ? 10000 : 20000,
+            tva_percent: 20
+          }]
+        }];
+      }
     }
 
     let totalHT = 0;
@@ -218,7 +336,9 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide et complet.`;
     const validatedCategories = estimateData.categories
       .map((cat: any) => {
         const validItems = (cat.items || [])
-          .filter((item: any) => item && (item.poste || item.description))
+          .filter((item: any) => {
+            return item && (item.poste || item.description);
+          })
           .map((item: any) => {
             const quantity = Number(item.quantity) || 1;
             const unitPriceHT = Number(item.unit_price_ht) || 0;
@@ -243,7 +363,9 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide et complet.`;
             };
           });
 
-        if (validItems.length === 0) return null;
+        if (validItems.length === 0) {
+          return null;
+        }
 
         const subtotalHT = validItems.reduce((sum, item) => sum + item.amount_ht, 0);
         const subtotalTVA = validItems.reduce((sum, item) => sum + item.tva_amount, 0);
@@ -254,7 +376,7 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide et complet.`;
         totalTTC += subtotalTTC;
 
         return {
-          name: cat.name || "Catégorie",
+          name: cat.name || "Cat\u00e9gorie",
           description: cat.description || "",
           items: validItems,
           subtotal_ht: Math.round(subtotalHT * 100) / 100,
@@ -265,6 +387,7 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide et complet.`;
       .filter((cat: any) => cat !== null);
 
     if (validatedCategories.length === 0) {
+      console.log("No valid categories after validation, creating default category...");
       const defaultPrice = scenarioType === 'eco' ? 5000 : scenarioType === 'standard' ? 10000 : 20000;
       const defaultHT = defaultPrice;
       const defaultTVA = Math.round(defaultHT * 0.2 * 100) / 100;
@@ -275,7 +398,7 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide et complet.`;
         description: `Estimation globale ${scenarioType}`,
         items: [{
           poste: "Travaux globaux",
-          description: `Estimation forfaitaire ${scenarioType}`,
+          description: `Estimation forfaitaire ${scenarioType} bas\u00e9e sur la description du projet`,
           quantity: 1,
           unit: "forfait",
           unit_price_ht: defaultHT,
@@ -320,8 +443,8 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide et complet.`;
         client_name: estimateData.client_name || "Client",
         estimate_date: new Date().toISOString(),
         validity_days: estimateData.validity_days || 30,
-        payment_terms: estimateData.payment_terms || "30% à la commande, 70% à la livraison",
-        execution_delay: estimateData.execution_delay || "À définir",
+        payment_terms: estimateData.payment_terms || "30% \u00e0 la commande, 70% \u00e0 la livraison",
+        execution_delay: estimateData.execution_delay || "\u00c0 d\u00e9finir",
         deposit_required: estimateData.deposit_required || 30,
         special_conditions: estimateData.special_conditions,
         total_ht: totalHT,
@@ -336,14 +459,6 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide et complet.`;
     if (insertError) {
       throw new Error(`Failed to save estimate: ${insertError.message}`);
     }
-
-    await supabase.from("usage_logs").insert({
-      user_id: user.id,
-      model_id: model.id,
-      tokens_used: 0,
-      cost: 0,
-      response_time: responseTime,
-    });
 
     return new Response(
       JSON.stringify({ success: true, estimate }),
