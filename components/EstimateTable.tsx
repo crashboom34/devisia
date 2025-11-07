@@ -230,17 +230,21 @@ export default function EstimateTable({ estimate, projectTitle }: EstimateTableP
           total_ht: editedEstimate.total_ht,
           total_tva: editedEstimate.total_tva,
           total_ttc: editedEstimate.total_ttc,
-          updated_at: new Date().toISOString()
+          total_amount: editedEstimate.total_ttc
         })
         .eq('id', estimate.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
 
       setIsEditing(false);
       window.location.reload();
     } catch (err) {
       console.error('Error saving changes:', err);
-      alert('Erreur lors de la sauvegarde des modifications');
+      const errorMessage = err instanceof Error ? err.message : 'Erreur inconnue';
+      alert(`Erreur lors de la sauvegarde: ${errorMessage}`);
     } finally {
       setIsSaving(false);
     }

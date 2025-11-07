@@ -267,6 +267,8 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
                       total_ttc: estimate.total_ttc || estimate.total_amount || 0,
                       discount_amount: estimate.discount_amount,
                       discount_percent: estimate.discount_percent,
+                      model_used: estimate.model_used,
+                      scenario_justification: estimate.scenario_justification,
                     }}
                     projectTitle={project.title}
                   />
