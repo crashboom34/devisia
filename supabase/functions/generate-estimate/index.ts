@@ -116,30 +116,69 @@ Deno.serve(async (req: Request) => {
 
     const multiplier = priceMultipliers[scenarioType];
 
-    const prompt = `Tu es un expert métreur BTP français spécialisé dans la génération de devis professionnels détaillés et réalistes.
+    const prompt = `Tu es une IA d'économie de la construction, jouant le rôle d'un économiste du bâtiment et maître d'œuvre expérimenté (15+ ans de terrain) spécialisé dans les projets résidentiels en France métropolitaine.
 
 **PROJET À CHIFFRER:**
 ${projectDescription}
 
-**TYPE DE DEVIS:** ${scenarioType.toUpperCase()}
+**SCÉNARIO DEMANDÉ:** ${scenarioType.toUpperCase()}
+${scenarioType === 'eco' ? `→ ÉCONOMIQUE (coefficient qualité: 0.85) - Matériaux standards, techniques simples, finitions de base, focus fonctionnel` : ''}${scenarioType === 'standard' ? `→ STANDARD (coefficient qualité: 1.00) - Matériaux qualité moyenne, techniques éprouvées, finitions soignées, compromis optimal` : ''}${scenarioType === 'premium' ? `→ PREMIUM (coefficient qualité: 1.25) - Matériaux haut de gamme, techniques avancées, finitions luxueuses, durabilité maximale` : ''}
 
-**INSTRUCTIONS PAR SCÉNARIO:**
-${scenarioType === 'eco' ? `
-- Tu génères le SCÉNARIO ÉCONOMIQUE (version basique mais fonctionnelle)
-- Utilise des matériaux standards, techniques simples, finitions de base
-- Focus sur le fonctionnel et l'essentiel
-- JUSTIFICATION REQUISE: Explique en 2-3 phrases pourquoi ce scénario est adapté et son rapport qualité-prix` : ''}${scenarioType === 'standard' ? `
-- Tu génères le SCÉNARIO STANDARD (version équilibrée, recommandée)
-- Utilise des matériaux de qualité moyenne, techniques éprouvées, finitions soignées
-- Bon compromis entre qualité et prix
-- JUSTIFICATION REQUISE: Explique en 2-3 phrases le compromis qualité-prix de cette option` : ''}${scenarioType === 'premium' ? `
-- Tu génères le SCÉNARIO PREMIUM (version haut de gamme, qualité maximale)
-- Utilise des matériaux premium, techniques avancées, finitions luxueuses
-- Qualité supérieure et durabilité optimale
-- JUSTIFICATION REQUISE: Explique en 2-3 phrases la valeur ajoutée de ce scénario` : ''}
+**RATIOS DE RÉFÉRENCE 2024-2025 (base France, avant coefficients):**
+- Construction/extension parpaing/béton: 1800-2600 €/m²
+- Extension ossature bois: 1500-2300 €/m²
+- Surélévation: 2200-2800 €/m²
+- Rénovation lourde: 1200-1800 €/m²
+- Terrasse couverte: 600-1200 €/m²
+- Clim bi-split posée: 3000-5000 €
 
-Utilise tes connaissances du marché français BTP pour établir des prix réalistes basés sur les tarifs actuels.
-Laisse-toi guider par ta connaissance des prix du marché pour ce type de travaux et ce niveau de qualité.
+**COEFFICIENTS GÉOGRAPHIQUES (à appliquer):**
+- Paris intra-muros: +25 à +30%
+- IDF hors Paris: +15 à +20%
+- Côte d'Azur (06/83): +15 à +20%
+- Grandes métropoles (Lyon, Bordeaux, Nantes): +10 à +15%
+- Montpellier/Hérault/Gard/Vaucluse: +10 à +15%
+- Littoral Atlantique: +8 à +12%
+- Centre rural: 0 à -5%
+
+**STRUCTURE OBLIGATOIRE DU DEVIS (5 GRANDS POSTES):**
+
+1) GROS ŒUVRE (40-50% budget):
+   - Terrassement, fondations (100-150 €/m²)
+   - Dalle béton 15-20cm (65-100 €/m²)
+   - Élévation murs parpaing+enduit (180-280 €/m²) ou ossature bois (150-250 €/m²)
+   - Charpente industrielle (50-80 €/m² toiture)
+   - Couverture et étanchéité
+
+2) SECOND ŒUVRE (30-35%):
+   - Isolation (25-40 €/m² intérieur, 80-140 €/m² ITE)
+   - Cloisons/doublages BA13
+   - Menuiseries extérieures PVC (350-600 €/m²) ou alu (450-800 €/m²)
+   - Électricité complète (80-120 €/m² hab.)
+   - Plomberie/évacuations
+   - Chauffage/climatisation
+
+3) FINITIONS (15-20%):
+   - Revêtements sols: carrelage (50-80 €/m²), parquet flottant (30-50 €/m²)
+   - Peinture (20-35 €/m²)
+   - Salle de bain (3000-9000 €)
+   - Cuisine (3000-12000 €)
+   - Portes intérieures
+
+4) AMÉNAGEMENTS EXTÉRIEURS:
+   - Terrasse couverte (600-1200 €/m²)
+   - Terrasse carrelée/bois (70-160 €/m²)
+   - VRD/raccordements (800-5000 € selon distance)
+   - Clôtures, portail
+
+5) FRAIS ANNEXES & IMPRÉVUS (5-15%):
+   - Étude de sol G2: 1500-2500 €
+   - Étude thermique: 800-1500 €
+   - Permis/DP: 500-3000 €
+   - Assurance DO: 2-4% des travaux
+   - Enveloppe sécurité: 5-10%
+
+**TVA:** 10% pour rénovation/extension logement >2 ans, 20% pour neuf
 
 **FORMAT DE SORTIE - STRUCTURE JSON EXACTE:**
 
@@ -178,15 +217,26 @@ Laisse-toi guider par ta connaissance des prix du marché pour ce type de travau
   "scenario_justification": "Explication en 2-3 phrases: Pourquoi ce scénario ${scenarioType} coûte ce prix par rapport aux autres? Quelles sont les différences qui justifient l'écart de prix? Quel est le rapport qualité-prix?"
 }
 
-**RÈGLES IMPORTANTES:**
-1. Détaille chaque poste avec quantités et prix unitaires réalistes
-2. Ajoute OBLIGATOIREMENT le champ "scenario_justification" avec 2-3 phrases expliquant ce scénario
-3. Les descriptions doivent être techniques et précises (matériaux, dimensions, techniques)
-4. Organise en catégories cohérentes (Gros œuvre, Second œuvre, Finitions, etc.)
-5. Utilise tes connaissances des prix du marché français actuel
-6. Adapte les prix en fonction du niveau de qualité du scénario (éco/standard/premium)
+**RÈGLES OBLIGATOIRES:**
+1. STRUCTURE: Organise OBLIGATOIREMENT en 5 catégories (Gros œuvre, Second œuvre, Finitions, Aménagements extérieurs, Frais annexes)
+2. DÉTAIL: Chaque poste doit avoir quantité, unité, prix unitaire HT, montant HT
+3. TVA: Applique 10% (rénovation/extension >2 ans) ou 20% (neuf) - précise laquelle dans special_conditions
+4. GÉOGRAPHIE: Applique le coefficient régional si la localisation est mentionnée
+5. QUALITÉ: Applique le coefficient ${scenarioType} (${scenarioType === 'eco' ? '0.85' : scenarioType === 'standard' ? '1.00' : '1.25'})
+6. JUSTIFICATION: Ajoute OBLIGATOIREMENT "scenario_justification" avec 2-3 phrases expliquant:
+   - Pourquoi ce prix (matériaux, techniques, région)
+   - Ce qui différencie ce scénario des autres
+   - Le rapport qualité-prix
+7. RÉALISME: Vise ±10% d'un vrai chantier, base ton estimation sur les ratios de référence fournis
+8. PRÉCISION: Descriptions techniques précises (matériaux exacts, dimensions, normes)
+9. EXHAUSTIF: Inclus TOUJOURS les frais annexes (études, permis, DO, imprévus 5-10%)
+10. CRÉDIBILITÉ: Ton devis doit pouvoir être présenté à une entreprise du bâtiment sans paraître fantaisiste
 
-IMPORTANT: Réponds UNIQUEMENT avec du JSON valide et complet incluant OBLIGATOIREMENT le champ scenario_justification.`;
+**IMPORTANT:**
+- Réponds UNIQUEMENT avec du JSON valide et complet
+- N'oublie JAMAIS le champ "scenario_justification"
+- Adapte les prix selon la région mentionnée dans la description du projet
+- Structure toujours en 5 grandes catégories, même si certaines sont petites`;
 
     // Essayer les modèles avec fallback automatique
     let llmData;
@@ -222,7 +272,7 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide et complet incluant OBLIGATOI
           messages: [
             {
               role: "system",
-              content: "Tu es un métreur expert en BTP français. Tu génères des devis détaillés et réalistes en JSON valide uniquement.",
+              content: "Tu es un économiste du bâtiment et maître d'œuvre expérimenté (15+ ans). Tu génères des devis BTP professionnels, détaillés, réalistes et crédibles (±10% d'un vrai chantier), en JSON valide uniquement. Tu appliques les coefficients géographiques, les ratios de référence 2024-2025, et structures TOUJOURS en 5 catégories: Gros œuvre, Second œuvre, Finitions, Aménagements extérieurs, Frais annexes.",
             },
             {
               role: "user",

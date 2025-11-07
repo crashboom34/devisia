@@ -36,10 +36,9 @@ Consultez les fichiers de documentation:
 - `SUPABASE_SETUP.md` - Configuration de la base de données
 - `OPENROUTER_SETUP.md` - Configuration de l'API OpenRouter
 - `REDEPLOY.md` - Instructions de redéploiement
+- `PROFESSIONAL_PROMPT.md` - Prompt professionnel d'économiste de la construction
 - `TEMPERATURE_CONTROL.md` - Contrôle de température et liberté des IA
 - `MODEL_FALLBACK.md` - Système de fallback automatique
-- `PRICING_FIX.md` - Tarifs de référence du marché français
-- `PROMPT_IMPROVEMENTS.md` - Améliorations du système de prompt
 
 ## Technologies utilisées
 
