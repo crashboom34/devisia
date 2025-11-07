@@ -46,7 +46,7 @@ Deno.serve(async (req: Request) => {
       .from('ai_models')
       .select('*')
       .eq('id', modelId)
-      .eq('is_enabled', true)
+      .eq('is_active', true)
       .single();
 
     if (modelError || !model) {

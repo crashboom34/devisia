@@ -27,8 +27,9 @@ interface Model {
   display_name: string;
   model_id: string;
   provider: string;
-  is_free: boolean;
-  cost_per_1k_tokens?: number;
+  cost_per_1k_tokens_input?: number;
+  cost_per_1k_tokens_output?: number;
+  is_active?: boolean;
 }
 
 interface RegenerateQuoteDialogProps {
@@ -73,8 +74,7 @@ export default function RegenerateQuoteDialog({
       const { data, error } = await supabase
         .from('ai_models')
         .select('*')
-        .eq('is_enabled', true)
-        .order('is_free', { ascending: false })
+        .eq('is_active', true)
         .order('display_name');
 
       if (error) {
@@ -88,10 +88,9 @@ export default function RegenerateQuoteDialog({
 
       setModels(data);
 
-      // Pré-sélectionner GPT-4o Mini si disponible, sinon le premier modèle payant
+      // Pré-sélectionner GPT-4o Mini si disponible, sinon le premier modèle disponible
       const gpt4oMini = data.find(m => m.model_id.includes('gpt-4o-mini'));
-      const firstPaid = data.find(m => !m.is_free);
-      const defaultModel = gpt4oMini?.id || firstPaid?.id || data[0]?.id || '';
+      const defaultModel = gpt4oMini?.id || data[0]?.id || '';
 
       setSelectedModel(defaultModel);
     } catch (err) {
@@ -194,8 +193,12 @@ export default function RegenerateQuoteDialog({
   };
 
   const selectedModelData = models.find(m => m.id === selectedModel);
-  const estimatedCost = selectedModelData?.cost_per_1k_tokens
-    ? ((projectDescription.length / 1000) * selectedModelData.cost_per_1k_tokens * 2).toFixed(2)
+  const isFreeModel = !selectedModelData?.cost_per_1k_tokens_input && !selectedModelData?.cost_per_1k_tokens_output;
+  const avgCost = selectedModelData?.cost_per_1k_tokens_input && selectedModelData?.cost_per_1k_tokens_output
+    ? (selectedModelData.cost_per_1k_tokens_input + selectedModelData.cost_per_1k_tokens_output) / 2
+    : selectedModelData?.cost_per_1k_tokens_input || selectedModelData?.cost_per_1k_tokens_output || 0;
+  const estimatedCost = avgCost > 0
+    ? ((projectDescription.length / 1000) * avgCost * 2).toFixed(2)
     : '0';
 
   return (
@@ -232,16 +235,23 @@ export default function RegenerateQuoteDialog({
                   <SelectValue placeholder="Choisir un modèle..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {models.map((model) => (
-                    <SelectItem key={model.id} value={model.id}>
-                      <div className="flex items-center justify-between w-full">
-                        <span>{model.display_name}</span>
-                        <span className="ml-4 text-xs text-gray-500">
-                          {model.is_free ? '(GRATUIT)' : `~${(model.cost_per_1k_tokens || 0).toFixed(3)}€/1k tokens`}
-                        </span>
-                      </div>
-                    </SelectItem>
-                  ))}
+                  {models.map((model) => {
+                    const modelIsFree = !model.cost_per_1k_tokens_input && !model.cost_per_1k_tokens_output;
+                    const avgModelCost = model.cost_per_1k_tokens_input && model.cost_per_1k_tokens_output
+                      ? (model.cost_per_1k_tokens_input + model.cost_per_1k_tokens_output) / 2
+                      : model.cost_per_1k_tokens_input || model.cost_per_1k_tokens_output || 0;
+
+                    return (
+                      <SelectItem key={model.id} value={model.id}>
+                        <div className="flex items-center justify-between w-full">
+                          <span>{model.display_name}</span>
+                          <span className="ml-4 text-xs text-gray-500">
+                            {modelIsFree ? '(GRATUIT)' : `~${avgModelCost.toFixed(4)}€/1k tokens`}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             )}
@@ -250,7 +260,7 @@ export default function RegenerateQuoteDialog({
             </p>
           </div>
 
-          {selectedModelData && !selectedModelData.is_free && (
+          {selectedModelData && !isFreeModel && parseFloat(estimatedCost) > 0 && (
             <Alert>
               <TrendingUp className="h-4 w-4" />
               <AlertDescription>
