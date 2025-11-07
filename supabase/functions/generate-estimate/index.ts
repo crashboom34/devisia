@@ -227,6 +227,7 @@ RÉPONDS UNIQUEMENT EN JSON VALIDE (sans texte avant ou après).`;
     let responseTime = 0;
     let usedModel = model;
     let lastError = null;
+    let estimateData = null;
 
     for (const currentModel of modelsToTry) {
       try {
@@ -305,9 +306,48 @@ RÉPONDS UNIQUEMENT EN JSON VALIDE (sans texte avant ou après).`;
 
         llmData = await llmResponse.json();
         content = llmData.choices[0].message.content;
-        usedModel = currentModel;
-        console.log(`Successfully used model: ${currentModel.display_name}`);
-        break;
+
+        // Vérifier que la réponse contient du JSON
+        if (!content || (!content.includes('{') && !content.includes('}'))) {
+          console.error(`Model ${currentModel.display_name} returned non-JSON response`);
+          console.error("Content:", content?.substring(0, 500));
+          lastError = "Model returned text without JSON";
+          continue;
+        }
+
+        console.log("Raw LLM response length:", content.length);
+        console.log("First 500 chars:", content.substring(0, 500));
+
+        // Essayer de parser le JSON
+        try {
+          // Essayer plusieurs patterns de détection JSON
+          let jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/);
+          if (jsonMatch) {
+            console.log("Found JSON in code block");
+            estimateData = JSON.parse(jsonMatch[1]);
+          } else {
+            // Chercher un objet JSON brut
+            jsonMatch = content.match(/\{[\s\S]*\}/);
+            if (!jsonMatch) {
+              console.error("No JSON pattern found in response from", currentModel.display_name);
+              lastError = "No JSON pattern found in response";
+              continue;
+            }
+            console.log("Found raw JSON object");
+            estimateData = JSON.parse(jsonMatch[0]);
+          }
+
+          // Si on arrive ici, le parsing a réussi
+          usedModel = currentModel;
+          console.log(`Successfully parsed JSON from model: ${currentModel.display_name}`);
+          break;
+
+        } catch (parseError) {
+          console.error(`JSON parse failed for model ${currentModel.display_name}:`, parseError);
+          console.error("Content that failed:", content.substring(0, 1000));
+          lastError = `JSON parse error: ${parseError.message}`;
+          continue;
+        }
 
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
@@ -318,37 +358,11 @@ RÉPONDS UNIQUEMENT EN JSON VALIDE (sans texte avant ou après).`;
       }
     }
 
-    // Si aucun modèle n'a fonctionné
-    if (!content) {
-      const errorDetails = lastError || "No models available or all models failed without error message";
+    // Si aucun modèle n'a réussi à générer un devis valide
+    if (!estimateData) {
+      const errorDetails = lastError || "No models available or all models failed to generate valid JSON";
       console.error("All models failed. Details:", errorDetails);
       throw new Error(`All models failed. Last error: ${errorDetails}`);
-    }
-
-    let estimateData;
-    try {
-      console.log("Raw LLM response length:", content.length);
-      console.log("First 500 chars:", content.substring(0, 500));
-
-      // Essayer plusieurs patterns de détection JSON
-      let jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/);
-      if (jsonMatch) {
-        console.log("Found JSON in code block");
-        estimateData = JSON.parse(jsonMatch[1]);
-      } else {
-        // Chercher un objet JSON brut
-        jsonMatch = content.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) {
-          console.error("No JSON pattern found. Response:", content);
-          throw new Error("No JSON found in response");
-        }
-        console.log("Found raw JSON object");
-        estimateData = JSON.parse(jsonMatch[0]);
-      }
-    } catch (parseError) {
-      console.error("JSON parse failed:", parseError);
-      console.error("Content that failed:", content.substring(0, 1000));
-      throw new Error(`Failed to parse LLM response: ${parseError.message}`);
     }
 
     if (!estimateData.categories || estimateData.categories.length === 0) {
