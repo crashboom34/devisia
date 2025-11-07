@@ -114,17 +114,16 @@ export default function RegenerateQuoteDialog({
     const startTime = Date.now();
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Not authenticated');
 
       // Appeler la fonction Edge pour régénérer le devis
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
       const response = await fetch(`${supabaseUrl}/functions/v1/regenerate-estimate`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${supabaseKey}`,
+          'Authorization': `Bearer ${session.access_token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -149,7 +148,7 @@ export default function RegenerateQuoteDialog({
       await supabase.from('quote_regeneration_log').insert({
         estimate_id: result.newEstimateId,
         original_estimate_id: estimateId,
-        user_id: user.id,
+        user_id: session.user.id,
         old_model: currentModel,
         new_model: selectedModelData?.display_name || 'Unknown',
         old_total_ttc: currentTotal,
@@ -168,12 +167,12 @@ export default function RegenerateQuoteDialog({
 
       // Logger l'échec
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
           await supabase.from('quote_regeneration_log').insert({
             estimate_id: estimateId,
             original_estimate_id: estimateId,
-            user_id: user.id,
+            user_id: session.user.id,
             old_model: currentModel,
             new_model: models.find(m => m.id === selectedModel)?.display_name || 'Unknown',
             old_total_ttc: currentTotal,
