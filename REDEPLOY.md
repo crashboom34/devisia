@@ -22,12 +22,16 @@ supabase functions deploy generate-estimate
 ## Modifications apportées
 
 La fonction mise à jour inclut:
+- **Prompt professionnel optimisé**: Économiste du bâtiment 15+ ans, ratios 2024-2025, coefficients régionaux (voir `PROFESSIONAL_PROMPT.md` et `PROMPT_OPTIMIZATION.md`)
 - **Système de fallback automatique**: Essaie plusieurs modèles si le premier échoue (voir `MODEL_FALLBACK.md`)
 - **Gestion du rate limiting**: Détection automatique des erreurs 429 et basculement vers un autre modèle
-- **Prompt amélioré**: Instructions détaillées avec contraintes de prix strictes (voir `PROMPT_IMPROVEMENTS.md`)
+- **Contrôle de température**: Ajustable de 0.0 à 1.0 pour contrôler la créativité (voir `TEMPERATURE_CONTROL.md`)
+- **Détection JSON robuste**: Multi-formats (code block markdown + JSON brut)
+- **Max tokens augmenté**: 6000 tokens pour devis détaillés en 5 catégories
 - **Justifications des scénarios**: Chaque devis explique son rapport qualité-prix
-- **Tarifs de référence**: Prix réalistes basés sur le marché français 2024 (voir `PRICING_FIX.md`)
-- **Traçabilité**: Nom du modèle IA utilisé pour chaque devis
+- **Structure en 5 catégories**: Gros œuvre, Second œuvre, Finitions, Aménagements ext, Frais annexes
+- **Traçabilité complète**: Nom du modèle IA et température utilisés
+- **Logging amélioré**: Déboguer facilement les problèmes de génération
 - Utilisation de `preferred_model_id` (cohérent avec l'interface)
 - Utilisation de `.maybeSingle()` pour éviter les erreurs
 - **Nouveau modèle par défaut**: Qwen 2 7B (plus stable que Gemini 2.0 Flash)
@@ -40,7 +44,10 @@ La fonction mise à jour inclut:
 4. **NOUVEAU**: Chaque devis devrait afficher:
    - Une boîte bleue avec "💡 Pourquoi ce scénario?" et une justification en 2-3 phrases
    - Le nom du modèle IA utilisé (ex: "Généré par: Qwen 2 7B (GRATUIT)")
-   - Des prix cohérents (éco +30-40% → standard +40-60% → premium)
+   - Structure en 5 catégories: Gros œuvre, Second œuvre, Finitions, Aménagements extérieurs, Frais annexes
+   - Coefficients régionaux appliqués si localisation mentionnée (ex: Montpellier +10-15%)
+   - Ratios de marché 2024-2025 réalistes (construction 1800-2600€/m²)
+   - Frais annexes toujours inclus (études, permis, DO, imprévus)
 
 ## En cas de problème
 

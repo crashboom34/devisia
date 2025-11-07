@@ -116,71 +116,36 @@ Deno.serve(async (req: Request) => {
 
     const multiplier = priceMultipliers[scenarioType];
 
-    const prompt = `Tu es une IA d'économie de la construction, jouant le rôle d'un économiste du bâtiment et maître d'œuvre expérimenté (15+ ans de terrain) spécialisé dans les projets résidentiels en France métropolitaine.
+    const prompt = `Tu es un économiste du bâtiment expérimenté. Génère un devis BTP professionnel et réaliste pour ce projet.
 
-**PROJET À CHIFFRER:**
+**PROJET:**
 ${projectDescription}
 
-**SCÉNARIO DEMANDÉ:** ${scenarioType.toUpperCase()}
-${scenarioType === 'eco' ? `→ ÉCONOMIQUE (coefficient qualité: 0.85) - Matériaux standards, techniques simples, finitions de base, focus fonctionnel` : ''}${scenarioType === 'standard' ? `→ STANDARD (coefficient qualité: 1.00) - Matériaux qualité moyenne, techniques éprouvées, finitions soignées, compromis optimal` : ''}${scenarioType === 'premium' ? `→ PREMIUM (coefficient qualité: 1.25) - Matériaux haut de gamme, techniques avancées, finitions luxueuses, durabilité maximale` : ''}
+**SCÉNARIO:** ${scenarioType.toUpperCase()}
+${scenarioType === 'eco' ? '- Coef 0.85: Matériaux standards, finitions base' : ''}${scenarioType === 'standard' ? '- Coef 1.00: Matériaux qualité moyenne, finitions soignées' : ''}${scenarioType === 'premium' ? '- Coef 1.25: Matériaux premium, finitions luxueuses' : ''}
 
-**RATIOS DE RÉFÉRENCE 2024-2025 (base France, avant coefficients):**
-- Construction/extension parpaing/béton: 1800-2600 €/m²
-- Extension ossature bois: 1500-2300 €/m²
-- Surélévation: 2200-2800 €/m²
-- Rénovation lourde: 1200-1800 €/m²
-- Terrasse couverte: 600-1200 €/m²
-- Clim bi-split posée: 3000-5000 €
+**RATIOS 2024-2025:**
+Construction: 1800-2600€/m² | Ossature bois: 1500-2300€/m² | Surélévation: 2200-2800€/m²
+Terrasse couverte: 600-1200€/m² | Clim bi-split: 3000-5000€
 
-**COEFFICIENTS GÉOGRAPHIQUES (à appliquer):**
-- Paris intra-muros: +25 à +30%
-- IDF hors Paris: +15 à +20%
-- Côte d'Azur (06/83): +15 à +20%
-- Grandes métropoles (Lyon, Bordeaux, Nantes): +10 à +15%
-- Montpellier/Hérault/Gard/Vaucluse: +10 à +15%
-- Littoral Atlantique: +8 à +12%
-- Centre rural: 0 à -5%
+**COEFFICIENTS RÉGIONAUX:**
+Paris: +25-30% | IDF: +15-20% | Métropoles: +10-15% | Montpellier/Hérault: +10-15% | Rural: 0 à -5%
 
-**STRUCTURE OBLIGATOIRE DU DEVIS (5 GRANDS POSTES):**
+**STRUCTURE OBLIGATOIRE (5 catégories):**
 
-1) GROS ŒUVRE (40-50% budget):
-   - Terrassement, fondations (100-150 €/m²)
-   - Dalle béton 15-20cm (65-100 €/m²)
-   - Élévation murs parpaing+enduit (180-280 €/m²) ou ossature bois (150-250 €/m²)
-   - Charpente industrielle (50-80 €/m² toiture)
-   - Couverture et étanchéité
+1. GROS ŒUVRE (40-50%): Fondations 100-150€/m², Dalle 65-100€/m², Murs 180-280€/m², Charpente 50-80€/m²
 
-2) SECOND ŒUVRE (30-35%):
-   - Isolation (25-40 €/m² intérieur, 80-140 €/m² ITE)
-   - Cloisons/doublages BA13
-   - Menuiseries extérieures PVC (350-600 €/m²) ou alu (450-800 €/m²)
-   - Électricité complète (80-120 €/m² hab.)
-   - Plomberie/évacuations
-   - Chauffage/climatisation
+2. SECOND ŒUVRE (30-35%): Isolation 25-140€/m², Menuiseries PVC 350-600€/m², Électricité 80-120€/m², Plomberie
 
-3) FINITIONS (15-20%):
-   - Revêtements sols: carrelage (50-80 €/m²), parquet flottant (30-50 €/m²)
-   - Peinture (20-35 €/m²)
-   - Salle de bain (3000-9000 €)
-   - Cuisine (3000-12000 €)
-   - Portes intérieures
+3. FINITIONS (15-20%): Carrelage 50-80€/m², Peinture 20-35€/m², SDB 3k-9k€, Cuisine 3k-12k€
 
-4) AMÉNAGEMENTS EXTÉRIEURS:
-   - Terrasse couverte (600-1200 €/m²)
-   - Terrasse carrelée/bois (70-160 €/m²)
-   - VRD/raccordements (800-5000 € selon distance)
-   - Clôtures, portail
+4. AMÉNAGEMENTS EXT: Terrasse, VRD 800-5k€, Clôtures
 
-5) FRAIS ANNEXES & IMPRÉVUS (5-15%):
-   - Étude de sol G2: 1500-2500 €
-   - Étude thermique: 800-1500 €
-   - Permis/DP: 500-3000 €
-   - Assurance DO: 2-4% des travaux
-   - Enveloppe sécurité: 5-10%
+5. FRAIS ANNEXES (5-15%): Étude sol 1.5-2.5k€, Thermique 800-1500€, Permis 500-3k€, DO 2-4%, Imprévus 5-10%
 
-**TVA:** 10% pour rénovation/extension logement >2 ans, 20% pour neuf
+**TVA:** 10% réno/extension >2ans, 20% neuf
 
-**FORMAT DE SORTIE - STRUCTURE JSON EXACTE:**
+**RÉPONDS UNIQUEMENT EN JSON (pas de texte avant/après):**
 
 {
   "estimate_number": "DEVIS-2024-001",
@@ -217,26 +182,17 @@ ${scenarioType === 'eco' ? `→ ÉCONOMIQUE (coefficient qualité: 0.85) - Maté
   "scenario_justification": "Explication en 2-3 phrases: Pourquoi ce scénario ${scenarioType} coûte ce prix par rapport aux autres? Quelles sont les différences qui justifient l'écart de prix? Quel est le rapport qualité-prix?"
 }
 
-**RÈGLES OBLIGATOIRES:**
-1. STRUCTURE: Organise OBLIGATOIREMENT en 5 catégories (Gros œuvre, Second œuvre, Finitions, Aménagements extérieurs, Frais annexes)
-2. DÉTAIL: Chaque poste doit avoir quantité, unité, prix unitaire HT, montant HT
-3. TVA: Applique 10% (rénovation/extension >2 ans) ou 20% (neuf) - précise laquelle dans special_conditions
-4. GÉOGRAPHIE: Applique le coefficient régional si la localisation est mentionnée
-5. QUALITÉ: Applique le coefficient ${scenarioType} (${scenarioType === 'eco' ? '0.85' : scenarioType === 'standard' ? '1.00' : '1.25'})
-6. JUSTIFICATION: Ajoute OBLIGATOIREMENT "scenario_justification" avec 2-3 phrases expliquant:
-   - Pourquoi ce prix (matériaux, techniques, région)
-   - Ce qui différencie ce scénario des autres
-   - Le rapport qualité-prix
-7. RÉALISME: Vise ±10% d'un vrai chantier, base ton estimation sur les ratios de référence fournis
-8. PRÉCISION: Descriptions techniques précises (matériaux exacts, dimensions, normes)
-9. EXHAUSTIF: Inclus TOUJOURS les frais annexes (études, permis, DO, imprévus 5-10%)
-10. CRÉDIBILITÉ: Ton devis doit pouvoir être présenté à une entreprise du bâtiment sans paraître fantaisiste
+**RÈGLES:**
+1. 5 catégories obligatoires (Gros œuvre, Second œuvre, Finitions, Aménagements ext, Frais annexes)
+2. Quantité, unité, prix unitaire HT pour chaque poste
+3. TVA 10% (réno >2ans) ou 20% (neuf) - précise dans special_conditions
+4. Applique coefficient régional si localisation mentionnée
+5. Applique coefficient qualité ${scenarioType} (${scenarioType === 'eco' ? '0.85' : scenarioType === 'standard' ? '1.00' : '1.25'})
+6. OBLIGATOIRE "scenario_justification" (2-3 phrases): matériaux/techniques/région, différences avec autres scénarios, rapport qualité-prix
+7. Réalisme ±10% marché réel, base-toi sur ratios fournis
+8. Frais annexes toujours inclus (5-15%)
 
-**IMPORTANT:**
-- Réponds UNIQUEMENT avec du JSON valide et complet
-- N'oublie JAMAIS le champ "scenario_justification"
-- Adapte les prix selon la région mentionnée dans la description du projet
-- Structure toujours en 5 grandes catégories, même si certaines sont petites`;
+RÉPONDS UNIQUEMENT EN JSON VALIDE (sans texte avant ou après).`;
 
     // Essayer les modèles avec fallback automatique
     let llmData;
@@ -280,7 +236,7 @@ ${scenarioType === 'eco' ? `→ ÉCONOMIQUE (coefficient qualité: 0.85) - Maté
             },
           ],
           temperature: apiTemperature,
-          max_tokens: 4000,
+          max_tokens: 6000,
         };
 
         const startTime = Date.now();
@@ -326,13 +282,27 @@ ${scenarioType === 'eco' ? `→ ÉCONOMIQUE (coefficient qualité: 0.85) - Maté
 
     let estimateData;
     try {
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        throw new Error("No JSON found in response");
+      console.log("Raw LLM response length:", content.length);
+      console.log("First 500 chars:", content.substring(0, 500));
+
+      // Essayer plusieurs patterns de détection JSON
+      let jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/);
+      if (jsonMatch) {
+        console.log("Found JSON in code block");
+        estimateData = JSON.parse(jsonMatch[1]);
+      } else {
+        // Chercher un objet JSON brut
+        jsonMatch = content.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+          console.error("No JSON pattern found. Response:", content);
+          throw new Error("No JSON found in response");
+        }
+        console.log("Found raw JSON object");
+        estimateData = JSON.parse(jsonMatch[0]);
       }
-      estimateData = JSON.parse(jsonMatch[0]);
     } catch (parseError) {
       console.error("JSON parse failed:", parseError);
+      console.error("Content that failed:", content.substring(0, 1000));
       throw new Error(`Failed to parse LLM response: ${parseError.message}`);
     }
 
