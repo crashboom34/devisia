@@ -45,10 +45,13 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
   const [expandedEstimate, setExpandedEstimate] = useState<string | null>(null);
   const [expandedScenarios, setExpandedScenarios] = useState<Set<string>>(new Set(['eco']));
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showDeleteEstimateDialog, setShowDeleteEstimateDialog] = useState(false);
+  const [estimateToDelete, setEstimateToDelete] = useState<string | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeletingEstimate, setIsDeletingEstimate] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -205,6 +208,34 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
     }
   };
 
+  const handleDeleteEstimate = async () => {
+    if (!estimateToDelete) return;
+
+    setIsDeletingEstimate(true);
+    try {
+      const { error } = await supabase
+        .from('estimates')
+        .delete()
+        .eq('id', estimateToDelete);
+
+      if (error) throw error;
+
+      setEstimates(estimates.filter(e => e.id !== estimateToDelete));
+      setShowDeleteEstimateDialog(false);
+      setEstimateToDelete(null);
+    } catch (err) {
+      console.error('Error deleting estimate:', err);
+      alert('Erreur lors de la suppression du scénario');
+    } finally {
+      setIsDeletingEstimate(false);
+    }
+  };
+
+  const confirmDeleteEstimate = (estimateId: string) => {
+    setEstimateToDelete(estimateId);
+    setShowDeleteEstimateDialog(true);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -319,6 +350,17 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
                           )}
                         </div>
                         <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              confirmDeleteEstimate(estimate.id);
+                            }}
+                            className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                           {isExpanded ? (
                             <ChevronUp className="h-5 w-5 text-gray-500" />
                           ) : (
@@ -473,6 +515,34 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
               className="bg-red-600 hover:bg-red-700"
             >
               {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Suppression...
+                </>
+              ) : (
+                'Supprimer'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showDeleteEstimateDialog} onOpenChange={setShowDeleteEstimateDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer ce scénario?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est irréversible. Ce devis sera définitivement supprimé.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingEstimate}>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteEstimate}
+              disabled={isDeletingEstimate}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isDeletingEstimate ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Suppression...
