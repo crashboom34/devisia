@@ -14,6 +14,7 @@ import UserMenu from '@/components/UserMenu';
 import VoiceRecorder from '@/components/VoiceRecorder';
 import ModelSelector from '@/components/ModelSelector';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Slider } from '@/components/ui/slider';
 
 export default function NewProjectPage() {
   const router = useRouter();
@@ -25,6 +26,7 @@ export default function NewProjectPage() {
     description: '',
   });
   const [activeTab, setActiveTab] = useState<'voice' | 'text'>('voice');
+  const [temperature, setTemperature] = useState(0.5);
 
   useEffect(() => {
     checkUser();
@@ -92,6 +94,7 @@ export default function NewProjectPage() {
             projectId: project.id,
             projectDescription: formData.description,
             scenarioType,
+            temperature,
           }),
         });
 
@@ -274,6 +277,45 @@ export default function NewProjectPage() {
         <div className="mt-4 sm:mt-6">
           <ModelSelector />
         </div>
+
+        <Card className="mt-4 sm:mt-6">
+          <CardHeader>
+            <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+              <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
+              Créativité de l'IA
+            </CardTitle>
+            <CardDescription className="text-xs sm:text-sm">
+              Ajustez la créativité du modèle (0 = précis et conservateur, 1 = créatif et varié)
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="px-3 sm:px-6 pb-4 sm:pb-6">
+            <div className="space-y-3 sm:space-y-4">
+              <div className="flex items-center justify-between text-xs sm:text-sm">
+                <span className="text-gray-600">Température: {temperature.toFixed(2)}</span>
+                <span className="text-gray-500">
+                  {temperature < 0.3 ? '❄️ Très conservateur' :
+                   temperature < 0.5 ? '🧊 Conservateur' :
+                   temperature < 0.7 ? '⚖️ Équilibré' :
+                   temperature < 0.9 ? '🔥 Créatif' :
+                   '🌟 Très créatif'}
+                </span>
+              </div>
+              <Slider
+                value={[temperature]}
+                onValueChange={(value) => setTemperature(value[0])}
+                min={0}
+                max={1}
+                step={0.05}
+                className="w-full"
+              />
+              <div className="flex justify-between text-xs text-gray-500">
+                <span>0.0 - Précis</span>
+                <span>0.5 - Équilibré</span>
+                <span>1.0 - Créatif</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <Card className="mt-4 sm:mt-6 bg-blue-50 border-blue-200">
           <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">

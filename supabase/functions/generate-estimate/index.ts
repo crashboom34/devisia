@@ -12,6 +12,7 @@ interface EstimateRequest {
   projectDescription: string;
   scenarioType: "eco" | "standard" | "premium";
   modelId?: string;
+  temperature?: number;
 }
 
 Deno.serve(async (req: Request) => {
@@ -39,11 +40,13 @@ Deno.serve(async (req: Request) => {
       throw new Error("Unauthorized");
     }
 
-    const { projectId, projectDescription, scenarioType, modelId }: EstimateRequest = await req.json();
+    const { projectId, projectDescription, scenarioType, modelId, temperature }: EstimateRequest = await req.json();
 
     if (!projectId || !projectDescription || !scenarioType) {
       throw new Error("Missing required fields");
     }
+
+    const apiTemperature = temperature !== undefined ? temperature : 0.5;
 
     // Fonction pour obtenir les modèles de fallback (gratuits ou très économiques)
     const getFallbackModels = async () => {
@@ -113,37 +116,30 @@ Deno.serve(async (req: Request) => {
 
     const multiplier = priceMultipliers[scenarioType];
 
-    const prompt = `Tu es un expert métreur BTP français spécialisé dans la génération de devis professionnels détaillés.
+    const prompt = `Tu es un expert métreur BTP français spécialisé dans la génération de devis professionnels détaillés et réalistes.
 
 **PROJET À CHIFFRER:**
 ${projectDescription}
 
-**TYPE DE DEVIS:** ${scenarioType.toUpperCase()} (multiplicateur: ${multiplier}x)
+**TYPE DE DEVIS:** ${scenarioType.toUpperCase()}
 
-**INSTRUCTIONS CRITIQUES - CONTRAINTES DE PRIX:**
+**INSTRUCTIONS PAR SCÉNARIO:**
 ${scenarioType === 'eco' ? `
 - Tu génères le SCÉNARIO ÉCONOMIQUE (version basique mais fonctionnelle)
 - Utilise des matériaux standards, techniques simples, finitions de base
-- Prix: Environ 40-50% moins cher que le scénario premium
-- JUSTIFICATION REQUISE: Explique pourquoi ce scénario est le plus abordable` : ''}${scenarioType === 'standard' ? `
-- Tu génères le SCÉNARIO STANDARD (version équilibrée, meilleur rapport qualité-prix)
+- Focus sur le fonctionnel et l'essentiel
+- JUSTIFICATION REQUISE: Explique en 2-3 phrases pourquoi ce scénario est adapté et son rapport qualité-prix` : ''}${scenarioType === 'standard' ? `
+- Tu génères le SCÉNARIO STANDARD (version équilibrée, recommandée)
 - Utilise des matériaux de qualité moyenne, techniques éprouvées, finitions soignées
-- Prix: Environ 30-40% plus cher que l'éco, 30-40% moins cher que le premium
-- JUSTIFICATION REQUISE: Explique le compromis qualité-prix de cette option` : ''}${scenarioType === 'premium' ? `
-- Tu génères le SCÉNARIO PREMIUM (version haut de gamme)
+- Bon compromis entre qualité et prix
+- JUSTIFICATION REQUISE: Explique en 2-3 phrases le compromis qualité-prix de cette option` : ''}${scenarioType === 'premium' ? `
+- Tu génères le SCÉNARIO PREMIUM (version haut de gamme, qualité maximale)
 - Utilise des matériaux premium, techniques avancées, finitions luxueuses
-- Prix: Environ 40-60% plus cher que le scénario standard
-- JUSTIFICATION REQUISE: Explique la valeur ajoutée qui justifie le surcoût` : ''}
+- Qualité supérieure et durabilité optimale
+- JUSTIFICATION REQUISE: Explique en 2-3 phrases la valeur ajoutée de ce scénario` : ''}
 
-**TARIFS MARCHÉ FRANÇAIS 2024 (APPLIQUE LE MULTIPLICATEUR ${multiplier}x):**
-- Main d'œuvre artisan: 40-60€/h (éco) | 50-80€/h (standard) | 70-120€/h (premium)
-- Peinture intérieure: 20-30€/m² (éco) | 30-50€/m² (standard) | 50-80€/m² (premium)
-- Carrelage pose comprise: 40-60€/m² (éco) | 60-90€/m² (standard) | 90-150€/m² (premium)
-- Électricité complète: 80-100€/m² (éco) | 100-150€/m² (standard) | 150-250€/m² (premium)
-- Plomberie complète: 100-150€/m² (éco) | 150-250€/m² (standard) | 250-400€/m² (premium)
-- Isolation combles: 30-50€/m² (éco) | 50-80€/m² (standard) | 80-120€/m² (premium)
-- Fenêtres PVC double vitrage: 300-500€/unité (éco) | 500-800€/unité (standard) | 800-1500€/unité (premium)
-- Porte d'entrée: 800-1500€ (éco) | 1500-3000€ (standard) | 3000-6000€ (premium)
+Utilise tes connaissances du marché français BTP pour établir des prix réalistes basés sur les tarifs actuels.
+Laisse-toi guider par ta connaissance des prix du marché pour ce type de travaux et ce niveau de qualité.
 
 **FORMAT DE SORTIE - STRUCTURE JSON EXACTE:**
 
@@ -182,14 +178,15 @@ ${scenarioType === 'eco' ? `
   "scenario_justification": "Explication en 2-3 phrases: Pourquoi ce scénario ${scenarioType} coûte ce prix par rapport aux autres? Quelles sont les différences qui justifient l'écart de prix? Quel est le rapport qualité-prix?"
 }
 
-**RÈGLES STRICTES:**
-1. Respecte les écarts de prix entre scénarios (éco = base, standard = +30-40%, premium = +40-60% vs standard)
-2. Détaille chaque poste avec quantités et prix unitaires réalistes basés sur les tarifs de référence
-3. Ajoute le champ "scenario_justification" avec 2-3 phrases expliquant ce scénario
-4. Les descriptions doivent être techniques et précises (matériaux, dimensions, techniques)
-5. Organise en catégories cohérentes (Gros œuvre, Second œuvre, Finitions, etc.)
+**RÈGLES IMPORTANTES:**
+1. Détaille chaque poste avec quantités et prix unitaires réalistes
+2. Ajoute OBLIGATOIREMENT le champ "scenario_justification" avec 2-3 phrases expliquant ce scénario
+3. Les descriptions doivent être techniques et précises (matériaux, dimensions, techniques)
+4. Organise en catégories cohérentes (Gros œuvre, Second œuvre, Finitions, etc.)
+5. Utilise tes connaissances des prix du marché français actuel
+6. Adapte les prix en fonction du niveau de qualité du scénario (éco/standard/premium)
 
-IMPORTANT: Réponds UNIQUEMENT avec du JSON valide et complet incluant le champ scenario_justification.`;
+IMPORTANT: Réponds UNIQUEMENT avec du JSON valide et complet incluant OBLIGATOIREMENT le champ scenario_justification.`;
 
     // Essayer les modèles avec fallback automatique
     let llmData;
@@ -225,14 +222,14 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide et complet incluant le champ 
           messages: [
             {
               role: "system",
-              content: "Tu es un métreur expert en BTP. Tu génères des devis détaillés et précis en JSON valide uniquement.",
+              content: "Tu es un métreur expert en BTP français. Tu génères des devis détaillés et réalistes en JSON valide uniquement.",
             },
             {
               role: "user",
               content: prompt,
             },
           ],
-          temperature: 0.5,
+          temperature: apiTemperature,
           max_tokens: 4000,
         };
 

@@ -5,10 +5,12 @@ Application Next.js avec Supabase pour générer des devis BTP automatiquement v
 ## Fonctionnalités principales
 
 - 🤖 **Génération automatique** de devis via IA (14 modèles disponibles)
+- 🌡️ **Contrôle de température** pour ajuster la créativité de l'IA (0.0 à 1.0)
 - 📊 **3 scénarios** par projet: Économique, Standard, Premium
 - 🎙️ **Dictée vocale** pour décrire vos projets
 - 🔄 **Fallback automatique** entre modèles en cas d'erreur
-- 💰 **Traçabilité** du modèle utilisé pour chaque devis
+- 💡 **Justifications explicatives** pour chaque scénario de devis
+- 💰 **Traçabilité complète** du modèle et paramètres utilisés
 - 📱 **Interface responsive** pour mobile et desktop
 - 🔐 **Authentification** Supabase avec RLS
 - 👥 **Administration** complète des modèles et utilisateurs
@@ -34,8 +36,10 @@ Consultez les fichiers de documentation:
 - `SUPABASE_SETUP.md` - Configuration de la base de données
 - `OPENROUTER_SETUP.md` - Configuration de l'API OpenRouter
 - `REDEPLOY.md` - Instructions de redéploiement
+- `TEMPERATURE_CONTROL.md` - Contrôle de température et liberté des IA
 - `MODEL_FALLBACK.md` - Système de fallback automatique
 - `PRICING_FIX.md` - Tarifs de référence du marché français
+- `PROMPT_IMPROVEMENTS.md` - Améliorations du système de prompt
 
 ## Technologies utilisées
 
