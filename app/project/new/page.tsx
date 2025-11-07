@@ -106,6 +106,12 @@ export default function NewProjectPage() {
         await response.json();
       }
 
+      // Marquer le projet comme terminé après génération de tous les devis
+      await supabase
+        .from('projects')
+        .update({ status: 'completed' })
+        .eq('id', project.id);
+
       router.push(`/project/${project.id}`);
     } catch (err) {
       console.error('Error creating project:', err);
