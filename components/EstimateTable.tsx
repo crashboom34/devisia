@@ -5,7 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Eye, EyeOff, Download, ChevronDown, ChevronUp } from 'lucide-react';
+import { Eye, EyeOff, Download, ChevronDown, ChevronUp, Edit2, Save, X, Trash2 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import EditableEstimateRow from './EditableEstimateRow';
 
 type ViewMode = 'client' | 'detailed' | 'internal';
 
@@ -63,6 +65,9 @@ interface EstimateTableProps {
 export default function EstimateTable({ estimate, projectTitle }: EstimateTableProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('detailed');
   const [expandedCategories, setExpandedCategories] = useState<Set<number>>(new Set([0]));
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedEstimate, setEditedEstimate] = useState<EstimateData>(estimate);
+  const [isSaving, setIsSaving] = useState(false);
 
   const toggleCategory = (index: number) => {
     const newExpanded = new Set(expandedCategories);
@@ -138,6 +143,116 @@ export default function EstimateTable({ estimate, projectTitle }: EstimateTableP
     return { margin, marginPercent };
   };
 
+  const recalculateTotals = (categories: EstimateCategory[]) => {
+    let totalHT = 0;
+    let totalTVA = 0;
+    let totalTTC = 0;
+
+    const updatedCategories = categories.map(category => {
+      let catSubtotalHT = 0;
+      let catSubtotalTVA = 0;
+      let catSubtotalTTC = 0;
+
+      const updatedItems = category.items.map(item => {
+        const amountHT = item.quantity * item.unit_price_ht;
+        const tvaAmount = amountHT * (item.tva_percent / 100);
+        const amountTTC = amountHT + tvaAmount;
+
+        catSubtotalHT += amountHT;
+        catSubtotalTVA += tvaAmount;
+        catSubtotalTTC += amountTTC;
+
+        return {
+          ...item,
+          amount_ht: amountHT,
+          tva_amount: tvaAmount,
+          amount_ttc: amountTTC
+        };
+      });
+
+      totalHT += catSubtotalHT;
+      totalTVA += catSubtotalTVA;
+      totalTTC += catSubtotalTTC;
+
+      return {
+        ...category,
+        items: updatedItems,
+        subtotal_ht: catSubtotalHT,
+        subtotal_tva: catSubtotalTVA,
+        subtotal_ttc: catSubtotalTTC
+      };
+    });
+
+    return {
+      categories: updatedCategories,
+      total_ht: totalHT,
+      total_tva: totalTVA,
+      total_ttc: totalTTC
+    };
+  };
+
+  const handleDeleteItem = (categoryIndex: number, itemIndex: number) => {
+    const newCategories = [...editedEstimate.categories];
+    newCategories[categoryIndex].items.splice(itemIndex, 1);
+
+    if (newCategories[categoryIndex].items.length === 0) {
+      newCategories.splice(categoryIndex, 1);
+    }
+
+    const recalculated = recalculateTotals(newCategories);
+    setEditedEstimate({
+      ...editedEstimate,
+      ...recalculated
+    });
+  };
+
+  const handleItemChange = (categoryIndex: number, itemIndex: number, field: keyof EstimateItem, value: any) => {
+    const newCategories = [...editedEstimate.categories];
+    newCategories[categoryIndex].items[itemIndex] = {
+      ...newCategories[categoryIndex].items[itemIndex],
+      [field]: value
+    };
+
+    const recalculated = recalculateTotals(newCategories);
+    setEditedEstimate({
+      ...editedEstimate,
+      ...recalculated
+    });
+  };
+
+  const handleSaveChanges = async () => {
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('estimates')
+        .update({
+          categories: editedEstimate.categories,
+          total_ht: editedEstimate.total_ht,
+          total_tva: editedEstimate.total_tva,
+          total_ttc: editedEstimate.total_ttc,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', estimate.id);
+
+      if (error) throw error;
+
+      setIsEditing(false);
+      window.location.reload();
+    } catch (err) {
+      console.error('Error saving changes:', err);
+      alert('Erreur lors de la sauvegarde des modifications');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditedEstimate(estimate);
+    setIsEditing(false);
+  };
+
+  const displayEstimate = isEditing ? editedEstimate : estimate;
+
   return (
     <Card className="w-full">
       <CardHeader className="space-y-4">
@@ -146,8 +261,13 @@ export default function EstimateTable({ estimate, projectTitle }: EstimateTableP
             <div className="flex flex-wrap items-center gap-2">
               <CardTitle className="text-lg sm:text-xl">Scénario {getScenarioLabel(estimate.scenario_type)}</CardTitle>
               <Badge className={`${getScenarioBadgeColor(estimate.scenario_type)} text-sm sm:text-base whitespace-nowrap`}>
-                {formatCurrency(estimate.total_ttc)}
+                {formatCurrency(displayEstimate.total_ttc)}
               </Badge>
+              {isEditing && displayEstimate.total_ttc !== estimate.total_ttc && (
+                <Badge variant="outline" className="text-xs sm:text-sm">
+                  Modifié
+                </Badge>
+              )}
             </div>
             {projectTitle && (
               <CardDescription className="text-sm sm:text-base">
@@ -167,9 +287,55 @@ export default function EstimateTable({ estimate, projectTitle }: EstimateTableP
               </CardDescription>
             )}
           </div>
+
+          <div className="flex gap-2">
+            {!isEditing ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsEditing(true)}
+                className="text-xs sm:text-sm"
+              >
+                <Edit2 className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+                Modifier
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleSaveChanges}
+                  disabled={isSaving}
+                  className="text-xs sm:text-sm"
+                >
+                  {isSaving ? (
+                    <>
+                      <Save className="h-3 w-3 sm:h-4 sm:w-4 mr-2 animate-spin" />
+                      Enregistrement...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+                      Enregistrer
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCancelEdit}
+                  disabled={isSaving}
+                  className="text-xs sm:text-sm"
+                >
+                  <X className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+                  Annuler
+                </Button>
+              </>
+            )}
+          </div>
         </div>
 
-        {estimate.scenario_justification && (
+        {displayEstimate.scenario_justification && (
           <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3 sm:p-4">
             <p className="text-xs sm:text-sm text-blue-900 dark:text-blue-100">
               <span className="font-semibold">💡 Pourquoi ce scénario?</span> {estimate.scenario_justification}
@@ -193,7 +359,7 @@ export default function EstimateTable({ estimate, projectTitle }: EstimateTableP
       </CardHeader>
 
       <CardContent className="space-y-4 sm:space-y-6 px-2 sm:px-6">
-        {estimate.categories.map((category, catIndex) => {
+        {displayEstimate.categories.map((category, catIndex) => {
           const isExpanded = expandedCategories.has(catIndex);
 
           return (
@@ -247,55 +413,24 @@ export default function EstimateTable({ estimate, projectTitle }: EstimateTableP
                               <th className="text-right p-3 font-semibold text-sm">Marge %</th>
                             </>
                           )}
+                          {isEditing && <th className="text-center p-3 font-semibold text-sm w-12"></th>}
                         </tr>
                       </thead>
                       <tbody>
-                        {category.items.map((item, itemIndex) => {
-                          const margin = viewMode === 'internal' ? calculateMargin(item) : null;
-                          return (
-                            <tr
-                              key={itemIndex}
-                              className={`border-b ${itemIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 transition-colors`}
-                            >
-                              <td className="p-3 font-medium text-sm">{item.poste}</td>
-                              {viewMode !== 'client' && (
-                                <>
-                                  <td className="p-3 text-sm max-w-xs">
-                                    {item.description}
-                                    {viewMode === 'detailed' && (item.materials_cost || item.labor_cost) && (
-                                      <div className="text-xs text-gray-500 mt-1 space-y-0.5">
-                                        {item.materials_cost && (
-                                          <div>Matériaux: {formatCurrency(item.materials_cost)}</div>
-                                        )}
-                                        {item.labor_cost && (
-                                          <div>Main-d'œuvre: {formatCurrency(item.labor_cost)}</div>
-                                        )}
-                                      </div>
-                                    )}
-                                  </td>
-                                  <td className="p-3 text-center text-sm">{item.quantity}</td>
-                                  <td className="p-3 text-center text-xs">{item.unit}</td>
-                                  <td className="p-3 text-right text-sm">{formatCurrency(item.unit_price_ht)}</td>
-                                  <td className="p-3 text-right font-semibold text-sm">{formatCurrency(item.amount_ht)}</td>
-                                  <td className="p-3 text-center text-xs">{item.tva_percent}%</td>
-                                </>
-                              )}
-                              <td className="p-3 text-right font-bold text-blue-700 text-sm">
-                                {formatCurrency(item.amount_ttc)}
-                              </td>
-                              {viewMode === 'internal' && margin && (
-                                <>
-                                  <td className="p-3 text-right text-green-700 font-semibold text-sm">
-                                    {formatCurrency(margin.margin)}
-                                  </td>
-                                  <td className="p-3 text-right text-green-700 font-semibold text-sm">
-                                    {margin.marginPercent.toFixed(1)}%
-                                  </td>
-                                </>
-                              )}
-                            </tr>
-                          );
-                        })}
+                        {displayEstimate.categories[catIndex].items.map((item, itemIndex) => (
+                          <EditableEstimateRow
+                            key={itemIndex}
+                            item={item}
+                            itemIndex={itemIndex}
+                            categoryIndex={catIndex}
+                            isEditing={isEditing}
+                            viewMode={viewMode}
+                            onItemChange={handleItemChange}
+                            onDelete={handleDeleteItem}
+                            formatCurrency={formatCurrency}
+                            calculateMargin={calculateMargin}
+                          />
+                        ))}
                       </tbody>
                     </table>
                   </div>
