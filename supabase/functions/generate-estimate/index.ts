@@ -113,27 +113,39 @@ Deno.serve(async (req: Request) => {
 
     const multiplier = priceMultipliers[scenarioType];
 
-    const prompt = `En tant qu'expert métreur BTP français, génère un devis détaillé et RÉALISTE pour le projet suivant.
+    const prompt = `Tu es un expert métreur BTP français spécialisé dans la génération de devis professionnels détaillés.
 
-Description du projet:
+**PROJET À CHIFFRER:**
 ${projectDescription}
 
-Type de devis: ${scenarioType.toUpperCase()}
-Multiplicateur de prix: ${multiplier}x
+**TYPE DE DEVIS:** ${scenarioType.toUpperCase()} (multiplicateur: ${multiplier}x)
 
-IMPORTANT - TARIFS MARCHÉ FRANÇAIS 2024:
+**INSTRUCTIONS CRITIQUES - CONTRAINTES DE PRIX:**
+${scenarioType === 'eco' ? `
+- Tu génères le SCÉNARIO ÉCONOMIQUE (version basique mais fonctionnelle)
+- Utilise des matériaux standards, techniques simples, finitions de base
+- Prix: Environ 40-50% moins cher que le scénario premium
+- JUSTIFICATION REQUISE: Explique pourquoi ce scénario est le plus abordable` : ''}${scenarioType === 'standard' ? `
+- Tu génères le SCÉNARIO STANDARD (version équilibrée, meilleur rapport qualité-prix)
+- Utilise des matériaux de qualité moyenne, techniques éprouvées, finitions soignées
+- Prix: Environ 30-40% plus cher que l'éco, 30-40% moins cher que le premium
+- JUSTIFICATION REQUISE: Explique le compromis qualité-prix de cette option` : ''}${scenarioType === 'premium' ? `
+- Tu génères le SCÉNARIO PREMIUM (version haut de gamme)
+- Utilise des matériaux premium, techniques avancées, finitions luxueuses
+- Prix: Environ 40-60% plus cher que le scénario standard
+- JUSTIFICATION REQUISE: Explique la valeur ajoutée qui justifie le surcoût` : ''}
+
+**TARIFS MARCHÉ FRANÇAIS 2024 (APPLIQUE LE MULTIPLICATEUR ${multiplier}x):**
 - Main d'œuvre artisan: 40-60€/h (éco) | 50-80€/h (standard) | 70-120€/h (premium)
 - Peinture intérieure: 20-30€/m² (éco) | 30-50€/m² (standard) | 50-80€/m² (premium)
 - Carrelage pose comprise: 40-60€/m² (éco) | 60-90€/m² (standard) | 90-150€/m² (premium)
-- Électricité complète maison: 80-100€/m² (éco) | 100-150€/m² (standard) | 150-250€/m² (premium)
+- Électricité complète: 80-100€/m² (éco) | 100-150€/m² (standard) | 150-250€/m² (premium)
 - Plomberie complète: 100-150€/m² (éco) | 150-250€/m² (standard) | 250-400€/m² (premium)
 - Isolation combles: 30-50€/m² (éco) | 50-80€/m² (standard) | 80-120€/m² (premium)
 - Fenêtres PVC double vitrage: 300-500€/unité (éco) | 500-800€/unité (standard) | 800-1500€/unité (premium)
 - Porte d'entrée: 800-1500€ (éco) | 1500-3000€ (standard) | 3000-6000€ (premium)
 
-Utilise ces tarifs de référence et applique le multiplicateur ${multiplier}x pour le scénario ${scenarioType}.
-
-Génère un devis professionnel structuré en JSON avec cette structure EXACTE:
+**FORMAT DE SORTIE - STRUCTURE JSON EXACTE:**
 
 {
   "estimate_number": "DEVIS-2024-001",
@@ -166,10 +178,18 @@ Génère un devis professionnel structuré en JSON avec cette structure EXACTE:
   ],
   "total_ht": 5000.00,
   "total_tva": 1000.00,
-  "total_ttc": 6000.00
+  "total_ttc": 6000.00,
+  "scenario_justification": "Explication en 2-3 phrases: Pourquoi ce scénario ${scenarioType} coûte ce prix par rapport aux autres? Quelles sont les différences qui justifient l'écart de prix? Quel est le rapport qualité-prix?"
 }
 
-IMPORTANT: Réponds UNIQUEMENT avec du JSON valide et complet.`;
+**RÈGLES STRICTES:**
+1. Respecte les écarts de prix entre scénarios (éco = base, standard = +30-40%, premium = +40-60% vs standard)
+2. Détaille chaque poste avec quantités et prix unitaires réalistes basés sur les tarifs de référence
+3. Ajoute le champ "scenario_justification" avec 2-3 phrases expliquant ce scénario
+4. Les descriptions doivent être techniques et précises (matériaux, dimensions, techniques)
+5. Organise en catégories cohérentes (Gros œuvre, Second œuvre, Finitions, etc.)
+
+IMPORTANT: Réponds UNIQUEMENT avec du JSON valide et complet incluant le champ scenario_justification.`;
 
     // Essayer les modèles avec fallback automatique
     let llmData;
@@ -403,6 +423,7 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide et complet.`;
         discount_amount: estimateData.discount_amount || 0,
         discount_percent: estimateData.discount_percent || 0,
         model_used: usedModel.display_name,
+        scenario_justification: estimateData.scenario_justification || null,
       })
       .select()
       .single();

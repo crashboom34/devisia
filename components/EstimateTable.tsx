@@ -52,6 +52,7 @@ interface EstimateData {
   discount_amount?: number;
   discount_percent?: number;
   model_used?: string;
+  scenario_justification?: string;
 }
 
 interface EstimateTableProps {
@@ -167,6 +168,14 @@ export default function EstimateTable({ estimate, projectTitle }: EstimateTableP
             )}
           </div>
         </div>
+
+        {estimate.scenario_justification && (
+          <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3 sm:p-4">
+            <p className="text-xs sm:text-sm text-blue-900 dark:text-blue-100">
+              <span className="font-semibold">💡 Pourquoi ce scénario?</span> {estimate.scenario_justification}
+            </p>
+          </div>
+        )}
 
         <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)} className="w-full">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
