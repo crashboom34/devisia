@@ -308,16 +308,18 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
                   <Edit2 className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
                   Modifier
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowRegenerateDialog(true)}
-                  className="text-xs sm:text-sm border-blue-300 text-blue-700 hover:bg-blue-50"
-                  title="Régénérer avec un modèle IA plus performant"
-                >
-                  <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
-                  Meilleur modèle
-                </Button>
+                {projectDescription && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowRegenerateDialog(true)}
+                    className="text-xs sm:text-sm border-blue-300 text-blue-700 hover:bg-blue-50"
+                    title="Régénérer avec un modèle IA plus performant"
+                  >
+                    <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+                    Meilleur modèle
+                  </Button>
+                )}
               </>
             ) : (
               <>
