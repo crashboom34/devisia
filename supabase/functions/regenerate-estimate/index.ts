@@ -63,11 +63,12 @@ Deno.serve(async (req: Request) => {
     const regenerationCount = (oldEstimate.regeneration_count || 0) + 1;
 
     // Appeler la fonction de génération avec le nouveau modèle
+    // IMPORTANT: Passer le token utilisateur, pas la clé service
     const generateUrl = `${supabaseUrl}/functions/v1/generate-estimate`;
     const generateResponse = await fetch(generateUrl, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${supabaseKey}`,
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
