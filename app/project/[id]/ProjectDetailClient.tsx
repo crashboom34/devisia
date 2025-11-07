@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, FileText, Loader2, Pencil, Trash2 } from 'lucide-react';
+import { ArrowLeft, FileText, Loader2, Pencil, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,6 +43,7 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
   const [estimates, setEstimates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedEstimate, setExpandedEstimate] = useState<string | null>(null);
+  const [expandedScenarios, setExpandedScenarios] = useState<Set<string>>(new Set(['eco']));
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editTitle, setEditTitle] = useState('');
@@ -149,6 +150,34 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
     }
   };
 
+  const toggleScenario = (scenarioType: string) => {
+    const newExpanded = new Set(expandedScenarios);
+    if (newExpanded.has(scenarioType)) {
+      newExpanded.delete(scenarioType);
+    } else {
+      newExpanded.add(scenarioType);
+    }
+    setExpandedScenarios(newExpanded);
+  };
+
+  const getScenarioLabel = (type: string) => {
+    switch (type) {
+      case 'eco': return 'Scénario Économique';
+      case 'standard': return 'Scénario Standard';
+      case 'premium': return 'Scénario Premium';
+      default: return type;
+    }
+  };
+
+  const getScenarioColor = (type: string) => {
+    switch (type) {
+      case 'eco': return 'bg-green-100 text-green-800 border-green-300';
+      case 'standard': return 'bg-blue-100 text-blue-800 border-blue-300';
+      case 'premium': return 'bg-purple-100 text-purple-800 border-purple-300';
+      default: return 'bg-gray-100 text-gray-800 border-gray-300';
+    }
+  };
+
   const handleDeleteProject = async () => {
     if (!project) return;
 
@@ -246,35 +275,89 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
                 </CardContent>
               </Card>
             ) : (
-              <div className="space-y-6">
-                {estimates.map((estimate) => (
-                  <EstimateTable
-                    key={estimate.id}
-                    estimate={{
-                      id: estimate.id,
-                      scenario_type: estimate.scenario_type,
-                      estimate_number: estimate.estimate_number,
-                      client_name: estimate.client_name,
-                      estimate_date: estimate.estimate_date,
-                      validity_days: estimate.validity_days,
-                      payment_terms: estimate.payment_terms,
-                      execution_delay: estimate.execution_delay,
-                      deposit_required: estimate.deposit_required,
-                      special_conditions: estimate.special_conditions,
-                      categories: estimate.categories || [],
-                      total_ht: estimate.total_ht || 0,
-                      total_tva: estimate.total_tva || 0,
-                      total_ttc: estimate.total_ttc || estimate.total_amount || 0,
-                      discount_amount: estimate.discount_amount,
-                      discount_percent: estimate.discount_percent,
-                      model_used: estimate.model_used,
-                      scenario_justification: estimate.scenario_justification,
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-semibold">Devis Générés</h2>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (expandedScenarios.size === estimates.length) {
+                        setExpandedScenarios(new Set());
+                      } else {
+                        setExpandedScenarios(new Set(estimates.map(e => e.scenario_type)));
+                      }
                     }}
-                    projectTitle={project.title}
-                    projectDescription={project.description}
-                    onRegenerate={() => loadProject(user.id)}
-                  />
-                ))}
+                    className="text-xs"
+                  >
+                    {expandedScenarios.size === estimates.length ? 'Tout replier' : 'Tout déplier'}
+                  </Button>
+                </div>
+                {estimates.map((estimate) => {
+                  const isExpanded = expandedScenarios.has(estimate.scenario_type);
+                  return (
+                    <div key={estimate.id} className="border rounded-lg overflow-hidden">
+                      <button
+                        onClick={() => toggleScenario(estimate.scenario_type)}
+                        className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`px-3 py-1 rounded-full border ${getScenarioColor(estimate.scenario_type)}`}>
+                            {getScenarioLabel(estimate.scenario_type)}
+                          </div>
+                          <span className="font-bold text-lg">
+                            {(estimate.total_ttc || estimate.total_amount || 0).toLocaleString('fr-FR', {
+                              style: 'currency',
+                              currency: 'EUR'
+                            })}
+                          </span>
+                          {estimate.model_used && (
+                            <span className="text-xs text-gray-500 hidden sm:inline">
+                              • {estimate.model_used}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {isExpanded ? (
+                            <ChevronUp className="h-5 w-5 text-gray-500" />
+                          ) : (
+                            <ChevronDown className="h-5 w-5 text-gray-500" />
+                          )}
+                        </div>
+                      </button>
+
+                      {isExpanded && (
+                        <div className="border-t">
+                          <EstimateTable
+                            estimate={{
+                              id: estimate.id,
+                              scenario_type: estimate.scenario_type,
+                              estimate_number: estimate.estimate_number,
+                              client_name: estimate.client_name,
+                              estimate_date: estimate.estimate_date,
+                              validity_days: estimate.validity_days,
+                              payment_terms: estimate.payment_terms,
+                              execution_delay: estimate.execution_delay,
+                              deposit_required: estimate.deposit_required,
+                              special_conditions: estimate.special_conditions,
+                              categories: estimate.categories || [],
+                              total_ht: estimate.total_ht || 0,
+                              total_tva: estimate.total_tva || 0,
+                              total_ttc: estimate.total_ttc || estimate.total_amount || 0,
+                              discount_amount: estimate.discount_amount,
+                              discount_percent: estimate.discount_percent,
+                              model_used: estimate.model_used,
+                              scenario_justification: estimate.scenario_justification,
+                            }}
+                            projectTitle={project.title}
+                            projectDescription={project.description}
+                            onRegenerate={() => loadProject(user.id)}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

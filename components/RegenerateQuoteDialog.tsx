@@ -60,12 +60,15 @@ export default function RegenerateQuoteDialog({
 
   useEffect(() => {
     if (open) {
+      setError(null);
+      setIsRegenerating(false);
       loadModels();
     }
   }, [open]);
 
   const loadModels = async () => {
     setLoadingModels(true);
+    setError(null);
     try {
       const { data, error } = await supabase
         .from('ai_models')
@@ -74,17 +77,27 @@ export default function RegenerateQuoteDialog({
         .order('is_free', { ascending: false })
         .order('display_name');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw new Error(`Erreur de chargement: ${error.message}`);
+      }
 
-      setModels(data || []);
+      if (!data || data.length === 0) {
+        throw new Error('Aucun modèle IA disponible. Veuillez contacter l\'administrateur.');
+      }
+
+      setModels(data);
 
       // Pré-sélectionner GPT-4o Mini si disponible, sinon le premier modèle payant
-      const gpt4oMini = data?.find(m => m.model_id.includes('gpt-4o-mini'));
-      const firstPaid = data?.find(m => !m.is_free);
-      setSelectedModel(gpt4oMini?.id || firstPaid?.id || data?.[0]?.id || '');
+      const gpt4oMini = data.find(m => m.model_id.includes('gpt-4o-mini'));
+      const firstPaid = data.find(m => !m.is_free);
+      const defaultModel = gpt4oMini?.id || firstPaid?.id || data[0]?.id || '';
+
+      setSelectedModel(defaultModel);
     } catch (err) {
       console.error('Error loading models:', err);
-      setError('Erreur lors du chargement des modèles');
+      const errorMessage = err instanceof Error ? err.message : 'Erreur lors du chargement des modèles';
+      setError(errorMessage);
     } finally {
       setLoadingModels(false);
     }
