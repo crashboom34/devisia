@@ -22,6 +22,7 @@ supabase functions deploy generate-estimate
 ## Modifications apportées
 
 La fonction mise à jour inclut:
+- **CORRECTION CRITIQUE**: Récupération de la clé API OpenRouter depuis `system_config` (voir `API_KEY_FIX.md`)
 - **Prompt professionnel optimisé**: Économiste du bâtiment 15+ ans, ratios 2024-2025, coefficients régionaux (voir `PROFESSIONAL_PROMPT.md` et `PROMPT_OPTIMIZATION.md`)
 - **Système de fallback automatique**: Essaie plusieurs modèles si le premier échoue (voir `MODEL_FALLBACK.md`)
 - **Gestion du rate limiting**: Détection automatique des erreurs 429 et basculement vers un autre modèle
@@ -31,7 +32,7 @@ La fonction mise à jour inclut:
 - **Justifications des scénarios**: Chaque devis explique son rapport qualité-prix
 - **Structure en 5 catégories**: Gros œuvre, Second œuvre, Finitions, Aménagements ext, Frais annexes
 - **Traçabilité complète**: Nom du modèle IA et température utilisés
-- **Logging amélioré**: Déboguer facilement les problèmes de génération
+- **Logging ultra-détaillé**: Déboguer facilement les problèmes de génération
 - Utilisation de `preferred_model_id` (cohérent avec l'interface)
 - Utilisation de `.maybeSingle()` pour éviter les erreurs
 - **Nouveau modèle par défaut**: Qwen 2 7B (plus stable que Gemini 2.0 Flash)

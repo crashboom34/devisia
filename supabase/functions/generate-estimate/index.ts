@@ -50,7 +50,7 @@ Deno.serve(async (req: Request) => {
 
     // Fonction pour obtenir les modèles de fallback (gratuits ou très économiques)
     const getFallbackModels = async () => {
-      const { data: fallbackModels } = await supabase
+      const { data: fallbackModels, error: fallbackError } = await supabase
         .from("ai_models")
         .select("*")
         .eq("is_active", true)
@@ -58,6 +58,10 @@ Deno.serve(async (req: Request) => {
         .order("cost_per_1k_tokens_input", { ascending: true })
         .limit(5);
 
+      if (fallbackError) {
+        console.error("Error fetching fallback models:", fallbackError);
+      }
+      console.log(`Found ${fallbackModels?.length || 0} fallback models`);
       return fallbackModels || [];
     };
 
@@ -94,8 +98,29 @@ Deno.serve(async (req: Request) => {
       .maybeSingle();
 
     if (modelError || !model) {
-      throw new Error("Invalid model selected");
+      console.error("Model selection error:", modelError);
+      console.error("Selected model ID:", selectedModelId);
+      throw new Error(`Invalid model selected: ${modelError?.message || 'Model not found'}`);
     }
+
+    console.log(`Starting generation with model: ${model.display_name} (${model.model_id})`);
+    console.log(`Temperature: ${apiTemperature}`);
+
+    // Récupérer la clé API OpenRouter depuis system_config
+    const { data: configData } = await supabase
+      .from("system_config")
+      .select("value")
+      .eq("key", "openrouter_api_key")
+      .maybeSingle();
+
+    const openrouterApiKey = configData?.value || Deno.env.get("OPENROUTER_API_KEY");
+
+    if (!openrouterApiKey) {
+      console.error("No OpenRouter API key found in system_config or environment");
+      throw new Error("OpenRouter API key not configured");
+    }
+
+    console.log("OpenRouter API key found:", openrouterApiKey ? "Yes" : "No");
 
     // Liste des modèles à essayer (modèle sélectionné + fallbacks)
     let modelsToTry = [model];
@@ -107,6 +132,8 @@ Deno.serve(async (req: Request) => {
         modelsToTry.push(fallback);
       }
     }
+
+    console.log(`Will try ${modelsToTry.length} models:`, modelsToTry.map(m => m.display_name).join(", "));
 
     const priceMultipliers = {
       eco: 0.7,
@@ -206,10 +233,19 @@ RÉPONDS UNIQUEMENT EN JSON VALIDE (sans texte avant ou après).`;
         console.log(`Trying model: ${currentModel.display_name} (${currentModel.model_id})`);
 
         const llmApiUrl = currentModel.api_endpoint || "https://openrouter.ai/api/v1/chat/completions";
-        const llmApiKey = currentModel.api_key || Deno.env.get("OPENROUTER_API_KEY");
+
+        // Utiliser la clé du modèle, ou la clé OpenRouter pour les modèles OpenRouter, ou l'env var
+        let llmApiKey = currentModel.api_key;
+        if (!llmApiKey && currentModel.provider === "openrouter") {
+          llmApiKey = openrouterApiKey;
+        }
+        if (!llmApiKey) {
+          llmApiKey = Deno.env.get("OPENROUTER_API_KEY");
+        }
 
         if (!llmApiKey) {
-          console.log(`No API key for ${currentModel.display_name}, skipping...`);
+          console.log(`No API key for ${currentModel.display_name} (provider: ${currentModel.provider}), skipping...`);
+          lastError = `No API key available for ${currentModel.display_name}`;
           continue;
         }
 
@@ -239,6 +275,8 @@ RÉPONDS UNIQUEMENT EN JSON VALIDE (sans texte avant ou après).`;
           max_tokens: 6000,
         };
 
+        console.log(`Sending request to: ${llmApiUrl}`);
+
         const startTime = Date.now();
         const llmResponse = await fetch(llmApiUrl, {
           method: "POST",
@@ -247,9 +285,12 @@ RÉPONDS UNIQUEMENT EN JSON VALIDE (sans texte avant ou après).`;
         });
         responseTime = Date.now() - startTime;
 
+        console.log(`Response status: ${llmResponse.status}, Time: ${responseTime}ms`);
+
         if (!llmResponse.ok) {
           const errorText = await llmResponse.text();
-          lastError = errorText;
+          lastError = `HTTP ${llmResponse.status}: ${errorText}`;
+          console.error(`Error response:`, lastError);
 
           // Vérifier si c'est une erreur de rate limit (429)
           if (llmResponse.status === 429) {
@@ -269,15 +310,19 @@ RÉPONDS UNIQUEMENT EN JSON VALIDE (sans texte avant ou après).`;
         break;
 
       } catch (error) {
-        console.error(`Error with model ${currentModel.display_name}:`, error);
-        lastError = error.message;
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        console.error(`Error with model ${currentModel.display_name}:`, errorMsg);
+        console.error("Full error object:", JSON.stringify(error, null, 2));
+        lastError = errorMsg || "Fetch error";
         continue;
       }
     }
 
     // Si aucun modèle n'a fonctionné
     if (!content) {
-      throw new Error(`All models failed. Last error: ${lastError || "Unknown error"}`);
+      const errorDetails = lastError || "No models available or all models failed without error message";
+      console.error("All models failed. Details:", errorDetails);
+      throw new Error(`All models failed. Last error: ${errorDetails}`);
     }
 
     let estimateData;
