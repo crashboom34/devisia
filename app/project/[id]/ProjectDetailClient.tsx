@@ -271,6 +271,8 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
                       scenario_justification: estimate.scenario_justification,
                     }}
                     projectTitle={project.title}
+                    projectDescription={project.description}
+                    onRegenerate={() => loadProject(user.id)}
                   />
                 ))}
               </div>

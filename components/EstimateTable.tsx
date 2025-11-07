@@ -5,9 +5,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Eye, EyeOff, Download, ChevronDown, ChevronUp, Edit2, Save, X, Trash2 } from 'lucide-react';
+import { Eye, EyeOff, Download, ChevronDown, ChevronUp, Edit2, Save, X, Trash2, RefreshCw, History } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import EditableEstimateRow from './EditableEstimateRow';
+import RegenerateQuoteDialog from './RegenerateQuoteDialog';
 
 type ViewMode = 'client' | 'detailed' | 'internal';
 
@@ -60,14 +61,17 @@ interface EstimateData {
 interface EstimateTableProps {
   estimate: EstimateData;
   projectTitle?: string;
+  projectDescription?: string;
+  onRegenerate?: () => void;
 }
 
-export default function EstimateTable({ estimate, projectTitle }: EstimateTableProps) {
+export default function EstimateTable({ estimate, projectTitle, projectDescription, onRegenerate }: EstimateTableProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('detailed');
   const [expandedCategories, setExpandedCategories] = useState<Set<number>>(new Set([0]));
   const [isEditing, setIsEditing] = useState(false);
   const [editedEstimate, setEditedEstimate] = useState<EstimateData>(estimate);
   const [isSaving, setIsSaving] = useState(false);
+  const [showRegenerateDialog, setShowRegenerateDialog] = useState(false);
 
   const toggleCategory = (index: number) => {
     const newExpanded = new Set(expandedCategories);
@@ -292,17 +296,29 @@ export default function EstimateTable({ estimate, projectTitle }: EstimateTableP
             )}
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {!isEditing ? (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsEditing(true)}
-                className="text-xs sm:text-sm"
-              >
-                <Edit2 className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
-                Modifier
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsEditing(true)}
+                  className="text-xs sm:text-sm"
+                >
+                  <Edit2 className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+                  Modifier
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowRegenerateDialog(true)}
+                  className="text-xs sm:text-sm border-blue-300 text-blue-700 hover:bg-blue-50"
+                  title="Régénérer avec un modèle IA plus performant"
+                >
+                  <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+                  Meilleur modèle
+                </Button>
+              </>
             ) : (
               <>
                 <Button
@@ -599,6 +615,23 @@ export default function EstimateTable({ estimate, projectTitle }: EstimateTableP
           </div>
         )}
       </CardContent>
+
+      {projectDescription && (
+        <RegenerateQuoteDialog
+          open={showRegenerateDialog}
+          onOpenChange={setShowRegenerateDialog}
+          estimateId={estimate.id}
+          currentModel={estimate.model_used || 'Unknown'}
+          currentTotal={estimate.total_ttc}
+          scenarioType={estimate.scenario_type}
+          projectDescription={projectDescription}
+          onSuccess={() => {
+            if (onRegenerate) {
+              onRegenerate();
+            }
+          }}
+        />
+      )}
     </Card>
   );
 }
