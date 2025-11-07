@@ -282,15 +282,16 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      if (expandedScenarios.size === estimates.length) {
+                      const uniqueScenarios = new Set(estimates.map(e => e.scenario_type));
+                      if (expandedScenarios.size === uniqueScenarios.size) {
                         setExpandedScenarios(new Set());
                       } else {
-                        setExpandedScenarios(new Set(estimates.map(e => e.scenario_type)));
+                        setExpandedScenarios(uniqueScenarios);
                       }
                     }}
                     className="text-xs"
                   >
-                    {expandedScenarios.size === estimates.length ? 'Tout replier' : 'Tout déplier'}
+                    {expandedScenarios.size === new Set(estimates.map(e => e.scenario_type)).size ? 'Tout replier' : 'Tout déplier'}
                   </Button>
                 </div>
                 {estimates.map((estimate) => {
