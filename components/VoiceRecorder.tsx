@@ -27,6 +27,7 @@ export default function VoiceRecorder({ onTranscriptComplete, placeholder, initi
   const isListeningRef = useRef<boolean>(false);
   const isPausedRef = useRef<boolean>(false);
   const isRecognitionActiveRef = useRef<boolean>(false);
+  const baseTextRef = useRef<string>('');
 
   useEffect(() => {
     if (initialValue) {
@@ -71,23 +72,18 @@ export default function VoiceRecorder({ onTranscriptComplete, placeholder, initi
 
         console.log('[VoiceRecorder] Using ONLY last result[' + lastIndex + '] - isFinal:', isLastFinal, '- text:', lastTranscript);
 
-        let finalTranscript = '';
-        let interimTranscript = '';
+        let sessionTranscript = '';
+        let sessionInterim = '';
 
         if (isLastFinal) {
-          // ✅ Seul le dernier résultat final est sauvegardé
-          finalTranscript = lastTranscript;
+          sessionTranscript = lastTranscript.trim();
         } else {
-          // ✅ Seul le dernier résultat intermédiaire est affiché (live)
-          interimTranscript = lastTranscript;
+          sessionInterim = lastTranscript.trim();
         }
 
-        finalTranscript = finalTranscript.trim();
-        interimTranscript = interimTranscript.trim();
-
-        // ✅ FILTRE ANTI-DUPLICATION AU NIVEAU DES MOTS (sécurité supplémentaire)
-        if (finalTranscript) {
-          const words = finalTranscript.split(/\s+/);
+        // ✅ FILTRE ANTI-DUPLICATION AU NIVEAU DES MOTS (sécurité)
+        if (sessionTranscript) {
+          const words = sessionTranscript.split(/\s+/);
           const cleanedWords: string[] = [];
 
           for (const word of words) {
@@ -99,18 +95,31 @@ export default function VoiceRecorder({ onTranscriptComplete, placeholder, initi
             }
           }
 
-          finalTranscript = cleanedWords.join(' ');
-          console.log('[VoiceRecorder] Final cleaned transcript:', finalTranscript);
+          sessionTranscript = cleanedWords.join(' ');
+          console.log('[VoiceRecorder] Session cleaned transcript:', sessionTranscript);
         }
 
-        // ✅ REMPLACER COMPLÈTEMENT le transcript (PAS de concaténation !)
-        if (finalTranscript) {
-          console.log('[VoiceRecorder] Setting transcript to:', finalTranscript);
-          setTranscript(finalTranscript);
+        // ✅ COMBINER baseText + sessionTranscript
+        const baseText = baseTextRef.current.trim();
+        const combined = baseText && sessionTranscript
+          ? baseText + ' ' + sessionTranscript
+          : baseText || sessionTranscript;
+
+        const combinedInterim = baseText && sessionInterim
+          ? baseText + ' ' + sessionInterim
+          : baseText || sessionInterim;
+
+        console.log('[VoiceRecorder] baseText:', baseText);
+        console.log('[VoiceRecorder] sessionTranscript:', sessionTranscript);
+        console.log('[VoiceRecorder] combined:', combined);
+
+        // ✅ Mettre à jour l'affichage (base + session)
+        if (sessionTranscript) {
+          setTranscript(combined);
           setInterimTranscript('');
-        } else {
-          console.log('[VoiceRecorder] Setting interim to:', interimTranscript);
-          setInterimTranscript(interimTranscript);
+        } else if (sessionInterim) {
+          setTranscript(baseText);
+          setInterimTranscript(combinedInterim);
         }
 
         console.log('[VoiceRecorder] ========================================');
@@ -222,7 +231,12 @@ export default function VoiceRecorder({ onTranscriptComplete, placeholder, initi
 
     if (recognitionRef.current && !isListening && !isRecognitionActiveRef.current) {
       console.log('[VoiceRecorder] startListening - Initializing...');
-      setTranscript('');
+
+      // ✅ Préserver le texte existant comme baseText
+      const currentText = transcript.trim();
+      baseTextRef.current = currentText;
+      console.log('[VoiceRecorder] startListening - baseText set to:', currentText);
+
       setInterimTranscript('');
       setIsValidated(false);
       setIsEditing(false);
@@ -314,13 +328,16 @@ export default function VoiceRecorder({ onTranscriptComplete, placeholder, initi
   };
 
   const handleReset = () => {
+    console.log('[VoiceRecorder] handleReset - Clearing everything');
     setTranscript('');
     setInterimTranscript('');
     setIsValidated(false);
     setIsEditing(false);
+    baseTextRef.current = '';
     if (isListening) {
       stopListening();
     }
+    onTranscriptComplete('');
   };
 
   const handleEdit = () => {
