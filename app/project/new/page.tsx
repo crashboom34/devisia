@@ -175,9 +175,8 @@ export default function NewProjectPage() {
                 <div className="space-y-2 sm:space-y-3">
                   <Label className="text-sm sm:text-base">Titre du Projet</Label>
                   <VoiceRecorder
-                    key={`title-${formData.title}`}
-                    initialValue={formData.title}
-                    onTranscriptComplete={(text) => setFormData({ ...formData, title: text })}
+                    value={formData.title}
+                    onChange={(text) => setFormData({ ...formData, title: text })}
                     placeholder="Dictez le titre de votre projet"
                   />
                 </div>
@@ -185,9 +184,8 @@ export default function NewProjectPage() {
                 <div className="space-y-2 sm:space-y-3">
                   <Label className="text-sm sm:text-base">Description du Projet</Label>
                   <VoiceRecorder
-                    key={`description-${formData.description}`}
-                    initialValue={formData.description}
-                    onTranscriptComplete={(text) => setFormData({ ...formData, description: text })}
+                    value={formData.description}
+                    onChange={(text) => setFormData({ ...formData, description: text })}
                     placeholder="Dictez la description complète de votre projet"
                   />
                 </div>

@@ -7,15 +7,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Mic, MicOff, Pause, Play, Check, RotateCcw, Edit2 } from 'lucide-react';
 
 interface VoiceRecorderProps {
-  onTranscriptComplete: (text: string) => void;
+  value: string;
+  onChange: (text: string) => void;
   placeholder?: string;
-  initialValue?: string;
 }
 
-export default function VoiceRecorder({ onTranscriptComplete, placeholder, initialValue = '' }: VoiceRecorderProps) {
+export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRecorderProps) {
   const [isListening, setIsListening] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
-  const [transcript, setTranscript] = useState(initialValue);
+  const [transcript, setTranscript] = useState(value);
   const [interimTranscript, setInterimTranscript] = useState('');
   const [isSupported, setIsSupported] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -30,11 +30,16 @@ export default function VoiceRecorder({ onTranscriptComplete, placeholder, initi
   const baseTextRef = useRef<string>('');
 
   useEffect(() => {
-    if (initialValue) {
-      setTranscript(initialValue);
+    setTranscript(value);
+  }, [value]);
+
+  useEffect(() => {
+    if (value) {
       setIsValidated(true);
+    } else {
+      setIsValidated(false);
     }
-  }, [initialValue]);
+  }, [value]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -113,11 +118,13 @@ export default function VoiceRecorder({ onTranscriptComplete, placeholder, initi
         console.log('[VoiceRecorder] sessionTranscript:', sessionTranscript);
         console.log('[VoiceRecorder] combined:', combined);
 
-        // ✅ Mettre à jour l'affichage (base + session)
+        // ✅ Mettre à jour l'affichage ET propager au parent
         if (sessionTranscript) {
           setTranscript(combined);
           setInterimTranscript('');
+          onChange(combined);  // Propager au parent immédiatement
         } else if (sessionInterim) {
+          // Pour l'interim, on affiche mais ne propage pas encore
           setTranscript(baseText);
           setInterimTranscript(combinedInterim);
         }
@@ -232,10 +239,11 @@ export default function VoiceRecorder({ onTranscriptComplete, placeholder, initi
     if (recognitionRef.current && !isListening && !isRecognitionActiveRef.current) {
       console.log('[VoiceRecorder] startListening - Initializing...');
 
-      // ✅ Préserver le texte existant comme baseText
-      const currentText = transcript.trim();
+      // ✅ Utiliser la VRAIE valeur du champ parent comme baseText
+      const currentText = value.trim();
       baseTextRef.current = currentText;
       console.log('[VoiceRecorder] startListening - baseText set to:', currentText);
+      console.log('[VoiceRecorder] startListening - This is the REAL parent value');
 
       setInterimTranscript('');
       setIsValidated(false);
@@ -320,7 +328,7 @@ export default function VoiceRecorder({ onTranscriptComplete, placeholder, initi
   const handleValidate = () => {
     const finalText = transcript.trim();
     if (finalText) {
-      onTranscriptComplete(finalText);
+      onChange(finalText);
       setIsValidated(true);
       setIsEditing(false);
       stopListening();
@@ -337,7 +345,7 @@ export default function VoiceRecorder({ onTranscriptComplete, placeholder, initi
     if (isListening) {
       stopListening();
     }
-    onTranscriptComplete('');
+    onChange('');
   };
 
   const handleEdit = () => {
@@ -348,7 +356,7 @@ export default function VoiceRecorder({ onTranscriptComplete, placeholder, initi
   const handleSaveEdit = () => {
     const finalText = transcript.trim();
     if (finalText) {
-      onTranscriptComplete(finalText);
+      onChange(finalText);
       setIsValidated(true);
       setIsEditing(false);
     }
