@@ -25,6 +25,8 @@ export default function VoiceRecorder({ onTranscriptComplete, placeholder, initi
   const recognitionRef = useRef<any>(null);
   const processedResultIndexRef = useRef<number>(0);
   const isRestartingRef = useRef<boolean>(false);
+  const isListeningRef = useRef<boolean>(false);
+  const isPausedRef = useRef<boolean>(false);
 
   useEffect(() => {
     if (initialValue) {
@@ -98,10 +100,13 @@ export default function VoiceRecorder({ onTranscriptComplete, placeholder, initi
       };
 
       recognition.onend = () => {
-        if (isListening && !isPaused && !isRestartingRef.current) {
+        const currentIsListening = isListeningRef.current;
+        const currentIsPaused = isPausedRef.current;
+
+        if (currentIsListening && !currentIsPaused && !isRestartingRef.current) {
           isRestartingRef.current = true;
           setTimeout(() => {
-            if (isListening && !isPaused) {
+            if (isListeningRef.current && !isPausedRef.current) {
               try {
                 recognition.start();
               } catch (error) {
@@ -121,7 +126,7 @@ export default function VoiceRecorder({ onTranscriptComplete, placeholder, initi
         recognitionRef.current.stop();
       }
     };
-  }, [isListening, isPaused]);
+  }, []);
 
   const startListening = () => {
     if (recognitionRef.current && !isListening) {
@@ -135,7 +140,9 @@ export default function VoiceRecorder({ onTranscriptComplete, placeholder, initi
       try {
         recognitionRef.current.start();
         setIsListening(true);
+        isListeningRef.current = true;
         setIsPaused(false);
+        isPausedRef.current = false;
       } catch (error) {
         console.error('Failed to start recognition:', error);
         setErrorMessage('Impossible de démarrer la reconnaissance vocale. Assurez-vous d\'être en HTTPS sur mobile.');
@@ -148,6 +155,7 @@ export default function VoiceRecorder({ onTranscriptComplete, placeholder, initi
       isRestartingRef.current = false;
       recognitionRef.current.stop();
       setIsPaused(true);
+      isPausedRef.current = true;
     }
   };
 
@@ -157,6 +165,7 @@ export default function VoiceRecorder({ onTranscriptComplete, placeholder, initi
       try {
         recognitionRef.current.start();
         setIsPaused(false);
+        isPausedRef.current = false;
       } catch (error) {
         console.error('Failed to resume recognition:', error);
         setErrorMessage('Impossible de reprendre la reconnaissance vocale.');
@@ -169,7 +178,9 @@ export default function VoiceRecorder({ onTranscriptComplete, placeholder, initi
       isRestartingRef.current = false;
       recognitionRef.current.stop();
       setIsListening(false);
+      isListeningRef.current = false;
       setIsPaused(false);
+      isPausedRef.current = false;
       setInterimTranscript('');
     }
   };
