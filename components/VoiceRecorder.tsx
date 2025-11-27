@@ -27,6 +27,7 @@ export default function VoiceRecorder({ onTranscriptComplete, placeholder, initi
   const isRestartingRef = useRef<boolean>(false);
   const isListeningRef = useRef<boolean>(false);
   const isPausedRef = useRef<boolean>(false);
+  const isRecognitionActiveRef = useRef<boolean>(false);
 
   useEffect(() => {
     if (initialValue) {
@@ -49,17 +50,28 @@ export default function VoiceRecorder({ onTranscriptComplete, placeholder, initi
       recognition.interimResults = true;
       recognition.lang = 'fr-FR';
 
+      recognition.onstart = () => {
+        console.log('[VoiceRecorder] onstart - Recognition started');
+        isRecognitionActiveRef.current = true;
+      };
+
       recognition.onresult = (event: any) => {
+        console.log('[VoiceRecorder] onresult - eventIndex:', event.resultIndex, 'resultsLength:', event.results.length, 'processedIndex:', processedResultIndexRef.current);
+
         let interim = '';
         let final = '';
 
         for (let i = event.resultIndex; i < event.results.length; i++) {
           if (i < processedResultIndexRef.current) {
+            console.log('[VoiceRecorder] Skipping already processed result at index:', i);
             continue;
           }
 
           const transcriptPart = event.results[i][0].transcript;
-          if (event.results[i].isFinal) {
+          const isFinal = event.results[i].isFinal;
+          console.log('[VoiceRecorder] Result', i, '- isFinal:', isFinal, '- text:', transcriptPart);
+
+          if (isFinal) {
             final += transcriptPart + ' ';
             processedResultIndexRef.current = i + 1;
           } else {
@@ -68,14 +80,28 @@ export default function VoiceRecorder({ onTranscriptComplete, placeholder, initi
         }
 
         if (final) {
-          setTranscript(prev => prev + final);
+          console.log('[VoiceRecorder] Adding final text:', final);
+          setTranscript(prev => {
+            const newText = prev + final;
+            console.log('[VoiceRecorder] New transcript:', newText);
+            return newText;
+          });
         }
         setInterimTranscript(interim);
       };
 
       recognition.onerror = (event: any) => {
-        console.error('Speech recognition error:', event.error);
+        console.error('[VoiceRecorder] onerror - Error type:', event.error);
+        console.log('[VoiceRecorder] onerror - States:', {
+          isListening: isListeningRef.current,
+          isPaused: isPausedRef.current,
+          isActive: isRecognitionActiveRef.current
+        });
+
+        isRecognitionActiveRef.current = false;
+
         if (event.error === 'no-speech') {
+          console.log('[VoiceRecorder] No speech detected, continuing...');
           return;
         }
 
@@ -97,24 +123,55 @@ export default function VoiceRecorder({ onTranscriptComplete, placeholder, initi
 
         setErrorMessage(message);
         setIsListening(false);
+        isListeningRef.current = false;
+        isPausedRef.current = false;
       };
 
       recognition.onend = () => {
+        console.log('[VoiceRecorder] onend - Recognition ended');
         const currentIsListening = isListeningRef.current;
         const currentIsPaused = isPausedRef.current;
+        const currentIsRestarting = isRestartingRef.current;
 
-        if (currentIsListening && !currentIsPaused && !isRestartingRef.current) {
+        console.log('[VoiceRecorder] onend - States:', {
+          isListening: currentIsListening,
+          isPaused: currentIsPaused,
+          isRestarting: currentIsRestarting,
+          isActive: isRecognitionActiveRef.current
+        });
+
+        isRecognitionActiveRef.current = false;
+
+        if (currentIsListening && !currentIsPaused && !currentIsRestarting) {
+          console.log('[VoiceRecorder] onend - Scheduling restart in 100ms');
           isRestartingRef.current = true;
+
           setTimeout(() => {
-            if (isListeningRef.current && !isPausedRef.current) {
+            console.log('[VoiceRecorder] onend - Restart timeout fired');
+            console.log('[VoiceRecorder] onend - Current states:', {
+              isListening: isListeningRef.current,
+              isPaused: isPausedRef.current,
+              isActive: isRecognitionActiveRef.current
+            });
+
+            if (isListeningRef.current && !isPausedRef.current && !isRecognitionActiveRef.current) {
               try {
+                console.log('[VoiceRecorder] onend - Attempting restart...');
                 recognition.start();
+                console.log('[VoiceRecorder] onend - Restart successful');
               } catch (error) {
-                console.error('Failed to restart recognition:', error);
+                console.error('[VoiceRecorder] onend - Failed to restart:', error);
+                setIsListening(false);
+                isListeningRef.current = false;
+                setErrorMessage('Impossible de redémarrer la reconnaissance vocale.');
               }
+            } else {
+              console.log('[VoiceRecorder] onend - Restart aborted (conditions not met)');
             }
             isRestartingRef.current = false;
           }, 100);
+        } else {
+          console.log('[VoiceRecorder] onend - No restart needed');
         }
       };
 
@@ -129,7 +186,16 @@ export default function VoiceRecorder({ onTranscriptComplete, placeholder, initi
   }, []);
 
   const startListening = () => {
-    if (recognitionRef.current && !isListening) {
+    console.log('[VoiceRecorder] startListening called');
+    console.log('[VoiceRecorder] startListening - Current states:', {
+      isListening: isListeningRef.current,
+      isPaused: isPausedRef.current,
+      isActive: isRecognitionActiveRef.current,
+      hasRecognition: !!recognitionRef.current
+    });
+
+    if (recognitionRef.current && !isListening && !isRecognitionActiveRef.current) {
+      console.log('[VoiceRecorder] startListening - Initializing...');
       setTranscript('');
       setInterimTranscript('');
       setIsValidated(false);
@@ -137,43 +203,68 @@ export default function VoiceRecorder({ onTranscriptComplete, placeholder, initi
       setErrorMessage('');
       processedResultIndexRef.current = 0;
       isRestartingRef.current = false;
+
       try {
+        console.log('[VoiceRecorder] startListening - Calling recognition.start()...');
         recognitionRef.current.start();
+        console.log('[VoiceRecorder] startListening - recognition.start() called successfully');
+
         setIsListening(true);
         isListeningRef.current = true;
         setIsPaused(false);
         isPausedRef.current = false;
-      } catch (error) {
-        console.error('Failed to start recognition:', error);
-        setErrorMessage('Impossible de démarrer la reconnaissance vocale. Assurez-vous d\'être en HTTPS sur mobile.');
+      } catch (error: any) {
+        console.error('[VoiceRecorder] startListening - Error:', error);
+        console.error('[VoiceRecorder] startListening - Error name:', error?.name);
+        console.error('[VoiceRecorder] startListening - Error message:', error?.message);
+
+        isListeningRef.current = false;
+        isRecognitionActiveRef.current = false;
+
+        if (error?.name === 'InvalidStateError') {
+          setErrorMessage('La reconnaissance vocale est déjà en cours. Veuillez attendre.');
+        } else {
+          setErrorMessage('Impossible de démarrer la reconnaissance vocale. Assurez-vous d\'être en HTTPS sur mobile.');
+        }
       }
+    } else {
+      console.log('[VoiceRecorder] startListening - Conditions not met, aborting');
+      if (isListening) console.log('[VoiceRecorder] startListening - Already listening');
+      if (isRecognitionActiveRef.current) console.log('[VoiceRecorder] startListening - Recognition already active');
+      if (!recognitionRef.current) console.log('[VoiceRecorder] startListening - No recognition instance');
     }
   };
 
   const pauseListening = () => {
+    console.log('[VoiceRecorder] pauseListening called');
     if (recognitionRef.current && isListening) {
       isRestartingRef.current = false;
       recognitionRef.current.stop();
       setIsPaused(true);
       isPausedRef.current = true;
+      console.log('[VoiceRecorder] pauseListening - Paused');
     }
   };
 
   const resumeListening = () => {
-    if (recognitionRef.current && isPaused) {
+    console.log('[VoiceRecorder] resumeListening called');
+    if (recognitionRef.current && isPaused && !isRecognitionActiveRef.current) {
       isRestartingRef.current = false;
       try {
+        console.log('[VoiceRecorder] resumeListening - Calling recognition.start()...');
         recognitionRef.current.start();
         setIsPaused(false);
         isPausedRef.current = false;
+        console.log('[VoiceRecorder] resumeListening - Resumed');
       } catch (error) {
-        console.error('Failed to resume recognition:', error);
+        console.error('[VoiceRecorder] resumeListening - Error:', error);
         setErrorMessage('Impossible de reprendre la reconnaissance vocale.');
       }
     }
   };
 
   const stopListening = () => {
+    console.log('[VoiceRecorder] stopListening called');
     if (recognitionRef.current) {
       isRestartingRef.current = false;
       recognitionRef.current.stop();
@@ -181,7 +272,9 @@ export default function VoiceRecorder({ onTranscriptComplete, placeholder, initi
       isListeningRef.current = false;
       setIsPaused(false);
       isPausedRef.current = false;
+      isRecognitionActiveRef.current = false;
       setInterimTranscript('');
+      console.log('[VoiceRecorder] stopListening - Stopped');
     }
   };
 
