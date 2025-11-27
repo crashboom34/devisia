@@ -23,7 +23,6 @@ export default function VoiceRecorder({ onTranscriptComplete, placeholder, initi
   const [errorMessage, setErrorMessage] = useState<string>('');
 
   const recognitionRef = useRef<any>(null);
-  const processedResultIndexRef = useRef<number>(0);
   const isRestartingRef = useRef<boolean>(false);
   const isListeningRef = useRef<boolean>(false);
   const isPausedRef = useRef<boolean>(false);
@@ -56,38 +55,57 @@ export default function VoiceRecorder({ onTranscriptComplete, placeholder, initi
       };
 
       recognition.onresult = (event: any) => {
-        console.log('[VoiceRecorder] onresult - eventIndex:', event.resultIndex, 'resultsLength:', event.results.length, 'processedIndex:', processedResultIndexRef.current);
+        console.log('[VoiceRecorder] onresult - resultIndex:', event.resultIndex, 'totalResults:', event.results.length);
 
-        let interim = '';
-        let final = '';
+        // ✅ NOUVELLE APPROCHE : RECONSTRUCTION COMPLÈTE À CHAQUE FOIS
+        let finalTranscript = '';
+        let interimTranscript = '';
 
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          if (i < processedResultIndexRef.current) {
-            console.log('[VoiceRecorder] Skipping already processed result at index:', i);
-            continue;
-          }
+        // Parcourir TOUS les résultats depuis le début
+        for (let i = 0; i < event.results.length; i++) {
+          const result = event.results[i];
+          const transcript = result[0].transcript;
+          const isFinal = result.isFinal;
 
-          const transcriptPart = event.results[i][0].transcript;
-          const isFinal = event.results[i].isFinal;
-          console.log('[VoiceRecorder] Result', i, '- isFinal:', isFinal, '- text:', transcriptPart);
+          console.log('[VoiceRecorder] Result[' + i + '] - isFinal:', isFinal, '- text:', transcript);
 
           if (isFinal) {
-            final += transcriptPart + ' ';
-            processedResultIndexRef.current = i + 1;
+            // ✅ Ajouter au transcript final
+            finalTranscript += transcript + ' ';
           } else {
-            interim += transcriptPart;
+            // ✅ Les résultats non-finaux sont pour l'affichage live
+            interimTranscript += transcript + ' ';
           }
         }
 
-        if (final) {
-          console.log('[VoiceRecorder] Adding final text:', final);
-          setTranscript(prev => {
-            const newText = prev + final;
-            console.log('[VoiceRecorder] New transcript:', newText);
-            return newText;
-          });
+        // ✅ NETTOYER : Trim et suppression des doublons consécutifs
+        finalTranscript = finalTranscript.trim();
+        interimTranscript = interimTranscript.trim();
+
+        // ✅ FILTRE ANTI-DUPLICATION AU NIVEAU DES MOTS
+        if (finalTranscript) {
+          const words = finalTranscript.split(/\s+/);
+          const cleanedWords: string[] = [];
+
+          for (const word of words) {
+            const lastWord = cleanedWords[cleanedWords.length - 1];
+            // Ne pas ajouter si c'est le même mot que le précédent
+            if (word !== lastWord) {
+              cleanedWords.push(word);
+            } else {
+              console.log('[VoiceRecorder] Removed duplicate word:', word);
+            }
+          }
+
+          finalTranscript = cleanedWords.join(' ');
+          console.log('[VoiceRecorder] Final cleaned transcript:', finalTranscript);
         }
-        setInterimTranscript(interim);
+
+        // ✅ REMPLACER COMPLÈTEMENT le transcript (PAS de concaténation !)
+        setTranscript(finalTranscript);
+        setInterimTranscript(interimTranscript);
+
+        console.log('[VoiceRecorder] State updated - final:', finalTranscript, '- interim:', interimTranscript);
       };
 
       recognition.onerror = (event: any) => {
@@ -201,7 +219,6 @@ export default function VoiceRecorder({ onTranscriptComplete, placeholder, initi
       setIsValidated(false);
       setIsEditing(false);
       setErrorMessage('');
-      processedResultIndexRef.current = 0;
       isRestartingRef.current = false;
 
       try {
