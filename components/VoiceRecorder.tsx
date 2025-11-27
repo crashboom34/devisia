@@ -55,41 +55,43 @@ export default function VoiceRecorder({ onTranscriptComplete, placeholder, initi
       };
 
       recognition.onresult = (event: any) => {
+        console.log('[VoiceRecorder] ========================================');
         console.log('[VoiceRecorder] onresult - resultIndex:', event.resultIndex, 'totalResults:', event.results.length);
 
-        // ✅ NOUVELLE APPROCHE : RECONSTRUCTION COMPLÈTE À CHAQUE FOIS
+        // Log ALL results to understand what the browser sends
+        for (let i = 0; i < event.results.length; i++) {
+          console.log('[VoiceRecorder] Result[' + i + '] - isFinal:', event.results[i].isFinal, '- text:', event.results[i][0].transcript);
+        }
+
+        // ✅ VRAIE SOLUTION : N'UTILISER QUE LE DERNIER RÉSULTAT
+        const lastIndex = event.results.length - 1;
+        const lastResult = event.results[lastIndex];
+        const lastTranscript = lastResult[0].transcript;
+        const isLastFinal = lastResult.isFinal;
+
+        console.log('[VoiceRecorder] Using ONLY last result[' + lastIndex + '] - isFinal:', isLastFinal, '- text:', lastTranscript);
+
         let finalTranscript = '';
         let interimTranscript = '';
 
-        // Parcourir TOUS les résultats depuis le début
-        for (let i = 0; i < event.results.length; i++) {
-          const result = event.results[i];
-          const transcript = result[0].transcript;
-          const isFinal = result.isFinal;
-
-          console.log('[VoiceRecorder] Result[' + i + '] - isFinal:', isFinal, '- text:', transcript);
-
-          if (isFinal) {
-            // ✅ Ajouter au transcript final
-            finalTranscript += transcript + ' ';
-          } else {
-            // ✅ Les résultats non-finaux sont pour l'affichage live
-            interimTranscript += transcript + ' ';
-          }
+        if (isLastFinal) {
+          // ✅ Seul le dernier résultat final est sauvegardé
+          finalTranscript = lastTranscript;
+        } else {
+          // ✅ Seul le dernier résultat intermédiaire est affiché (live)
+          interimTranscript = lastTranscript;
         }
 
-        // ✅ NETTOYER : Trim et suppression des doublons consécutifs
         finalTranscript = finalTranscript.trim();
         interimTranscript = interimTranscript.trim();
 
-        // ✅ FILTRE ANTI-DUPLICATION AU NIVEAU DES MOTS
+        // ✅ FILTRE ANTI-DUPLICATION AU NIVEAU DES MOTS (sécurité supplémentaire)
         if (finalTranscript) {
           const words = finalTranscript.split(/\s+/);
           const cleanedWords: string[] = [];
 
           for (const word of words) {
             const lastWord = cleanedWords[cleanedWords.length - 1];
-            // Ne pas ajouter si c'est le même mot que le précédent
             if (word !== lastWord) {
               cleanedWords.push(word);
             } else {
@@ -102,10 +104,16 @@ export default function VoiceRecorder({ onTranscriptComplete, placeholder, initi
         }
 
         // ✅ REMPLACER COMPLÈTEMENT le transcript (PAS de concaténation !)
-        setTranscript(finalTranscript);
-        setInterimTranscript(interimTranscript);
+        if (finalTranscript) {
+          console.log('[VoiceRecorder] Setting transcript to:', finalTranscript);
+          setTranscript(finalTranscript);
+          setInterimTranscript('');
+        } else {
+          console.log('[VoiceRecorder] Setting interim to:', interimTranscript);
+          setInterimTranscript(interimTranscript);
+        }
 
-        console.log('[VoiceRecorder] State updated - final:', finalTranscript, '- interim:', interimTranscript);
+        console.log('[VoiceRecorder] ========================================');
       };
 
       recognition.onerror = (event: any) => {
