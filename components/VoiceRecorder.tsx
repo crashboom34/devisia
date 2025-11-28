@@ -143,8 +143,18 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
 
         isRecognitionActiveRef.current = false;
 
+        // Ces erreurs ne sont pas des vraies erreurs, juste des événements normaux
         if (event.error === 'no-speech') {
           console.log('[VoiceRecorder] No speech detected, continuing...');
+          return;
+        }
+
+        if (event.error === 'aborted') {
+          console.log('[VoiceRecorder] Recognition aborted (normal behavior)');
+          // Ne pas afficher de message d'erreur, c'est un arrêt normal
+          setIsListening(false);
+          isListeningRef.current = false;
+          isPausedRef.current = false;
           return;
         }
 
@@ -156,9 +166,6 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
             break;
           case 'network':
             message = 'Erreur réseau. Vérifiez votre connexion internet.';
-            break;
-          case 'aborted':
-            message = 'Reconnaissance vocale interrompue.';
             break;
           default:
             message = `Erreur: ${event.error}. Sur mobile, HTTPS est requis pour la reconnaissance vocale.`;
