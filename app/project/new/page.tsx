@@ -15,6 +15,8 @@ import VoiceRecorder from '@/components/VoiceRecorder';
 import ModelSelector from '@/components/ModelSelector';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Slider } from '@/components/ui/slider';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import type { EstimateTemplate } from '@/lib/supabase';
 
 export default function NewProjectPage() {
   const router = useRouter();
@@ -27,9 +29,13 @@ export default function NewProjectPage() {
   });
   const [activeTab, setActiveTab] = useState<'voice' | 'text'>('voice');
   const [temperature, setTemperature] = useState(0.5);
+  const [templates, setTemplates] = useState<EstimateTemplate[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
+  const [loadingTemplates, setLoadingTemplates] = useState(true);
 
   useEffect(() => {
     checkUser();
+    loadTemplates();
   }, []);
 
   const checkUser = async () => {
@@ -38,6 +44,23 @@ export default function NewProjectPage() {
       router.push('/auth/login');
     } else {
       setUser(user);
+    }
+  };
+
+  const loadTemplates = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('estimate_templates')
+        .select('*')
+        .eq('is_active', true)
+        .order('sort_order', { ascending: true });
+
+      if (error) throw error;
+      setTemplates(data || []);
+    } catch (error) {
+      console.error('Error loading templates:', error);
+    } finally {
+      setLoadingTemplates(false);
     }
   };
 
@@ -95,6 +118,7 @@ export default function NewProjectPage() {
             projectDescription: formData.description,
             scenarioType,
             temperature,
+            templateId: selectedTemplateId || undefined,
           }),
         });
 
@@ -196,6 +220,34 @@ export default function NewProjectPage() {
                   />
                 </div>
 
+                <div className="space-y-2 sm:space-y-3">
+                  <Label className="text-sm sm:text-base">Type de Projet (optionnel)</Label>
+                  {loadingTemplates ? (
+                    <div className="flex items-center gap-2 p-3 border rounded-lg bg-gray-50">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span className="text-sm text-gray-600">Chargement des templates...</span>
+                    </div>
+                  ) : (
+                    <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
+                      <SelectTrigger className="text-sm sm:text-base">
+                        <SelectValue placeholder="Sélectionner un type de projet (optionnel)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Aucun template (génération libre)</SelectItem>
+                        {templates.map((template) => (
+                          <SelectItem key={template.id} value={template.template_id}>
+                            {template.name}
+                            <span className="text-xs text-gray-500 ml-2">• {template.category}</span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  <p className="text-xs text-gray-500">
+                    Sélectionnez un type de projet pour structurer automatiquement votre devis selon les standards BTP
+                  </p>
+                </div>
+
                 <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-3 sm:pt-4">
                   <Link href="/dashboard" className="w-full sm:flex-1">
                     <Button type="button" variant="outline" className="w-full text-sm sm:text-base" disabled={loading}>
@@ -252,6 +304,34 @@ export default function NewProjectPage() {
                   />
                   <p className="text-xs sm:text-sm text-gray-500">
                     Plus votre description est détaillée, plus les devis générés seront précis.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="template" className="text-sm sm:text-base">Type de Projet (optionnel)</Label>
+                  {loadingTemplates ? (
+                    <div className="flex items-center gap-2 p-3 border rounded-lg bg-gray-50">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span className="text-sm text-gray-600">Chargement des templates...</span>
+                    </div>
+                  ) : (
+                    <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
+                      <SelectTrigger id="template" className="text-sm sm:text-base">
+                        <SelectValue placeholder="Sélectionner un type de projet (optionnel)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Aucun template (génération libre)</SelectItem>
+                        {templates.map((template) => (
+                          <SelectItem key={template.id} value={template.template_id}>
+                            {template.name}
+                            <span className="text-xs text-gray-500 ml-2">• {template.category}</span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  <p className="text-xs text-gray-500">
+                    Sélectionnez un type de projet pour structurer automatiquement votre devis selon les standards BTP
                   </p>
                 </div>
 

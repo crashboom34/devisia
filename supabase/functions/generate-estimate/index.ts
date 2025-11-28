@@ -13,6 +13,7 @@ interface EstimateRequest {
   scenarioType: "eco" | "standard" | "premium";
   modelId?: string;
   temperature?: number;
+  templateId?: string;
 }
 
 Deno.serve(async (req: Request) => {
@@ -40,13 +41,31 @@ Deno.serve(async (req: Request) => {
       throw new Error("Unauthorized");
     }
 
-    const { projectId, projectDescription, scenarioType, modelId, temperature }: EstimateRequest = await req.json();
+    const { projectId, projectDescription, scenarioType, modelId, temperature, templateId }: EstimateRequest = await req.json();
 
     if (!projectId || !projectDescription || !scenarioType) {
       throw new Error("Missing required fields");
     }
 
     const apiTemperature = temperature !== undefined ? temperature : 0.5;
+
+    // Charger le template si fourni
+    let templateData = null;
+    if (templateId && templateId !== 'none') {
+      const { data: template, error: templateError } = await supabase
+        .from("estimate_templates")
+        .select("*")
+        .eq("template_id", templateId)
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (!templateError && template) {
+        templateData = template;
+        console.log(`Using template: ${template.name} (${template.category})`);
+      } else {
+        console.log(`Template ${templateId} not found or inactive, proceeding without template`);
+      }
+    }
 
     // Fonction pour obtenir les modèles de fallback (gratuits ou très économiques)
     const getFallbackModels = async () => {
@@ -143,11 +162,26 @@ Deno.serve(async (req: Request) => {
 
     const multiplier = priceMultipliers[scenarioType];
 
+    // Construire le contexte du template si disponible
+    let templateContext = '';
+    if (templateData) {
+      templateContext = `\n**TEMPLATE DE RÉFÉRENCE: ${templateData.name}**
+**Catégorie:** ${templateData.category}
+
+**LOTS ET POSTES RECOMMANDÉS:**
+${JSON.stringify(templateData.lots, null, 2)}
+
+UTILISE CE TEMPLATE comme structure de base. Adapte les lots et postes à la description du projet, mais garde la logique et l'organisation du template.
+Pour le scénario ${scenarioType.toUpperCase()}, utilise les spécifications de "gamme_${scenarioType}" de chaque poste.
+
+`;
+    }
+
     const prompt = `Tu es un économiste du bâtiment expérimenté. Génère un devis BTP professionnel et réaliste pour ce projet.
 
 **PROJET:**
 ${projectDescription}
-
+${templateContext}
 **SCÉNARIO:** ${scenarioType.toUpperCase()}
 ${scenarioType === 'eco' ? '- Coef 0.85: Matériaux standards, finitions base' : ''}${scenarioType === 'standard' ? '- Coef 1.00: Matériaux qualité moyenne, finitions soignées' : ''}${scenarioType === 'premium' ? '- Coef 1.25: Matériaux premium, finitions luxueuses' : ''}
 
