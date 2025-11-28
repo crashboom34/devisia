@@ -176,7 +176,10 @@ export default function NewProjectPage() {
                   <Label className="text-sm sm:text-base">Titre du Projet</Label>
                   <VoiceRecorder
                     value={formData.title}
-                    onChange={(text) => setFormData(prev => ({ ...prev, title: text }))}
+                    onChange={(text) => {
+                      console.log('[TITLE onChange]', text);
+                      setFormData(prev => ({ ...prev, title: text }));
+                    }}
                     placeholder="Dictez le titre de votre projet"
                   />
                 </div>
@@ -185,7 +188,10 @@ export default function NewProjectPage() {
                   <Label className="text-sm sm:text-base">Description du Projet</Label>
                   <VoiceRecorder
                     value={formData.description}
-                    onChange={(text) => setFormData(prev => ({ ...prev, description: text }))}
+                    onChange={(text) => {
+                      console.log('[DESCRIPTION onChange]', text);
+                      setFormData(prev => ({ ...prev, description: text }));
+                    }}
                     placeholder="Dictez la description complète de votre projet"
                   />
                 </div>

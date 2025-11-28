@@ -122,6 +122,7 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
         if (sessionTranscript) {
           setTranscript(combined);
           setInterimTranscript('');
+          console.log('[VoiceRecorder] Calling onChange with:', combined);
           onChange(combined);  // Propager au parent immédiatement
         } else if (sessionInterim) {
           // Pour l'interim, on affiche mais ne propage pas encore
