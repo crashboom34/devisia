@@ -176,7 +176,7 @@ export default function NewProjectPage() {
                   <Label className="text-sm sm:text-base">Titre du Projet</Label>
                   <VoiceRecorder
                     value={formData.title}
-                    onChange={(text) => setFormData({ ...formData, title: text })}
+                    onChange={(text) => setFormData(prev => ({ ...prev, title: text }))}
                     placeholder="Dictez le titre de votre projet"
                   />
                 </div>
@@ -185,7 +185,7 @@ export default function NewProjectPage() {
                   <Label className="text-sm sm:text-base">Description du Projet</Label>
                   <VoiceRecorder
                     value={formData.description}
-                    onChange={(text) => setFormData({ ...formData, description: text })}
+                    onChange={(text) => setFormData(prev => ({ ...prev, description: text }))}
                     placeholder="Dictez la description complète de votre projet"
                   />
                 </div>
@@ -225,7 +225,7 @@ export default function NewProjectPage() {
                     id="title"
                     placeholder="ex: Rénovation maison 100m²"
                     value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
                     required
                     className="text-sm sm:text-base"
                   />
@@ -240,7 +240,7 @@ export default function NewProjectPage() {
                     placeholder="Décrivez votre projet en détail : type de travaux, superficie, matériaux souhaités, contraintes particulières..."
                     rows={8}
                     value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                     required
                     className="text-sm sm:text-base"
                   />
