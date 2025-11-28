@@ -80,12 +80,20 @@ export default function DashboardPage() {
               {user?.email}
             </p>
           </div>
-          <Link href="/project/new" className="w-full sm:w-auto">
-            <Button size="lg" className="w-full sm:w-auto text-sm sm:text-base">
-              <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-              Nouveau Projet
-            </Button>
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+            <Link href="/project/create" className="w-full sm:w-auto">
+              <Button size="lg" variant="outline" className="w-full sm:w-auto text-sm sm:text-base">
+                <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+                Créer un Projet
+              </Button>
+            </Link>
+            <Link href="/project/new" className="w-full sm:w-auto">
+              <Button size="lg" className="w-full sm:w-auto text-sm sm:text-base">
+                <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+                Projet + Devis
+              </Button>
+            </Link>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">

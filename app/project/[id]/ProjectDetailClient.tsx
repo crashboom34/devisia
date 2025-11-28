@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, FileText, Loader2, Pencil, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, FileText, Loader2, Pencil, Trash2, ChevronDown, ChevronUp, Sparkles, Camera } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,6 +30,8 @@ import { Label } from '@/components/ui/label';
 import { supabase } from '@/lib/supabase';
 import UserMenu from '@/components/UserMenu';
 import EstimateTable from '@/components/EstimateTable';
+import ProjectRoomsPhotos from '@/components/ProjectRoomsPhotos';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { Project } from '@/lib/supabase';
 
 interface ProjectDetailClientProps {
@@ -284,14 +286,86 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           <div className="lg:col-span-2 space-y-4 sm:space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Description du Projet</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-700 whitespace-pre-wrap">{project.description}</p>
-              </CardContent>
-            </Card>
+            <Tabs defaultValue="infos" className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="infos">
+                  <FileText className="h-4 w-4 mr-2" />
+                  Infos
+                </TabsTrigger>
+                <TabsTrigger value="devis">
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Devis
+                </TabsTrigger>
+                <TabsTrigger value="photos">
+                  <Camera className="h-4 w-4 mr-2" />
+                  Photos
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="infos" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Description du Projet</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-gray-700 whitespace-pre-wrap">{project.description}</p>
+                  </CardContent>
+                </Card>
+
+                {project.client_name && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Informations Client</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      {project.client_name && (
+                        <div>
+                          <span className="font-medium text-gray-700">Client :</span>{' '}
+                          <span className="text-gray-600">{project.client_name}</span>
+                        </div>
+                      )}
+                      {project.client_address && (
+                        <div>
+                          <span className="font-medium text-gray-700">Adresse :</span>{' '}
+                          <span className="text-gray-600 whitespace-pre-wrap">{project.client_address}</span>
+                        </div>
+                      )}
+                      {project.work_type && (
+                        <div>
+                          <span className="font-medium text-gray-700">Type de travaux :</span>{' '}
+                          <span className="text-gray-600">{project.work_type}</span>
+                        </div>
+                      )}
+                      {project.notes && (
+                        <div>
+                          <span className="font-medium text-gray-700">Notes :</span>{' '}
+                          <span className="text-gray-600 whitespace-pre-wrap">{project.notes}</span>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {estimates.length === 0 && (
+                  <Card className="bg-blue-50 border-blue-200">
+                    <CardContent className="py-8 text-center">
+                      <Sparkles className="h-12 w-12 mx-auto mb-4 text-blue-600" />
+                      <h3 className="font-semibold mb-2 text-blue-900">Aucun devis généré</h3>
+                      <p className="text-sm text-blue-800 mb-4">
+                        Générez vos premiers devis avec l'IA pour ce projet
+                      </p>
+                      <Link href="/project/new">
+                        <Button>
+                          <Sparkles className="h-4 w-4 mr-2" />
+                          Générer des Devis
+                        </Button>
+                      </Link>
+                    </CardContent>
+                  </Card>
+                )}
+              </TabsContent>
+
+              <TabsContent value="devis" className="space-y-4">
 
             {estimates.length === 0 ? (
               <Card>
@@ -403,6 +477,12 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
                 })}
               </div>
             )}
+              </TabsContent>
+
+              <TabsContent value="photos">
+                <ProjectRoomsPhotos projectId={projectId} />
+              </TabsContent>
+            </Tabs>
           </div>
 
           <div className="space-y-4 sm:space-y-6">
