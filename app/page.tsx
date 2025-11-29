@@ -1,256 +1,179 @@
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Mic, FileText, Zap, DollarSign, Clock, CheckCircle } from 'lucide-react';
+import { HeroSection } from '@/components/marketing/HeroSection';
+import { FeatureCard } from '@/components/marketing/FeatureCard';
+import { StatBlock } from '@/components/marketing/StatBlock';
+import { CTASection } from '@/components/marketing/CTASection';
+import { SiteHeader } from '@/components/marketing/SiteHeader';
+import { SiteFooter } from '@/components/marketing/SiteFooter';
+import { Sparkles, Clock, FileText, Mic, Zap, BarChart3, CheckCircle, Download } from 'lucide-react';
+import { Card } from '@/components/ui/card';
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
-      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <FileText className="h-8 w-8 text-blue-600" />
-            <span className="text-2xl font-bold text-gray-900">Aide Devis IA</span>
-          </div>
-          <nav className="flex gap-4 items-center">
-            <Link href="#fonctionnalites" className="text-gray-600 hover:text-blue-600 transition-colors">
-              Fonctionnalités
-            </Link>
-            <Link href="#tarifs" className="text-gray-600 hover:text-blue-600 transition-colors">
-              Tarifs
-            </Link>
-            <Link href="/auth/login">
-              <Button variant="ghost">Connexion</Button>
-            </Link>
-            <Link href="/auth/register">
-              <Button>Commencer</Button>
-            </Link>
-          </nav>
-        </div>
-      </header>
+    <div className="min-h-screen bg-brand-dark">
+      <SiteHeader />
 
       <main>
-        <section className="container mx-auto px-4 py-20 text-center">
-          <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
-            Créez vos devis de chantier
-            <br />
-            <span className="text-blue-600">en quelques minutes</span>
-          </h1>
-          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            Décrivez votre projet à la voix ou par écrit. Notre IA génère automatiquement un devis détaillé
-            avec plusieurs scénarios tarifaires.
-          </p>
-          <div className="flex gap-4 justify-center">
-            <Link href="/auth/register">
-              <Button size="lg" className="text-lg px-8 py-6">
-                Essayer gratuitement
-              </Button>
-            </Link>
-            <Link href="#fonctionnalites">
-              <Button size="lg" variant="outline" className="text-lg px-8 py-6">
-                En savoir plus
-              </Button>
-            </Link>
-          </div>
-        </section>
-
-        <section id="fonctionnalites" className="bg-white py-20">
-          <div className="container mx-auto px-4">
-            <h2 className="text-4xl font-bold text-center mb-12 text-gray-900">
-              Comment ça marche ?
-            </h2>
-            <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-              <Card className="border-2 hover:border-blue-500 transition-all">
-                <CardHeader>
-                  <Mic className="h-12 w-12 text-blue-600 mb-4" />
-                  <CardTitle>1. Décrivez votre projet</CardTitle>
-                  <CardDescription>
-                    Utilisez votre voix ou tapez pour décrire le chantier, les travaux nécessaires et vos contraintes.
-                  </CardDescription>
-                </CardHeader>
+        <HeroSection
+          badge="Propulsé par l'IA - Créez vos devis en quelques minutes"
+          title="Vos devis en 2 minutes, pas en 2 heures"
+          subtitle="Devisia génère des devis clairs, chiffrés et professionnels grâce à l'IA. Moins d'erreurs, plus de chantiers."
+          primaryCTA={{
+            label: 'Commencer gratuitement',
+            href: '/auth/register',
+          }}
+          secondaryCTA={{
+            label: 'Voir comment ça marche',
+            href: '#features',
+          }}
+          image={
+            <div className="relative max-w-5xl mx-auto">
+              <div className="absolute inset-0 bg-gradient-cta opacity-20 blur-3xl" />
+              <Card className="relative bg-brand-darkCard border-gray-800 p-8 shadow-2xl">
+                <div className="aspect-video bg-gradient-to-br from-gray-900 to-gray-800 rounded-lg flex items-center justify-center">
+                  <div className="text-center">
+                    <FileText className="h-20 w-20 text-brand-green mx-auto mb-4" />
+                    <p className="text-gray-400">Interface de génération de devis</p>
+                  </div>
+                </div>
               </Card>
+            </div>
+          }
+        />
 
-              <Card className="border-2 hover:border-blue-500 transition-all">
-                <CardHeader>
-                  <Zap className="h-12 w-12 text-blue-600 mb-4" />
-                  <CardTitle>2. L'IA analyse</CardTitle>
-                  <CardDescription>
-                    Notre intelligence artificielle analyse votre demande et structure automatiquement tous les postes de travaux.
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-
-              <Card className="border-2 hover:border-blue-500 transition-all">
-                <CardHeader>
-                  <FileText className="h-12 w-12 text-blue-600 mb-4" />
-                  <CardTitle>3. Recevez vos devis</CardTitle>
-                  <CardDescription>
-                    Obtenez 3 scénarios (Éco, Standard, Premium) avec détails complets et export PDF instantané.
-                  </CardDescription>
-                </CardHeader>
-              </Card>
+        <section className="py-20 bg-brand-darkLight">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
+              <StatBlock value="10 000+" label="Devis créés" />
+              <StatBlock value="98%" label="Satisfaction" />
+              <StatBlock value="2 min" label="Temps moyen" />
+              <StatBlock value="50+" label="Modèles BTP" />
             </div>
           </div>
         </section>
 
-        <section className="py-20 bg-blue-50">
-          <div className="container mx-auto px-4">
-            <h2 className="text-4xl font-bold text-center mb-12 text-gray-900">
-              Pourquoi choisir Aide Devis IA ?
-            </h2>
+        <section id="features" className="py-24 bg-brand-dark">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+                Fonctionnalités conçues pour accélérer votre succès
+              </h2>
+              <p className="text-lg text-gray-400 max-w-2xl mx-auto">
+                Découvrez les outils qui vous permettront de créer des devis professionnels en quelques minutes et d&apos;augmenter vos taux de conversion.
+              </p>
+            </div>
+
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-              <div className="flex gap-4">
-                <Clock className="h-8 w-8 text-blue-600 flex-shrink-0" />
+              <FeatureCard
+                icon={Sparkles}
+                title="IA Avancée"
+                description="L'intelligence artificielle génère des devis professionnels adaptés à votre secteur d'activité en quelques secondes."
+              />
+              <FeatureCard
+                icon={Clock}
+                title="Gain de temps"
+                description="Plus besoin de passer des heures sur Excel. Générez un devis complet en 2 minutes chrono."
+              />
+              <FeatureCard
+                icon={Mic}
+                title="Dictée vocale"
+                description="Décrivez votre projet à la voix, même sur chantier. L'IA s'occupe de structurer votre devis."
+              />
+              <FeatureCard
+                icon={BarChart3}
+                title="3 Scénarios tarifaires"
+                description="Proposez automatiquement Éco, Standard et Premium pour maximiser vos opportunités."
+              />
+              <FeatureCard
+                icon={FileText}
+                title="10 Templates BTP"
+                description="Modèles professionnels pré-configurés pour tous types de travaux : rénovation, construction, etc."
+              />
+              <FeatureCard
+                icon={Download}
+                title="Export PDF instant"
+                description="Téléchargez vos devis au format PDF prêts à envoyer à vos clients en un clic."
+              />
+            </div>
+          </div>
+        </section>
+
+        <section className="py-24 bg-brand-darkLight">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-5xl mx-auto">
+              <div className="grid md:grid-cols-2 gap-12 items-center mb-20">
                 <div>
-                  <h3 className="font-semibold text-lg mb-2">Gain de temps</h3>
-                  <p className="text-gray-600">
-                    Plus besoin de passer des heures sur Excel. Générez un devis en 5 minutes.
+                  <h3 className="text-3xl font-bold text-white mb-4">
+                    Éditeur intuitif
+                  </h3>
+                  <p className="text-gray-400 mb-6 leading-relaxed">
+                    Notre interface glisser-déposer vous permet de personnaliser chaque aspect de vos devis sans compétences techniques. Ajoutez votre logo, mentions légales et TVA pour un rendu soigné.
                   </p>
+                  <ul className="space-y-3">
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="h-5 w-5 text-brand-green flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-300">Interface intuitive sans courbe d&apos;apprentissage</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="h-5 w-5 text-brand-green flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-300">Modification en temps réel avec aperçu instantané</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="h-5 w-5 text-brand-green flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-300">Sauvegarde automatique de vos modifications</span>
+                    </li>
+                  </ul>
                 </div>
+                <Card className="bg-brand-darkCard border-gray-800 p-6">
+                  <div className="aspect-square bg-gradient-to-br from-gray-900 to-gray-800 rounded-lg flex items-center justify-center">
+                    <FileText className="h-16 w-16 text-brand-green" />
+                  </div>
+                </Card>
               </div>
 
-              <div className="flex gap-4">
-                <DollarSign className="h-8 w-8 text-blue-600 flex-shrink-0" />
-                <div>
-                  <h3 className="font-semibold text-lg mb-2">Plusieurs scénarios</h3>
-                  <p className="text-gray-600">
-                    Proposez 3 niveaux de prestation à vos clients pour maximiser vos chances.
+              <div className="grid md:grid-cols-2 gap-12 items-center">
+                <Card className="bg-brand-darkCard border-gray-800 p-6 md:order-1">
+                  <div className="aspect-square bg-gradient-to-br from-gray-900 to-gray-800 rounded-lg flex items-center justify-center">
+                    <Zap className="h-16 w-16 text-brand-green" />
+                  </div>
+                </Card>
+                <div className="md:order-2">
+                  <h3 className="text-3xl font-bold text-white mb-4">
+                    Personnalisation complète
+                  </h3>
+                  <p className="text-gray-400 mb-6 leading-relaxed">
+                    Adaptez tous les éléments à votre charte graphique pour une cohérence parfaite avec votre image de marque. Vos clients reconnaîtront votre professionnalisme au premier coup d&apos;œil.
                   </p>
-                </div>
-              </div>
-
-              <div className="flex gap-4">
-                <CheckCircle className="h-8 w-8 text-blue-600 flex-shrink-0" />
-                <div>
-                  <h3 className="font-semibold text-lg mb-2">Professionnel</h3>
-                  <p className="text-gray-600">
-                    Des devis détaillés et structurés qui inspirent confiance à vos clients.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex gap-4">
-                <Mic className="h-8 w-8 text-blue-600 flex-shrink-0" />
-                <div>
-                  <h3 className="font-semibold text-lg mb-2">Dictée vocale</h3>
-                  <p className="text-gray-600">
-                    Décrivez votre projet à la voix, même sur chantier, l'IA s'occupe du reste.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex gap-4">
-                <FileText className="h-8 w-8 text-blue-600 flex-shrink-0" />
-                <div>
-                  <h3 className="font-semibold text-lg mb-2">Export PDF</h3>
-                  <p className="text-gray-600">
-                    Téléchargez vos devis au format PDF prêts à envoyer à vos clients.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex gap-4">
-                <Zap className="h-8 w-8 text-blue-600 flex-shrink-0" />
-                <div>
-                  <h3 className="font-semibold text-lg mb-2">IA avancée</h3>
-                  <p className="text-gray-600">
-                    Utilisez GPT-4 ou Claude pour des estimations précises et réalistes.
-                  </p>
+                  <ul className="space-y-3">
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="h-5 w-5 text-brand-green flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-300">Logo, couleurs et polices personnalisables</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="h-5 w-5 text-brand-green flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-300">Gestion des photos par pièce et par projet</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="h-5 w-5 text-brand-green flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-300">Templates réutilisables pour gagner du temps</span>
+                    </li>
+                  </ul>
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        <section id="tarifs" className="py-20 bg-white">
-          <div className="container mx-auto px-4">
-            <h2 className="text-4xl font-bold text-center mb-4 text-gray-900">
-              Tarification simple
-            </h2>
-            <p className="text-center text-gray-600 mb-12">
-              Utilisez votre propre clé API OpenAI ou Anthropic
-            </p>
-            <Card className="max-w-md mx-auto border-2 border-blue-500">
-              <CardHeader className="text-center">
-                <CardTitle className="text-3xl">Gratuit</CardTitle>
-                <CardDescription className="text-lg">
-                  Apportez votre clé API
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-3">
-                  <li className="flex gap-2">
-                    <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span>Devis illimités</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span>Dictée vocale</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span>3 scénarios par projet</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span>Export PDF</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span>Historique des projets</span>
-                  </li>
-                </ul>
-                <Link href="/auth/register" className="block mt-6">
-                  <Button className="w-full" size="lg">
-                    Commencer maintenant
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          </div>
-        </section>
-
-        <section className="py-20 bg-blue-600 text-white">
-          <div className="container mx-auto px-4 text-center">
-            <h2 className="text-4xl font-bold mb-6">
-              Prêt à gagner du temps sur vos devis ?
-            </h2>
-            <p className="text-xl mb-8 max-w-2xl mx-auto opacity-90">
-              Rejoignez les professionnels du bâtiment qui utilisent l'IA pour créer leurs devis plus rapidement.
-            </p>
-            <Link href="/auth/register">
-              <Button size="lg" variant="secondary" className="text-lg px-8 py-6">
-                Créer mon compte gratuitement
-              </Button>
-            </Link>
-          </div>
-        </section>
+        <CTASection
+          title="Prêt à transformer votre façon de créer des devis ?"
+          description="Rejoignez les professionnels du bâtiment qui utilisent Devisia pour gagner du temps et augmenter leur taux de conversion."
+          cta={{
+            label: 'Créer mon compte gratuitement',
+            href: '/auth/register',
+          }}
+        />
       </main>
 
-      <footer className="bg-gray-900 text-gray-400 py-12">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="flex items-center gap-2">
-              <FileText className="h-6 w-6 text-blue-400" />
-              <span className="text-lg font-semibold text-white">Aide Devis IA</span>
-            </div>
-            <div className="flex gap-6">
-              <Link href="#" className="hover:text-white transition-colors">
-                Mentions légales
-              </Link>
-              <Link href="#" className="hover:text-white transition-colors">
-                CGU
-              </Link>
-              <Link href="#" className="hover:text-white transition-colors">
-                Contact
-              </Link>
-            </div>
-          </div>
-          <div className="text-center mt-8 text-sm">
-            © 2025 Aide Devis IA. Tous droits réservés.
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

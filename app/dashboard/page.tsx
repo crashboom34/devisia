@@ -80,14 +80,14 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-brand-light">
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
+    <div className="min-h-screen bg-brand-dark">
+      <header className="bg-brand-darkCard border-b border-gray-800 sticky top-0 z-10 shadow-lg">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
             <div className="p-2 rounded-lg bg-brand-green">
               <FileText className="h-6 w-6 text-white" />
             </div>
-            <span className="text-xl sm:text-2xl font-bold text-brand-dark">Devisia</span>
+            <span className="text-xl sm:text-2xl font-bold text-white">Devisia</span>
           </div>
           <div className="flex items-center gap-3">
             <Link href="/project/new">
@@ -104,10 +104,10 @@ export default function DashboardPage() {
 
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 max-w-7xl">
         <div className="mb-8 animate-fade-in">
-          <h1 className="text-3xl sm:text-4xl font-bold text-brand-dark mb-2">
-            Bonjour {getFirstName()} 👋
+          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">
+            Bonjour {getFirstName()}
           </h1>
-          <p className="text-base sm:text-lg text-status-neutral">
+          <p className="text-base sm:text-lg text-gray-400">
             Suivez vos devis et projets en un coup d'œil
           </p>
         </div>
@@ -146,10 +146,10 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-brand-dark">Mes Projets</h2>
+              <h2 className="text-2xl font-bold text-white">Mes Projets</h2>
               <div className="flex gap-2">
                 <Link href="/project/create">
-                  <Button size="sm" variant="outline" className="text-sm">
+                  <Button size="sm" variant="outline" className="text-sm border-gray-700 text-gray-300 hover:bg-brand-darkCard">
                     <Plus className="h-4 w-4 mr-2" />
                     Projet Simple
                   </Button>
@@ -167,13 +167,13 @@ export default function DashboardPage() {
                 <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
               </div>
             ) : projects.length === 0 ? (
-              <Card className="text-center py-12 sm:py-16 animate-fade-in">
+              <Card className="text-center py-12 sm:py-16 animate-fade-in bg-brand-darkCard border-gray-800">
                 <CardContent className="px-6">
-                  <div className="w-16 h-16 rounded-full bg-brand-light flex items-center justify-center mx-auto mb-4">
+                  <div className="w-16 h-16 rounded-full bg-brand-green/10 flex items-center justify-center mx-auto mb-4">
                     <FileText className="h-8 w-8 text-brand-green" />
                   </div>
-                  <h3 className="text-xl font-semibold text-brand-dark mb-2">Aucun projet</h3>
-                  <p className="text-base text-status-neutral mb-6">
+                  <h3 className="text-xl font-semibold text-white mb-2">Aucun projet</h3>
+                  <p className="text-base text-gray-400 mb-6">
                     Créez votre premier projet pour générer des devis professionnels
                   </p>
                   <Link href="/project/new" className="inline-block">
@@ -189,22 +189,22 @@ export default function DashboardPage() {
             {projects.map((project, index) => (
               <Link key={project.id} href={`/project/${project.id}`}>
                 <Card
-                  className="hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer h-full border-gray-200 animate-fade-in"
+                  className="hover:shadow-xl hover:shadow-brand-green/10 transition-all duration-300 hover:-translate-y-1 cursor-pointer h-full bg-brand-darkCard border-gray-800 hover:border-brand-green/50 animate-fade-in"
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
                   <CardHeader className="pb-4">
                     <div className="flex items-start justify-between gap-3">
-                      <CardTitle className="text-lg font-semibold text-brand-dark flex-1 break-words">
+                      <CardTitle className="text-lg font-semibold text-white flex-1 break-words">
                         {project.title}
                       </CardTitle>
                       <StatusBadge status={project.status as 'draft' | 'processing' | 'completed'} />
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm text-status-neutral line-clamp-3 mb-4">
+                    <p className="text-sm text-gray-400 line-clamp-3 mb-4">
                       {project.description}
                     </p>
-                    <div className="flex items-center justify-between text-xs text-status-neutral">
+                    <div className="flex items-center justify-between text-xs text-gray-500">
                       <span>
                         {new Date(project.created_at).toLocaleDateString('fr-FR', {
                           day: 'numeric',

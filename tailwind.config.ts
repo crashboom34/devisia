@@ -9,10 +9,14 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+      },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
-        'gradient-conic':
-          'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
+        'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
+        'gradient-cta': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        'gradient-dark': 'linear-gradient(135deg, #1a1a1a 0%, #121212 100%)',
       },
       borderRadius: {
         lg: 'var(--radius)',
@@ -22,7 +26,9 @@ const config: Config = {
       colors: {
         brand: {
           green: '#1FBF73',
-          dark: '#0F172A',
+          dark: '#121212',
+          darkLight: '#1A1A1A',
+          darkCard: '#1E1E1E',
           light: '#F6F7FB',
         },
         status: {
@@ -30,6 +36,13 @@ const config: Config = {
           warning: '#F59E0B',
           danger: '#EF4444',
           neutral: '#64748B',
+        },
+        devisia: {
+          blue: '#0EA5E9',
+          purple: {
+            DEFAULT: '#667eea',
+            dark: '#764ba2',
+          },
         },
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
