@@ -1,15 +1,26 @@
+'use client';
+
 import { ReactNode } from 'react';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
 
 interface PageHeaderProps {
   title: string;
   subtitle?: string;
   breadcrumbs?: { label: string; href?: string }[];
   actions?: ReactNode;
+  showBackButton?: boolean;
 }
 
-export function PageHeader({ title, subtitle, breadcrumbs, actions }: PageHeaderProps) {
+export function PageHeader({ title, subtitle, breadcrumbs, actions, showBackButton = true }: PageHeaderProps) {
+  const router = useRouter();
+
+  const handleBack = () => {
+    router.back();
+  };
+
   return (
     <div className="mb-8">
       {breadcrumbs && breadcrumbs.length > 0 && (
@@ -35,19 +46,31 @@ export function PageHeader({ title, subtitle, breadcrumbs, actions }: PageHeader
       )}
 
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">
-            {title}
-          </h1>
-          {subtitle && (
-            <p className="text-base text-slate-400">
-              {subtitle}
-            </p>
+        <div className="flex items-start gap-4 flex-1 min-w-0">
+          {showBackButton && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleBack}
+              className="mt-1 border-slate-700 hover:bg-slate-800 text-slate-300 hover:text-white transition-colors shrink-0"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
           )}
+          <div className="flex-1 min-w-0">
+            <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">
+              {title}
+            </h1>
+            {subtitle && (
+              <p className="text-base text-slate-400">
+                {subtitle}
+              </p>
+            )}
+          </div>
         </div>
 
         {actions && (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 shrink-0">
             {actions}
           </div>
         )}

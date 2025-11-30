@@ -133,24 +133,15 @@ export default function ClientsPage() {
             { label: 'Clients' },
           ]}
           actions={
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRefresh}
-                className="border-slate-700 hover:bg-slate-800 text-slate-300 hover:text-white transition-colors"
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Actualiser
-              </Button>
-              <Button
-                onClick={handleCreateClient}
-                className="bg-gradient-to-r from-cyan-600 to-cyan-700 hover:from-cyan-700 hover:to-cyan-800 text-white shadow-lg shadow-cyan-600/20"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Nouveau client
-              </Button>
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              className="border-slate-700 hover:bg-slate-800 text-slate-300 hover:text-white transition-colors"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Actualiser
+            </Button>
           }
         />
 

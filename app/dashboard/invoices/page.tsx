@@ -157,14 +157,6 @@ export default function InvoicesPage() {
             { label: 'dashboard', href: '/dashboard' },
             { label: 'Factures' },
           ]}
-          actions={
-            <Link href="/project/new">
-              <Button className="bg-gradient-to-r from-cyan-600 to-cyan-700 hover:from-cyan-700 hover:to-cyan-800 text-white shadow-lg shadow-cyan-600/20">
-                <Plus className="h-4 w-4 mr-2" />
-                Convertir un devis
-              </Button>
-            </Link>
-          }
         />
 
         {/* KPI Cards */}

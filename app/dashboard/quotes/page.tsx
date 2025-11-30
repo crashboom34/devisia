@@ -149,14 +149,6 @@ export default function QuotesPage() {
             { label: 'dashboard', href: '/dashboard' },
             { label: 'Devis' },
           ]}
-          actions={
-            <Link href="/project/new">
-              <Button className="bg-cyan-600 hover:bg-cyan-700 text-white">
-                <Plus className="h-4 w-4 mr-2" />
-                Nouveau devis
-              </Button>
-            </Link>
-          }
         />
 
         {/* KPI Cards */}
