@@ -41,20 +41,20 @@ export default function ClientsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950">
+    <div className="min-h-screen bg-[#020617]">
       {/* Header */}
-      <header className="bg-slate-900 border-b border-slate-800 sticky top-0 z-10 shadow-lg">
+      <header className="bg-slate-900/95 backdrop-blur-xl border-b border-slate-800/50 sticky top-0 z-50 shadow-2xl">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="p-2 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600">
+            <div className="p-2.5 rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-600 shadow-lg shadow-emerald-500/20">
               <FileText className="h-6 w-6 text-white" />
             </div>
-            <span className="text-xl sm:text-2xl font-bold text-white">Devisia</span>
+            <span className="text-xl sm:text-2xl font-bold text-white tracking-tight">Devisia</span>
           </div>
           <div className="flex items-center gap-3">
             <Button
               onClick={handleCreateClient}
-              className="bg-cyan-600 hover:bg-cyan-700 text-white shadow-sm font-medium"
+              className="bg-gradient-to-r from-cyan-600 to-cyan-700 hover:from-cyan-700 hover:to-cyan-800 text-white shadow-lg shadow-cyan-600/20 font-medium transition-all duration-200"
             >
               <Plus className="h-4 w-4 mr-2" />
               <span className="hidden sm:inline">Nouveau client</span>
@@ -65,7 +65,7 @@ export default function ClientsPage() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-7xl">
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-7xl space-y-8">
         {/* Page Header */}
         <PageHeader
           title="Clients"
@@ -97,15 +97,15 @@ export default function ClientsPage() {
         />
 
         {/* Search Bar */}
-        <div className="mb-6">
+        <div className="p-4 bg-slate-900/30 rounded-xl border border-slate-800/50">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-500" />
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-500" />
             <Input
               type="text"
               placeholder="Rechercher par nom, email, entreprise..."
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
-              className="pl-10 bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 focus:border-cyan-500 h-12 text-base"
+              className="pl-12 bg-slate-800/50 border-slate-700/50 hover:border-slate-600/50 focus:border-cyan-500/50 text-white placeholder:text-slate-500 h-12 text-base rounded-xl transition-colors"
             />
           </div>
         </div>
@@ -128,12 +128,12 @@ export default function ClientsPage() {
         )}
 
         {/* Table structure (for when clients exist) */}
-        <div className="hidden bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
+        <div className="hidden bg-gradient-to-br from-slate-800/90 to-slate-800/50 border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="bg-slate-900/50 border-b border-slate-700">
-                  <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                <tr className="bg-slate-900/80 border-b border-slate-700/50">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
                     Nom
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">

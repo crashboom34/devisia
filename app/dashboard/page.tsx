@@ -87,19 +87,19 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950">
+    <div className="min-h-screen bg-[#020617]">
       {/* Header */}
-      <header className="bg-slate-900 border-b border-slate-800 sticky top-0 z-10 shadow-lg">
+      <header className="bg-slate-900/95 backdrop-blur-xl border-b border-slate-800/50 sticky top-0 z-50 shadow-2xl">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="p-2 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600">
+            <div className="p-2.5 rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-600 shadow-lg shadow-emerald-500/20">
               <FileText className="h-6 w-6 text-white" />
             </div>
-            <span className="text-xl sm:text-2xl font-bold text-white">Devisia</span>
+            <span className="text-xl sm:text-2xl font-bold text-white tracking-tight">Devisia</span>
           </div>
           <div className="flex items-center gap-3">
             <Link href="/project/new">
-              <Button className="bg-cyan-600 hover:bg-cyan-700 text-white shadow-sm font-medium">
+              <Button className="bg-gradient-to-r from-cyan-600 to-cyan-700 hover:from-cyan-700 hover:to-cyan-800 text-white shadow-lg shadow-cyan-600/20 font-medium transition-all duration-200">
                 <Plus className="h-4 w-4 mr-2" />
                 <span className="hidden sm:inline">Nouveau Devis</span>
                 <span className="sm:hidden">Devis</span>
@@ -110,31 +110,38 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-7xl">
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-7xl space-y-8">
         {/* Page Header */}
-        <PageHeader
-          title="Tableau de bord"
-          subtitle={`Bienvenue, ${getFirstName()}`}
-          actions={
+        <div className="mb-8">
+          <div className="flex items-start justify-between gap-4 mb-2">
+            <div>
+              <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">
+                Tableau de bord
+              </h1>
+              <p className="text-lg text-slate-400">
+                Bienvenue, {getFirstName()}
+              </p>
+            </div>
             <Button
               variant="outline"
               size="sm"
               onClick={handleRefresh}
-              className="border-slate-700 hover:bg-slate-800 text-slate-300"
+              className="border-slate-700/50 hover:bg-slate-800 text-slate-300 hover:text-white transition-colors"
             >
               <RefreshCw className="h-4 w-4 mr-2" />
               Actualiser
             </Button>
-          }
-        />
+          </div>
+        </div>
 
         {/* KPI Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <KpiCard
             title="Total des devis (30 derniers jours)"
             value={estimatesCount.total}
             subtitle={`${estimatesCount.completed} approuvés, ${estimatesCount.processing} expirés`}
             icon={FileText}
+            iconColor="text-cyan-400"
           />
           <KpiCard
             title="En attente (30 derniers jours)"
@@ -142,13 +149,15 @@ export default function DashboardPage() {
             valueColor="text-orange-400"
             subtitle="À encaisser"
             icon={Clock}
+            iconColor="text-orange-400"
           />
           <KpiCard
             title="Approuvés (30 derniers jours)"
             value={estimatesCount.completed}
-            valueColor="text-green-400"
+            valueColor="text-emerald-400"
             subtitle="Devis acceptés"
             icon={CheckCircle2}
+            iconColor="text-emerald-400"
           />
           <KpiCard
             title="Chiffre d'affaires (30 derniers jours)"
@@ -156,59 +165,62 @@ export default function DashboardPage() {
             valueColor="text-cyan-400"
             subtitle="Montants en euros pour les 30 derniers jours"
             icon={Euro}
+            iconColor="text-cyan-400"
           />
         </div>
 
         {/* Chart Section */}
-        <Card className="mb-8 bg-slate-800 border-slate-700">
-          <CardHeader className="border-b border-slate-700">
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <CardTitle className="text-white text-xl">
-                Chiffre d'affaires quotidien
-              </CardTitle>
-              <div className="flex gap-2">
+        <Card className="bg-gradient-to-br from-slate-800/90 to-slate-800/50 border-slate-700/50 shadow-2xl">
+          <CardHeader className="border-b border-slate-700/50 pb-6">
+            <div className="flex items-start justify-between flex-wrap gap-4">
+              <div>
+                <CardTitle className="text-white text-2xl font-bold mb-2">
+                  Chiffre d'affaires quotidien
+                </CardTitle>
+                <p className="text-sm text-slate-400">
+                  Montants en euros pour les {chartPeriod === '7days' ? '7' : chartPeriod === '30days' ? '30' : '90'} derniers jours
+                </p>
+              </div>
+              <div className="flex gap-2 bg-slate-900/50 p-1.5 rounded-xl border border-slate-700/50">
                 <Button
-                  variant={chartPeriod === '3months' ? 'default' : 'outline'}
+                  variant={chartPeriod === '3months' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => setChartPeriod('3months')}
                   className={chartPeriod === '3months'
-                    ? 'bg-cyan-600 hover:bg-cyan-700 text-white'
-                    : 'border-slate-600 text-slate-400 hover:bg-slate-700'
+                    ? 'bg-cyan-600 hover:bg-cyan-700 text-white shadow-lg'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
                   }
                 >
                   3 derniers mois
                 </Button>
                 <Button
-                  variant={chartPeriod === '30days' ? 'default' : 'outline'}
+                  variant={chartPeriod === '30days' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => setChartPeriod('30days')}
                   className={chartPeriod === '30days'
-                    ? 'bg-cyan-600 hover:bg-cyan-700 text-white'
-                    : 'border-slate-600 text-slate-400 hover:bg-slate-700'
+                    ? 'bg-cyan-600 hover:bg-cyan-700 text-white shadow-lg'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
                   }
                 >
                   30 derniers jours
                 </Button>
                 <Button
-                  variant={chartPeriod === '7days' ? 'default' : 'outline'}
+                  variant={chartPeriod === '7days' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => setChartPeriod('7days')}
                   className={chartPeriod === '7days'
-                    ? 'bg-cyan-600 hover:bg-cyan-700 text-white'
-                    : 'border-slate-600 text-slate-400 hover:bg-slate-700'
+                    ? 'bg-cyan-600 hover:bg-cyan-700 text-white shadow-lg'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
                   }
                 >
                   7 derniers jours
                 </Button>
               </div>
             </div>
-            <p className="text-sm text-slate-400 mt-2">
-              Montants en euros pour les {chartPeriod === '7days' ? '7' : chartPeriod === '30days' ? '30' : '90'} derniers jours
-            </p>
           </CardHeader>
           <CardContent className="p-6">
-            <div className="h-64 flex items-center justify-center text-slate-500">
-              <p>Aucune donnée de chiffre d'affaires pour le moment</p>
+            <div className="h-64 flex items-center justify-center text-slate-500 bg-slate-900/30 rounded-xl border border-slate-800/50">
+              <p className="text-slate-400">Aucune donnée de chiffre d'affaires pour le moment</p>
             </div>
           </CardContent>
         </Card>
@@ -216,17 +228,16 @@ export default function DashboardPage() {
         {/* Bottom Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Recent Quotes */}
-          <Card className="bg-slate-800 border-slate-700">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center justify-between">
-                <span>Devis récents</span>
-                <Link href="/project/new">
-                  <Button size="sm" className="bg-cyan-600 hover:bg-cyan-700 text-white">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Créer votre premier devis
+          <Card className="bg-gradient-to-br from-slate-800/90 to-slate-800/50 border-slate-700/50 shadow-xl">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-white text-xl font-bold">Devis récents</CardTitle>
+                <Link href="/dashboard/quotes">
+                  <Button size="sm" variant="ghost" className="text-cyan-400 hover:text-cyan-300 hover:bg-slate-700/50">
+                    Voir tout →
                   </Button>
                 </Link>
-              </CardTitle>
+              </div>
             </CardHeader>
             <CardContent>
               {loading ? (
@@ -234,21 +245,31 @@ export default function DashboardPage() {
                   <Loader2 className="h-8 w-8 animate-spin text-cyan-600" />
                 </div>
               ) : projects.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="w-16 h-16 rounded-full bg-slate-700/50 flex items-center justify-center mx-auto mb-4">
+                <div className="text-center py-12 bg-slate-900/30 rounded-xl border border-slate-800/50">
+                  <div className="w-16 h-16 rounded-2xl bg-slate-700/50 flex items-center justify-center mx-auto mb-4">
                     <FileText className="h-8 w-8 text-slate-500" />
                   </div>
-                  <p className="text-slate-400">Aucun devis récent</p>
+                  <p className="text-slate-400 mb-4">Aucun devis récent</p>
+                  <Link href="/project/new">
+                    <Button size="sm" className="bg-cyan-600 hover:bg-cyan-700 text-white">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Créer votre premier devis
+                    </Button>
+                  </Link>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {projects.slice(0, 5).map((project) => (
                     <Link key={project.id} href={`/project/${project.id}`}>
-                      <div className="flex items-center justify-between p-4 rounded-lg bg-slate-900 hover:bg-slate-850 transition-colors border border-slate-700 hover:border-slate-600">
+                      <div className="flex items-center justify-between p-4 rounded-xl bg-slate-900/50 hover:bg-slate-900 transition-all duration-200 border border-slate-800/50 hover:border-slate-700 group">
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-white truncate">{project.title}</p>
-                          <p className="text-sm text-slate-400">
-                            {new Date(project.created_at).toLocaleDateString('fr-FR')}
+                          <p className="font-semibold text-white truncate group-hover:text-cyan-400 transition-colors">{project.title}</p>
+                          <p className="text-sm text-slate-500">
+                            {new Date(project.created_at).toLocaleDateString('fr-FR', {
+                              day: 'numeric',
+                              month: 'long',
+                              year: 'numeric'
+                            })}
                           </p>
                         </div>
                         <StatusBadge status={project.status as 'draft' | 'processing' | 'completed'} />
@@ -262,19 +283,19 @@ export default function DashboardPage() {
 
           {/* Subscription Plan */}
           <div className="space-y-6">
-            <Card className="bg-slate-800 border-slate-700">
-              <CardHeader>
-                <CardTitle className="text-white">Plan d'abonnement</CardTitle>
+            <Card className="bg-gradient-to-br from-slate-800/90 to-slate-800/50 border-slate-700/50 shadow-xl">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-white text-xl font-bold">Plan d'abonnement</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between p-4 bg-slate-900/50 rounded-xl border border-slate-800/50">
                     <div>
-                      <p className="text-white font-medium">Plan Gratuit</p>
+                      <p className="text-white font-semibold text-lg">Plan Gratuit</p>
                       <p className="text-sm text-slate-400">Essai gratuit actif</p>
                     </div>
                     <Link href="/pricing">
-                      <Button size="sm" variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700">
+                      <Button size="sm" className="bg-gradient-to-r from-cyan-600 to-cyan-700 hover:from-cyan-700 hover:to-cyan-800 text-white shadow-lg">
                         Choisir un plan
                       </Button>
                     </Link>
@@ -283,27 +304,25 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
 
-            <Card className="bg-slate-800 border-slate-700">
-              <CardHeader>
-                <CardTitle className="text-white">Consommation actuelle</CardTitle>
+            <Card className="bg-gradient-to-br from-slate-800/90 to-slate-800/50 border-slate-700/50 shadow-xl">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-white text-xl font-bold">Consommation actuelle</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-slate-400">Devis générés</span>
-                      <span className="text-sm font-medium text-white">{estimatesCount.total}</span>
-                    </div>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-3 bg-slate-900/50 rounded-lg">
+                    <span className="text-sm font-medium text-slate-400">Devis générés</span>
+                    <span className="text-lg font-bold text-white">{estimatesCount.total}</span>
                   </div>
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-slate-400">Limite atteinte</span>
-                      <span className="text-sm font-medium text-red-400">100%</span>
+                  <div className="p-4 bg-red-500/10 rounded-xl border border-red-500/20">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm font-medium text-red-400">Limite atteinte</span>
+                      <span className="text-sm font-bold text-red-400">100%</span>
                     </div>
-                    <div className="w-full bg-slate-700 rounded-full h-2">
-                      <div className="bg-red-500 h-2 rounded-full" style={{ width: '100%' }}></div>
+                    <div className="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden">
+                      <div className="bg-gradient-to-r from-red-500 to-red-600 h-2.5 rounded-full shadow-lg shadow-red-500/50" style={{ width: '100%' }}></div>
                     </div>
-                    <p className="text-xs text-slate-500 mt-1">
+                    <p className="text-xs text-slate-400 mt-3 leading-relaxed">
                       Passez à un plan supérieur pour continuer à générer des devis
                     </p>
                   </div>
