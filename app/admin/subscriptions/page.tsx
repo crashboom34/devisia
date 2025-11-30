@@ -256,8 +256,9 @@ export default function AdminSubscriptionsPage() {
         <Alert className="mb-6 border-cyan-500/30 bg-cyan-500/10">
           <AlertCircle className="h-4 w-4 text-cyan-400" />
           <AlertDescription className="text-slate-300">
-            <strong className="text-cyan-400">Important:</strong> AI model assignments are only visible to administrators.
-            Users will see generic capability descriptions (e.g., "Advanced AI Intelligence") instead of specific model names.
+            <strong className="text-cyan-400">Administrator Control:</strong> Only super administrators can assign AI models to subscription tiers.
+            Users <strong>cannot</strong> manually select models - assignment is automatic based on their subscription.
+            Users only see generic labels like "Advanced AI Intelligence" without technical details.
           </AlertDescription>
         </Alert>
 

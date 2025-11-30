@@ -12,11 +12,11 @@ import { ArrowLeft, FileText, Mic, Keyboard, Loader2, Sparkles } from 'lucide-re
 import { supabase } from '@/lib/supabase';
 import UserMenu from '@/components/UserMenu';
 import VoiceRecorder from '@/components/VoiceRecorder';
-import ModelSelector from '@/components/ModelSelector';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { EstimateTemplate } from '@/lib/supabase';
+import { getUserSubscriptionInfo, type SubscriptionInfo } from '@/lib/subscription-helper';
 
 export default function NewProjectPage() {
   const router = useRouter();
@@ -32,6 +32,7 @@ export default function NewProjectPage() {
   const [templates, setTemplates] = useState<EstimateTemplate[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [loadingTemplates, setLoadingTemplates] = useState(true);
+  const [subscriptionInfo, setSubscriptionInfo] = useState<SubscriptionInfo | null>(null);
 
   useEffect(() => {
     checkUser();
@@ -44,6 +45,9 @@ export default function NewProjectPage() {
       router.push('/auth/login');
     } else {
       setUser(user);
+      // Load subscription info to display AI capability level
+      const subInfo = await getUserSubscriptionInfo(user.id);
+      setSubscriptionInfo(subInfo);
     }
   };
 
@@ -366,9 +370,31 @@ export default function NewProjectPage() {
           </CardContent>
         </Card>
 
-        <div className="mt-4 sm:mt-6">
-          <ModelSelector />
-        </div>
+        {/* Subscription Tier Info - Automatic AI Model Assignment */}
+        <Card className="mt-4 sm:mt-6 bg-gradient-to-br from-slate-800/90 to-slate-800/50 border border-slate-700/50 shadow-2xl">
+          <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-cyan-500/10">
+                <Sparkles className="h-5 w-5 text-cyan-400" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-white">
+                  {subscriptionInfo ? subscriptionInfo.ai_capability_level : 'AI Intelligence'}
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {subscriptionInfo
+                    ? `Abonnement ${subscriptionInfo.tier_name} • Modèle IA automatique`
+                    : 'Vos devis seront générés avec l\'IA de votre abonnement'}
+                </p>
+              </div>
+              {subscriptionInfo && subscriptionInfo.tier_level > 1 && (
+                <div className="px-2 py-1 rounded-full bg-cyan-500/20 border border-cyan-500/30">
+                  <span className="text-xs font-medium text-cyan-300">Premium</span>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         <Card className="mt-4 sm:mt-6 bg-gradient-to-br from-slate-800/90 to-slate-800/50 border border-slate-700/50 shadow-2xl">
           <CardHeader>

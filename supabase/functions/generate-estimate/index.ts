@@ -11,9 +11,9 @@ interface EstimateRequest {
   projectId: string;
   projectDescription: string;
   scenarioType: "eco" | "standard" | "premium";
-  modelId?: string;
   temperature?: number;
   templateId?: string;
+  // modelId removed - automatic assignment based on subscription tier only
 }
 
 Deno.serve(async (req: Request) => {
@@ -41,7 +41,7 @@ Deno.serve(async (req: Request) => {
       throw new Error("Unauthorized");
     }
 
-    const { projectId, projectDescription, scenarioType, modelId, temperature, templateId }: EstimateRequest = await req.json();
+    const { projectId, projectDescription, scenarioType, temperature, templateId }: EstimateRequest = await req.json();
 
     if (!projectId || !projectDescription || !scenarioType) {
       throw new Error("Missing required fields");
@@ -84,30 +84,39 @@ Deno.serve(async (req: Request) => {
       return fallbackModels || [];
     };
 
-    let selectedModelId = modelId;
-    if (!selectedModelId) {
-      const { data: preferences } = await supabase
-        .from("user_preferences")
-        .select("preferred_model_id")
-        .eq("user_id", user.id)
+    // AUTOMATIC MODEL SELECTION BASED ON SUBSCRIPTION
+    // Users cannot select models - assignment is automatic based on their subscription tier
+    console.log("Determining AI model based on user subscription...");
+
+    // Get user's AI model via subscription tier
+    const { data: modelData, error: modelLookupError } = await supabase.rpc(
+      'get_user_ai_model',
+      { p_user_id: user.id }
+    );
+
+    let selectedModelId = null;
+
+    if (modelLookupError || !modelData || modelData.length === 0) {
+      console.warn("No subscription model found, using fallback:", modelLookupError);
+
+      // Fallback: Get the lowest cost model (free tier default)
+      const { data: fallbackModel } = await supabase
+        .from("ai_models")
+        .select("id")
+        .eq("is_active", true)
+        .order("cost_per_1k_tokens_input", { ascending: true })
+        .limit(1)
         .maybeSingle();
 
-      if (preferences?.preferred_model_id) {
-        selectedModelId = preferences.preferred_model_id;
+      if (fallbackModel) {
+        selectedModelId = fallbackModel.id;
+        console.log("Using free tier fallback model");
       } else {
-        const { data: defaultModel } = await supabase
-          .from("ai_models")
-          .select("id")
-          .eq("is_default", true)
-          .eq("is_active", true)
-          .maybeSingle();
-
-        if (defaultModel) {
-          selectedModelId = defaultModel.id;
-        } else {
-          throw new Error("No AI model available");
-        }
+        throw new Error("No AI model available");
       }
+    } else {
+      selectedModelId = modelData[0].model_id;
+      console.log(`Subscription-assigned model: ${modelData[0].model_identifier}`);
     }
 
     const { data: model, error: modelError } = await supabase
