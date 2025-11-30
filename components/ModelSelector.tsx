@@ -90,34 +90,34 @@ export default function ModelSelector() {
 
   if (loading) {
     return (
-      <Card>
+      <Card className="bg-brand-darkCard border-gray-800">
         <CardContent className="pt-6">
-          <p className="text-gray-500">Chargement...</p>
+          <p className="text-gray-400">Chargement...</p>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card>
+    <Card className="bg-brand-darkCard border-gray-800">
       <CardHeader>
         <div className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-purple-600" />
-          <CardTitle>Modèle IA</CardTitle>
+          <Sparkles className="h-5 w-5 text-brand-green" />
+          <CardTitle className="text-white">Modèle IA</CardTitle>
         </div>
-        <CardDescription>
+        <CardDescription className="text-gray-400">
           Choisissez le modèle d'intelligence artificielle pour générer vos devis
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
           <Select value={selectedModelId} onValueChange={handleModelChange}>
-            <SelectTrigger>
+            <SelectTrigger className="bg-brand-darkLight border-gray-700 text-white">
               <SelectValue placeholder="Sélectionner un modèle" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-brand-darkCard border-gray-800">
               {models.map((model) => (
-                <SelectItem key={model.id} value={model.id}>
+                <SelectItem key={model.id} value={model.id} className="text-white hover:bg-brand-darkLight">
                   {model.display_name}
                 </SelectItem>
               ))}
@@ -126,29 +126,29 @@ export default function ModelSelector() {
         </div>
 
         {selectedModel && (
-          <div className="p-4 bg-gray-50 rounded-lg space-y-3">
+          <div className="p-4 bg-brand-darkLight rounded-lg border border-gray-800 space-y-3">
             <div className="flex items-start gap-2">
-              <Sparkles className="h-4 w-4 text-gray-600 mt-0.5 flex-shrink-0" />
+              <Sparkles className="h-4 w-4 text-brand-green mt-0.5 flex-shrink-0" />
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium text-gray-900">{selectedModel.display_name}</p>
+                  <p className="text-sm font-medium text-white">{selectedModel.display_name}</p>
                   {selectedModel.cost_per_1k_tokens_input === 0 ? (
-                    <Badge variant="default" className="bg-green-600">GRATUIT</Badge>
+                    <Badge variant="default" className="bg-brand-green text-white">GRATUIT</Badge>
                   ) : (
-                    <Badge variant="outline" className="text-xs">
+                    <Badge variant="outline" className="text-xs border-gray-700 text-gray-400">
                       {((selectedModel.cost_per_1k_tokens_input + selectedModel.cost_per_1k_tokens_output) / 2).toFixed(5)}$/1K tokens
                     </Badge>
                   )}
                 </div>
-                <p className="text-xs text-gray-600 mt-1">{selectedModel.description}</p>
+                <p className="text-xs text-gray-400 mt-1">{selectedModel.description}</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 pt-2 border-t border-gray-200">
+            <div className="flex items-center gap-2 pt-2 border-t border-gray-800">
               <Zap className="h-4 w-4 text-gray-500" />
               <div>
                 <p className="text-xs text-gray-500">Capacité</p>
-                <p className="text-sm font-medium">{selectedModel.max_tokens.toLocaleString()} tokens</p>
+                <p className="text-sm font-medium text-white">{selectedModel.max_tokens.toLocaleString()} tokens</p>
               </div>
             </div>
           </div>

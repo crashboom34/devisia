@@ -372,12 +372,12 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
 
   if (!isSupported) {
     return (
-      <Card className="bg-amber-50 border-amber-200">
+      <Card className="bg-yellow-900/20 border-yellow-700">
         <CardContent className="pt-6">
-          <p className="text-sm text-amber-800 mb-2">
+          <p className="text-sm text-yellow-400 mb-2">
             La reconnaissance vocale n'est pas supportée par votre navigateur.
           </p>
-          <p className="text-xs text-amber-700">
+          <p className="text-xs text-yellow-500">
             Navigateurs compatibles: Chrome/Edge (Android), Safari 14.5+ (iOS).
             HTTPS est requis sur mobile.
           </p>
@@ -391,20 +391,20 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
   return (
     <div className="space-y-4">
       {errorMessage && (
-        <Card className="bg-red-50 border-red-200">
+        <Card className="bg-red-900/20 border-red-700">
           <CardContent className="pt-6">
-            <p className="text-sm text-red-800">{errorMessage}</p>
+            <p className="text-sm text-red-400">{errorMessage}</p>
             {errorMessage.includes('HTTPS') && (
-              <p className="text-xs text-red-700 mt-2">
+              <p className="text-xs text-red-500 mt-2">
                 Pour utiliser la dictée vocale sur mobile, déployez l'application sur Vercel (HTTPS automatique) ou utilisez un tunnel HTTPS local.
               </p>
             )}
           </CardContent>
         </Card>
       )}
-      <Card className={`transition-all ${
-        isListening ? 'ring-2 ring-red-500 ring-offset-2' :
-        isValidated ? 'ring-2 ring-green-500 ring-offset-2' : ''
+      <Card className={`transition-all bg-brand-darkCard border-gray-800 ${
+        isListening ? 'ring-2 ring-red-500' :
+        isValidated ? 'ring-2 ring-brand-green' : ''
       }`}>
         <CardContent className="pt-6">
           {isEditing ? (
@@ -413,7 +413,7 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
                 value={transcript}
                 onChange={(e) => setTranscript(e.target.value)}
                 rows={8}
-                className="w-full"
+                className="w-full bg-brand-darkLight border-gray-700 text-white placeholder:text-gray-500"
                 placeholder="Modifiez votre texte..."
               />
               <div className="flex gap-2">
@@ -424,13 +424,14 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
                   }}
                   variant="outline"
                   size="sm"
+                  className="border-gray-700 text-gray-300 hover:bg-brand-darkLight"
                 >
                   Annuler
                 </Button>
                 <Button
                   onClick={handleSaveEdit}
                   size="sm"
-                  className="bg-green-600 hover:bg-green-700"
+                  className="bg-brand-green hover:bg-green-600 text-white"
                 >
                   <Check className="h-4 w-4 mr-2" />
                   Enregistrer
@@ -441,10 +442,10 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
             <div className="min-h-[200px] max-h-[400px] overflow-y-auto">
               {displayText ? (
                 <div>
-                  <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
+                  <p className="text-gray-300 whitespace-pre-wrap leading-relaxed">
                     {transcript}
                     {interimTranscript && (
-                      <span className="text-gray-400 italic">{interimTranscript}</span>
+                      <span className="text-gray-500 italic">{interimTranscript}</span>
                     )}
                   </p>
                   {isValidated && (
@@ -452,7 +453,7 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
                       onClick={handleEdit}
                       variant="ghost"
                       size="sm"
-                      className="mt-3"
+                      className="mt-3 text-gray-400 hover:text-white hover:bg-brand-darkLight"
                     >
                       <Edit2 className="h-4 w-4 mr-2" />
                       Modifier le texte
@@ -460,9 +461,9 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
                   )}
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center h-[200px] text-gray-400">
+                <div className="flex flex-col items-center justify-center h-[200px] text-gray-500">
                   <Mic className="h-12 w-12 mb-4" />
-                  <p className="text-center">
+                  <p className="text-center text-gray-400">
                     {placeholder || "Cliquez sur le micro pour commencer à dicter"}
                   </p>
                 </div>
@@ -478,7 +479,7 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
             <Button
               onClick={startListening}
               size="lg"
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-red-600 hover:bg-red-700 text-white"
             >
               <Mic className="h-5 w-5 mr-2" />
               Commencer la Dictée
@@ -491,6 +492,7 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
                 onClick={pauseListening}
                 size="lg"
                 variant="outline"
+                className="border-gray-700 text-gray-300 hover:bg-brand-darkLight"
               >
                 <Pause className="h-5 w-5 mr-2" />
                 Pause
@@ -499,7 +501,7 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
                 onClick={stopListening}
                 size="lg"
                 variant="outline"
-                className="text-red-600 border-red-600 hover:bg-red-50"
+                className="text-red-400 border-red-600 hover:bg-red-900/20"
               >
                 <MicOff className="h-5 w-5 mr-2" />
                 Arrêter
@@ -512,7 +514,7 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
               <Button
                 onClick={resumeListening}
                 size="lg"
-                className="bg-red-600 hover:bg-red-700"
+                className="bg-red-600 hover:bg-red-700 text-white"
               >
                 <Play className="h-5 w-5 mr-2" />
                 Reprendre
@@ -521,6 +523,7 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
                 onClick={stopListening}
                 size="lg"
                 variant="outline"
+                className="border-gray-700 text-gray-300 hover:bg-brand-darkLight"
               >
                 <MicOff className="h-5 w-5 mr-2" />
                 Terminer
@@ -534,6 +537,7 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
                 onClick={handleReset}
                 size="lg"
                 variant="outline"
+                className="border-gray-700 text-gray-300 hover:bg-brand-darkLight"
               >
                 <RotateCcw className="h-5 w-5 mr-2" />
                 Recommencer
@@ -541,7 +545,7 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
               <Button
                 onClick={handleValidate}
                 size="lg"
-                className="bg-green-600 hover:bg-green-700"
+                className="bg-brand-green hover:bg-green-600 text-white"
               >
                 <Check className="h-5 w-5 mr-2" />
                 Valider
