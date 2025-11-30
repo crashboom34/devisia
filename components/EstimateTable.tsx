@@ -262,12 +262,12 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
   const displayEstimate = isEditing ? editedEstimate : estimate;
 
   return (
-    <Card className="w-full">
+    <Card className="w-full bg-brand-darkCard border-gray-800">
       <CardHeader className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2">
-              <CardTitle className="text-lg sm:text-xl">Scénario {getScenarioLabel(estimate.scenario_type)}</CardTitle>
+              <CardTitle className="text-lg sm:text-xl text-white">Scénario {getScenarioLabel(estimate.scenario_type)}</CardTitle>
               <Badge className={`${getScenarioBadgeColor(estimate.scenario_type)} text-sm sm:text-base whitespace-nowrap`}>
                 {formatCurrency(displayEstimate.total_ttc)}
               </Badge>
@@ -278,20 +278,20 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
               )}
             </div>
             {projectTitle && (
-              <CardDescription className="text-sm sm:text-base">
-                <span className="font-semibold">Projet:</span> {projectTitle}
+              <CardDescription className="text-sm sm:text-base text-gray-400">
+                <span className="font-semibold text-gray-300">Projet:</span> {projectTitle}
               </CardDescription>
             )}
             {estimate.estimate_number && (
-              <CardDescription className="text-xs sm:text-sm flex flex-col sm:flex-row sm:gap-2">
-                <span><span className="font-semibold">N° Devis:</span> {estimate.estimate_number}</span>
-                <span><span className="font-semibold">Date:</span> {formatDate(estimate.estimate_date)}</span>
-                <span><span className="font-semibold">Validité:</span> {estimate.validity_days || 30} jours</span>
+              <CardDescription className="text-xs sm:text-sm flex flex-col sm:flex-row sm:gap-2 text-gray-400">
+                <span><span className="font-semibold text-gray-300">N° Devis:</span> {estimate.estimate_number}</span>
+                <span><span className="font-semibold text-gray-300">Date:</span> {formatDate(estimate.estimate_date)}</span>
+                <span><span className="font-semibold text-gray-300">Validité:</span> {estimate.validity_days || 30} jours</span>
               </CardDescription>
             )}
             {estimate.model_used && (
-              <CardDescription className="text-xs sm:text-sm">
-                <span className="font-semibold">Généré par:</span> {estimate.model_used}
+              <CardDescription className="text-xs sm:text-sm text-gray-400">
+                <span className="font-semibold text-gray-300">Généré par:</span> {estimate.model_used}
               </CardDescription>
             )}
           </div>
@@ -313,7 +313,7 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
                     variant="outline"
                     size="sm"
                     onClick={() => setShowRegenerateDialog(true)}
-                    className="text-xs sm:text-sm border-blue-300 text-blue-700 hover:bg-blue-50"
+                    className="text-xs sm:text-sm border-brand-green text-brand-green hover:bg-brand-green/10"
                     title="Régénérer avec un modèle IA plus performant"
                   >
                     <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
@@ -358,21 +358,21 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
         </div>
 
         {displayEstimate.scenario_justification && (
-          <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3 sm:p-4">
-            <p className="text-xs sm:text-sm text-blue-900 dark:text-blue-100">
-              <span className="font-semibold">💡 Pourquoi ce scénario?</span> {estimate.scenario_justification}
+          <div className="bg-brand-green/10 border border-brand-green/30 rounded-lg p-3 sm:p-4">
+            <p className="text-xs sm:text-sm text-gray-300">
+              <span className="font-semibold text-brand-green">💡 Pourquoi ce scénario?</span> {estimate.scenario_justification}
             </p>
           </div>
         )}
 
         <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)} className="w-full">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-            <TabsList className="grid w-full sm:w-auto grid-cols-3 sm:grid-cols-3">
-              <TabsTrigger value="client" className="text-xs sm:text-sm">Client</TabsTrigger>
-              <TabsTrigger value="detailed" className="text-xs sm:text-sm">Détaillée</TabsTrigger>
-              <TabsTrigger value="internal" className="text-xs sm:text-sm">Interne</TabsTrigger>
+            <TabsList className="grid w-full sm:w-auto grid-cols-3 sm:grid-cols-3 bg-brand-darkLight border-gray-800">
+              <TabsTrigger value="client" className="text-xs sm:text-sm data-[state=active]:bg-brand-green data-[state=active]:text-white">Client</TabsTrigger>
+              <TabsTrigger value="detailed" className="text-xs sm:text-sm data-[state=active]:bg-brand-green data-[state=active]:text-white">Détaillée</TabsTrigger>
+              <TabsTrigger value="internal" className="text-xs sm:text-sm data-[state=active]:bg-brand-green data-[state=active]:text-white">Interne</TabsTrigger>
             </TabsList>
-            <Button variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
+            <Button variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm border-gray-700 text-gray-300 hover:bg-brand-darkLight">
               <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
               Exporter PDF
             </Button>
@@ -388,23 +388,23 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
             <div key={catIndex} className="space-y-2 sm:space-y-3">
               <button
                 onClick={() => toggleCategory(catIndex)}
-                className="w-full bg-gray-100 px-3 sm:px-4 py-2 sm:py-3 rounded-md hover:bg-gray-200 transition-colors"
+                className="w-full bg-brand-darkLight px-3 sm:px-4 py-2 sm:py-3 rounded-md hover:bg-brand-dark transition-colors border border-gray-800"
               >
                 <div className="flex items-center justify-between">
                   <div className="text-left flex-1">
-                    <h3 className="font-bold text-sm sm:text-lg">{category.name}</h3>
+                    <h3 className="font-bold text-sm sm:text-lg text-white">{category.name}</h3>
                     {category.description && (
-                      <p className="text-xs sm:text-sm text-gray-600 mt-0.5 sm:mt-1">{category.description}</p>
+                      <p className="text-xs sm:text-sm text-gray-400 mt-0.5 sm:mt-1">{category.description}</p>
                     )}
                   </div>
                   <div className="flex items-center gap-2 sm:gap-3">
-                    <span className="font-bold text-xs sm:text-base text-blue-700 whitespace-nowrap">
+                    <span className="font-bold text-xs sm:text-base text-brand-green whitespace-nowrap">
                       {formatCurrency(category.subtotal_ttc)}
                     </span>
                     {isExpanded ? (
-                      <ChevronUp className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                      <ChevronUp className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 text-gray-400" />
                     ) : (
-                      <ChevronDown className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                      <ChevronDown className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 text-gray-400" />
                     )}
                   </div>
                 </div>
@@ -416,26 +416,26 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
                   <div className="hidden lg:block overflow-x-auto">
                     <table className="w-full border-collapse">
                       <thead>
-                        <tr className="bg-gray-50 border-b-2 border-gray-200">
-                          <th className="text-left p-3 font-semibold text-sm">Poste</th>
+                        <tr className="bg-brand-darkLight border-b-2 border-gray-800">
+                          <th className="text-left p-3 font-semibold text-sm text-gray-300">Poste</th>
                           {viewMode !== 'client' && (
                             <>
-                              <th className="text-left p-3 font-semibold text-sm">Description</th>
-                              <th className="text-center p-3 font-semibold text-sm">Qté</th>
-                              <th className="text-center p-3 font-semibold text-sm">Unité</th>
-                              <th className="text-right p-3 font-semibold text-sm">PU HT</th>
-                              <th className="text-right p-3 font-semibold text-sm">Montant HT</th>
-                              <th className="text-center p-3 font-semibold text-sm">TVA</th>
+                              <th className="text-left p-3 font-semibold text-sm text-gray-300">Description</th>
+                              <th className="text-center p-3 font-semibold text-sm text-gray-300">Qté</th>
+                              <th className="text-center p-3 font-semibold text-sm text-gray-300">Unité</th>
+                              <th className="text-right p-3 font-semibold text-sm text-gray-300">PU HT</th>
+                              <th className="text-right p-3 font-semibold text-sm text-gray-300">Montant HT</th>
+                              <th className="text-center p-3 font-semibold text-sm text-gray-300">TVA</th>
                             </>
                           )}
-                          <th className="text-right p-3 font-semibold text-sm">Montant TTC</th>
+                          <th className="text-right p-3 font-semibold text-sm text-gray-300">Montant TTC</th>
                           {viewMode === 'internal' && (
                             <>
-                              <th className="text-right p-3 font-semibold text-sm">Marge €</th>
-                              <th className="text-right p-3 font-semibold text-sm">Marge %</th>
+                              <th className="text-right p-3 font-semibold text-sm text-gray-300">Marge €</th>
+                              <th className="text-right p-3 font-semibold text-sm text-gray-300">Marge %</th>
                             </>
                           )}
-                          {isEditing && <th className="text-center p-3 font-semibold text-sm w-12"></th>}
+                          {isEditing && <th className="text-center p-3 font-semibold text-sm w-12 text-gray-300"></th>}
                         </tr>
                       </thead>
                       <tbody>
@@ -464,48 +464,48 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
                       return (
                         <div
                           key={itemIndex}
-                          className="bg-white border border-gray-200 rounded-lg p-3 space-y-2"
+                          className="bg-brand-darkLight border border-gray-800 rounded-lg p-3 space-y-2"
                         >
                           <div className="flex justify-between items-start gap-2">
                             <div className="flex-1 min-w-0">
-                              <h4 className="font-semibold text-sm truncate">{item.poste}</h4>
+                              <h4 className="font-semibold text-sm truncate text-white">{item.poste}</h4>
                               {viewMode !== 'client' && (
-                                <p className="text-xs text-gray-600 mt-1 line-clamp-2">{item.description}</p>
+                                <p className="text-xs text-gray-400 mt-1 line-clamp-2">{item.description}</p>
                               )}
                             </div>
-                            <span className="font-bold text-blue-700 text-sm whitespace-nowrap">
+                            <span className="font-bold text-brand-green text-sm whitespace-nowrap">
                               {formatCurrency(item.amount_ttc)}
                             </span>
                           </div>
 
                           {viewMode !== 'client' && (
-                            <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t">
+                            <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-gray-800">
                               <div>
                                 <span className="text-gray-500">Quantité:</span>
-                                <span className="ml-1 font-medium">{item.quantity} {item.unit}</span>
+                                <span className="ml-1 font-medium text-gray-300">{item.quantity} {item.unit}</span>
                               </div>
                               <div>
                                 <span className="text-gray-500">PU HT:</span>
-                                <span className="ml-1 font-medium">{formatCurrency(item.unit_price_ht)}</span>
+                                <span className="ml-1 font-medium text-gray-300">{formatCurrency(item.unit_price_ht)}</span>
                               </div>
                               <div>
                                 <span className="text-gray-500">Montant HT:</span>
-                                <span className="ml-1 font-medium">{formatCurrency(item.amount_ht)}</span>
+                                <span className="ml-1 font-medium text-gray-300">{formatCurrency(item.amount_ht)}</span>
                               </div>
                               <div>
                                 <span className="text-gray-500">TVA:</span>
-                                <span className="ml-1 font-medium">{item.tva_percent}%</span>
+                                <span className="ml-1 font-medium text-gray-300">{item.tva_percent}%</span>
                               </div>
                             </div>
                           )}
 
                           {viewMode === 'detailed' && (item.materials_cost || item.labor_cost) && (
-                            <div className="text-xs text-gray-500 pt-2 border-t space-y-1">
+                            <div className="text-xs text-gray-500 pt-2 border-t border-gray-800 space-y-1">
                               {item.materials_cost && (
-                                <div>Matériaux: {formatCurrency(item.materials_cost)}</div>
+                                <div className="text-gray-400">Matériaux: {formatCurrency(item.materials_cost)}</div>
                               )}
                               {item.labor_cost && (
-                                <div>Main-d'œuvre: {formatCurrency(item.labor_cost)}</div>
+                                <div className="text-gray-400">Main-d'œuvre: {formatCurrency(item.labor_cost)}</div>
                               )}
                             </div>
                           )}
