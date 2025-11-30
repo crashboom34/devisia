@@ -54,6 +54,7 @@ import {
   Users
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { PageSwitcher } from '@/components/SettingsNavigation';
 
 interface UserSettings {
   // Account
@@ -241,7 +242,7 @@ export default function CompleteSettingsPage() {
       {/* Header */}
       <header className="bg-[#0f0f0f] border-b border-[#2a2a2a] sticky top-0 z-50">
         <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <Link href="/dashboard">
                 <Button variant="ghost" size="sm" className="text-slate-300 hover:text-white">
@@ -250,18 +251,21 @@ export default function CompleteSettingsPage() {
                 </Button>
               </Link>
               <div>
-                <h1 className="text-2xl font-bold text-white">Paramètres</h1>
+                <h1 className="text-2xl font-bold text-white">Paramètres Complets</h1>
                 <p className="text-sm text-slate-400">Gérez tous les paramètres de votre compte et application</p>
               </div>
             </div>
-            <Button
-              onClick={handleSave}
-              disabled={saving}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              <Save className="h-4 w-4 mr-2" />
-              {saving ? 'Sauvegarde...' : 'Sauvegarder tout'}
-            </Button>
+            <div className="flex items-center gap-3">
+              <PageSwitcher currentPage="complete" />
+              <Button
+                onClick={handleSave}
+                disabled={saving}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                <Save className="h-4 w-4 mr-2" />
+                {saving ? 'Sauvegarde...' : 'Sauvegarder tout'}
+              </Button>
+            </div>
           </div>
         </div>
       </header>

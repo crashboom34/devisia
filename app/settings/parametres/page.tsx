@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import UserMenu from '@/components/UserMenu';
+import { PageSwitcher } from '@/components/SettingsNavigation';
 
 type SettingsSection = 'general' | 'devis' | 'notifications' | 'appearance' | 'security';
 
@@ -274,8 +275,13 @@ export default function ParametresPage() {
         <main className="flex-1 overflow-y-auto p-8">
           {/* Page Title */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-white mb-2">Paramètres</h1>
-            <p className="text-slate-400">Gérez les paramètres de votre compte et application</p>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h1 className="text-3xl font-bold text-white mb-2">Paramètres</h1>
+                <p className="text-slate-400">Gérez les paramètres de votre compte et application</p>
+              </div>
+              <PageSwitcher currentPage="parametres" />
+            </div>
           </div>
 
           {/* Main Grid */}

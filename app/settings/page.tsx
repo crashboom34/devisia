@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FileText, Key, AlertCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { SettingsNavigation } from '@/components/SettingsNavigation';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -201,37 +202,10 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Quick Links */}
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Link href="/dashboard">
-            <Card className="bg-gray-900 border-gray-700 hover:border-blue-600 transition-colors cursor-pointer">
-              <CardContent className="p-4 text-center">
-                <FileText className="h-8 w-8 text-blue-400 mx-auto mb-2" />
-                <p className="text-white font-semibold">Dashboard</p>
-                <p className="text-gray-500 text-xs mt-1">Gérer vos devis</p>
-              </CardContent>
-            </Card>
-          </Link>
-
-          <Link href="/project/new">
-            <Card className="bg-gray-900 border-gray-700 hover:border-emerald-600 transition-colors cursor-pointer">
-              <CardContent className="p-4 text-center">
-                <FileText className="h-8 w-8 text-emerald-400 mx-auto mb-2" />
-                <p className="text-white font-semibold">Nouveau Devis</p>
-                <p className="text-gray-500 text-xs mt-1">Créer un devis</p>
-              </CardContent>
-            </Card>
-          </Link>
-
-          <Link href="/settings/parametres">
-            <Card className="bg-gray-900 border-gray-700 hover:border-purple-600 transition-colors cursor-pointer">
-              <CardContent className="p-4 text-center">
-                <FileText className="h-8 w-8 text-purple-400 mx-auto mb-2" />
-                <p className="text-white font-semibold">Paramètres Complets</p>
-                <p className="text-gray-500 text-xs mt-1">Tous les réglages</p>
-              </CardContent>
-            </Card>
-          </Link>
+        {/* Settings Navigation */}
+        <div className="mt-8">
+          <h3 className="text-lg font-semibold text-white mb-4">Navigation des paramètres</h3>
+          <SettingsNavigation />
         </div>
       </main>
     </div>
