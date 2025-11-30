@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileText, Plus, Loader2, TrendingUp, CheckCircle2, Clock, Euro, RefreshCw } from 'lucide-react';
+import { FileText, Plus, Loader2, TrendingUp, CheckCircle2, Clock, Euro, RefreshCw, Users, Receipt } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import type { Project } from '@/lib/supabase';
 import ModelSelector from '@/components/ModelSelector';
@@ -132,6 +132,57 @@ export default function DashboardPage() {
               Actualiser
             </Button>
           </div>
+        </div>
+
+        {/* Quick Navigation */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Link href="/dashboard/quotes">
+            <Card className="bg-gradient-to-br from-slate-800/90 to-slate-800/50 border-slate-700/50 hover:border-cyan-600/50 transition-all duration-300 hover:shadow-xl hover:shadow-cyan-900/20 hover:-translate-y-1 cursor-pointer group">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-xl bg-cyan-500/10 group-hover:bg-cyan-500/20 transition-colors">
+                    <FileText className="h-6 w-6 text-cyan-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white group-hover:text-cyan-400 transition-colors">Devis</h3>
+                    <p className="text-sm text-slate-400">Gérer vos devis</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link href="/dashboard/invoices">
+            <Card className="bg-gradient-to-br from-slate-800/90 to-slate-800/50 border-slate-700/50 hover:border-emerald-600/50 transition-all duration-300 hover:shadow-xl hover:shadow-emerald-900/20 hover:-translate-y-1 cursor-pointer group">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-xl bg-emerald-500/10 group-hover:bg-emerald-500/20 transition-colors">
+                    <Receipt className="h-6 w-6 text-emerald-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white group-hover:text-emerald-400 transition-colors">Factures</h3>
+                    <p className="text-sm text-slate-400">Gérer vos factures</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link href="/dashboard/clients">
+            <Card className="bg-gradient-to-br from-slate-800/90 to-slate-800/50 border-slate-700/50 hover:border-blue-600/50 transition-all duration-300 hover:shadow-xl hover:shadow-blue-900/20 hover:-translate-y-1 cursor-pointer group">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-xl bg-blue-500/10 group-hover:bg-blue-500/20 transition-colors">
+                    <Users className="h-6 w-6 text-blue-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white group-hover:text-blue-400 transition-colors">Clients</h3>
+                    <p className="text-sm text-slate-400">Gérer vos clients</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
         </div>
 
         {/* KPI Cards */}
