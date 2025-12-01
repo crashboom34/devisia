@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { FileText, Key, AlertCircle } from 'lucide-react';
+import { FileText, Key, AlertCircle, EyeOff } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { SettingsNavigation } from '@/components/SettingsNavigation';
 
@@ -206,6 +206,42 @@ export default function SettingsPage() {
         <div className="mt-8">
           <h3 className="text-lg font-semibold text-white mb-4">Navigation des paramètres</h3>
           <SettingsNavigation />
+        </div>
+
+        {/* View Mode Configuration */}
+        <div className="mt-8">
+          <Card className="bg-gradient-to-br from-purple-500/10 to-blue-500/10 border-purple-500/50">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
+                    <EyeOff className="h-5 w-5 text-purple-400" />
+                    Restreindre l'affichage
+                  </h3>
+                  <p className="text-slate-400 text-sm mb-4">
+                    Configurez votre compte pour afficher uniquement certaines pages et masquer toutes les autres.
+                    Utile si vous souhaitez vous concentrer sur une seule section (ex: paramètres détaillés uniquement).
+                  </p>
+                  <div className="flex flex-wrap gap-2 text-xs text-slate-500">
+                    <Badge variant="secondary" className="bg-purple-500/20 text-purple-300">
+                      Redirection automatique
+                    </Badge>
+                    <Badge variant="secondary" className="bg-purple-500/20 text-purple-300">
+                      Sauvegarde permanente
+                    </Badge>
+                    <Badge variant="secondary" className="bg-purple-500/20 text-purple-300">
+                      Réversible
+                    </Badge>
+                  </div>
+                </div>
+                <Link href="/settings/view-mode">
+                  <Button className="bg-purple-600 hover:bg-purple-700 text-white">
+                    Configurer
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </main>
     </div>
