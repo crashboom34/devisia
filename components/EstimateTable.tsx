@@ -324,7 +324,7 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
             ) : (
               <>
                 <Button
-                  variant="default"
+                  variant="primary"
                   size="sm"
                   onClick={handleSaveChanges}
                   disabled={isSaving}

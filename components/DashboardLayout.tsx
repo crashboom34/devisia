@@ -32,8 +32,8 @@ export function DashboardLayout({ children, showNewQuoteButton = true }: Dashboa
             <div className="flex items-center gap-3">
               {showNewQuoteButton && (
                 <Link href="/project/new">
-                  <Button className="bg-gradient-to-r from-cyan-600 to-cyan-700 hover:from-cyan-700 hover:to-cyan-800 text-white shadow-lg shadow-cyan-600/20 font-medium transition-all duration-200">
-                    <Plus className="h-4 w-4 mr-2" />
+                  <Button variant="primary" size="lg">
+                    <Plus className="h-4 w-4" />
                     <span className="hidden sm:inline">Nouveau Devis</span>
                     <span className="sm:hidden">Devis</span>
                   </Button>

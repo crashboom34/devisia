@@ -82,8 +82,8 @@ export default function SettingsPage() {
 
         {/* Return to Dashboard Button */}
         <div className="mb-8">
-          <Link href="/dashboard">
-            <Button className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-6 text-base font-semibold">
+          <Link href="/dashboard" className="block">
+            <Button variant="primary" size="lg" className="w-full">
               Retour au Dashboard
             </Button>
           </Link>

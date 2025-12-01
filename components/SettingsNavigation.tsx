@@ -95,15 +95,9 @@ export function SettingsNavigation() {
 
                   <div className="flex items-center justify-between mt-4">
                     <Button
-                      variant={card.active ? 'outline' : 'default'}
+                      variant={card.active ? 'secondary' : 'primary'}
                       size="sm"
-                      className={`
-                        flex-1
-                        ${card.active
-                          ? 'border-purple-500/50 text-purple-400 hover:bg-purple-500/10'
-                          : 'bg-purple-600 hover:bg-purple-700 text-white'
-                        }
-                      `}
+                      className="flex-1"
                     >
                       {card.active ? 'Page actuelle' : 'Accéder'}
                       <ChevronRight
@@ -125,14 +119,14 @@ export function SettingsNavigation() {
       {/* Quick Actions */}
       <div className="flex items-center justify-center gap-4 pt-4">
         <Link href="/dashboard">
-          <Button variant="outline" className="border-[#2a2a2a] text-slate-300">
+          <Button variant="outline">
             Retour au Dashboard
           </Button>
         </Link>
         <Link href="/project/new">
-          <Button className="bg-emerald-600 hover:bg-emerald-700 text-white">
+          <Button variant="primary">
             Nouveau Devis
-            <ArrowRight className="h-4 w-4 ml-2" />
+            <ArrowRight className="h-4 w-4" />
           </Button>
         </Link>
       </div>
@@ -164,9 +158,8 @@ export function PageSwitcher({ currentPage, onPageChange }: PageSwitcherProps) {
       {pages.map((page) => (
         <Link key={page.id} href={page.path}>
           <Button
-            variant="default"
+            variant="secondary"
             size="sm"
-            className="bg-purple-600 hover:bg-purple-700 text-white"
             onClick={() => onPageChange?.(page.id)}
           >
             {page.label}

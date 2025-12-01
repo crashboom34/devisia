@@ -100,8 +100,8 @@ export default function DashboardPage() {
             <div className="flex-1" />
             <div className="flex items-center gap-3">
               <Link href="/project/new">
-                <Button className="bg-gradient-to-r from-cyan-600 to-cyan-700 hover:from-cyan-700 hover:to-cyan-800 text-white shadow-lg shadow-cyan-600/20 font-medium transition-all duration-200">
-                  <Plus className="h-4 w-4 mr-2" />
+                <Button variant="primary" size="lg">
+                  <Plus className="h-4 w-4" />
                   <span className="hidden sm:inline">Nouveau Devis</span>
                   <span className="sm:hidden">Devis</span>
                 </Button>
@@ -127,9 +127,8 @@ export default function DashboardPage() {
               variant="outline"
               size="sm"
               onClick={handleRefresh}
-              className="border-slate-700/50 hover:bg-slate-800 text-slate-300 hover:text-white transition-colors"
             >
-              <RefreshCw className="h-4 w-4 mr-2" />
+              <RefreshCw className="h-4 w-4" />
               Actualiser
             </Button>
           </div>
@@ -235,7 +234,7 @@ export default function DashboardPage() {
               </div>
               <div className="flex gap-2 bg-slate-900/50 p-1.5 rounded-xl border border-slate-700/50">
                 <Button
-                  variant={chartPeriod === '3months' ? 'default' : 'ghost'}
+                  variant={chartPeriod === '3months' ? 'secondary' : 'ghost'}
                   size="sm"
                   onClick={() => setChartPeriod('3months')}
                   className={chartPeriod === '3months'
@@ -246,7 +245,7 @@ export default function DashboardPage() {
                   3 derniers mois
                 </Button>
                 <Button
-                  variant={chartPeriod === '30days' ? 'default' : 'ghost'}
+                  variant={chartPeriod === '30days' ? 'secondary' : 'ghost'}
                   size="sm"
                   onClick={() => setChartPeriod('30days')}
                   className={chartPeriod === '30days'
@@ -257,7 +256,7 @@ export default function DashboardPage() {
                   30 derniers jours
                 </Button>
                 <Button
-                  variant={chartPeriod === '7days' ? 'default' : 'ghost'}
+                  variant={chartPeriod === '7days' ? 'secondary' : 'ghost'}
                   size="sm"
                   onClick={() => setChartPeriod('7days')}
                   className={chartPeriod === '7days'
@@ -303,8 +302,8 @@ export default function DashboardPage() {
                   </div>
                   <p className="text-slate-400 mb-4">Aucun devis récent</p>
                   <Link href="/project/new">
-                    <Button size="sm" className="bg-cyan-600 hover:bg-cyan-700 text-white">
-                      <Plus className="h-4 w-4 mr-2" />
+                    <Button variant="primary" size="sm">
+                      <Plus className="h-4 w-4" />
                       Créer votre premier devis
                     </Button>
                   </Link>
@@ -347,7 +346,7 @@ export default function DashboardPage() {
                       <p className="text-sm text-slate-400">Essai gratuit actif</p>
                     </div>
                     <Link href="/pricing">
-                      <Button size="sm" className="bg-gradient-to-r from-cyan-600 to-cyan-700 hover:from-cyan-700 hover:to-cyan-800 text-white shadow-lg">
+                      <Button variant="primary" size="sm">
                         Choisir un plan
                       </Button>
                     </Link>

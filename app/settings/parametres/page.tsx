@@ -300,9 +300,9 @@ export default function ParametresPage() {
                     {/* Save Button */}
                     <div className="flex justify-end pt-4">
                       <Button
+                        variant="primary"
                         onClick={handleSave}
                         disabled={saving}
-                        className="bg-orange-600 hover:bg-orange-700 text-white"
                       >
                         {saving ? (
                           <>Sauvegarde...</>
@@ -414,9 +414,9 @@ export default function ParametresPage() {
 
                     <div className="flex justify-end pt-4">
                       <Button
+                        variant="primary"
                         onClick={handleSave}
                         disabled={saving}
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white"
                       >
                         {saving ? (
                           <>Sauvegarde...</>
@@ -605,9 +605,9 @@ export default function ParametresPage() {
 
                     <div className="flex justify-end pt-4">
                       <Button
+                        variant="primary"
                         onClick={handleSave}
                         disabled={saving}
-                        className="bg-blue-600 hover:bg-blue-700 text-white"
                       >
                         {saving ? (
                           <>Sauvegarde...</>

@@ -11,9 +11,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { User, Settings, LogOut, Shield } from 'lucide-react';
+import { UserAvatarButton } from '@/components/ui/user-avatar-button';
+import { Settings, LogOut, Shield } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 export default function UserMenu() {
@@ -57,13 +56,11 @@ export default function UserMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-          <Avatar className="h-10 w-10">
-            <AvatarFallback className="bg-blue-600 text-white">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
-        </Button>
+        <UserAvatarButton
+          initials={initials}
+          userName={user.email}
+          size="md"
+        />
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">

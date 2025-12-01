@@ -5,40 +5,34 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-semibold ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]',
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap font-semibold ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.97]',
   {
     variants: {
       variant: {
-        default:
-          'bg-gradient-to-r from-cyan-600 to-cyan-700 text-white shadow-lg shadow-cyan-600/25 hover:from-cyan-700 hover:to-cyan-800 hover:shadow-xl hover:shadow-cyan-600/30 hover:-translate-y-0.5',
         primary:
-          'bg-gradient-to-r from-emerald-500 to-cyan-600 text-white shadow-lg shadow-emerald-500/25 hover:from-emerald-600 hover:to-cyan-700 hover:shadow-xl hover:shadow-emerald-500/30 hover:-translate-y-0.5',
-        destructive:
-          'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-600/25 hover:from-red-700 hover:to-red-800 hover:shadow-xl hover:shadow-red-600/30 hover:-translate-y-0.5',
-        outline:
-          'border-2 border-slate-700/50 bg-slate-900/50 backdrop-blur-sm text-slate-200 hover:bg-slate-800/80 hover:border-slate-600 hover:text-white hover:shadow-lg',
+          'rounded-full bg-gradient-to-r from-cyan-500 via-cyan-600 to-blue-600 text-white shadow-lg shadow-cyan-500/30 hover:shadow-xl hover:shadow-cyan-500/40 hover:scale-105 hover:from-cyan-600 hover:via-cyan-700 hover:to-blue-700',
         secondary:
-          'bg-slate-800 text-slate-200 border border-slate-700/50 hover:bg-slate-700 hover:border-slate-600 hover:text-white hover:shadow-lg',
+          'rounded-lg bg-slate-800/70 backdrop-blur-sm border border-slate-600/60 text-slate-200 shadow-md hover:bg-slate-700/80 hover:border-slate-500/70 hover:text-white hover:shadow-lg',
+        outline:
+          'rounded-lg border-2 border-cyan-500/50 bg-transparent text-cyan-400 hover:bg-cyan-500/10 hover:border-cyan-400 hover:text-cyan-300 hover:shadow-lg hover:shadow-cyan-500/20',
         ghost:
-          'text-slate-300 hover:bg-slate-800/50 hover:text-white',
+          'rounded-md text-slate-300 hover:bg-slate-800/60 hover:text-white',
+        danger:
+          'rounded-lg bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-600/30 hover:from-red-700 hover:to-red-800 hover:shadow-xl hover:shadow-red-600/40 hover:scale-105',
         link:
           'text-cyan-400 underline-offset-4 hover:underline hover:text-cyan-300',
-        success:
-          'bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-lg shadow-emerald-600/25 hover:from-emerald-700 hover:to-emerald-800 hover:shadow-xl hover:shadow-emerald-600/30 hover:-translate-y-0.5',
-        warning:
-          'bg-gradient-to-r from-amber-600 to-amber-700 text-white shadow-lg shadow-amber-600/25 hover:from-amber-700 hover:to-amber-800 hover:shadow-xl hover:shadow-amber-600/30 hover:-translate-y-0.5',
       },
       size: {
-        default: 'h-10 px-5 py-2.5',
-        sm: 'h-9 rounded-md px-4 text-xs',
-        lg: 'h-12 rounded-xl px-8 text-base',
-        xl: 'h-14 rounded-xl px-10 text-lg',
-        icon: 'h-10 w-10',
+        xs: 'h-8 px-3 text-xs',
+        sm: 'h-9 px-4 text-sm',
+        md: 'h-10 px-5 text-sm',
+        lg: 'h-12 px-8 text-base',
+        icon: 'h-10 w-10 p-0',
       },
     },
     defaultVariants: {
-      variant: 'default',
-      size: 'default',
+      variant: 'primary',
+      size: 'md',
     },
   }
 );

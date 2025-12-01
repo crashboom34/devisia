@@ -304,7 +304,7 @@ export default function ProjectRoomsPhotos({ projectId }: ProjectRoomsPhotosProp
                     </Button>
                     <Button
                       size="sm"
-                      variant="destructive"
+                      variant="danger"
                       onClick={() => {
                         setRoomToDelete(room.id);
                         setShowDeleteRoomDialog(true);
