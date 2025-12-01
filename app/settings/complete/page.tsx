@@ -256,7 +256,7 @@ export default function CompleteSettingsPage() {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <PageSwitcher currentPage="complete" />
+              <PageSwitcher currentPage="parametres" />
               <Button
                 onClick={handleSave}
                 disabled={saving}

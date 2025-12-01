@@ -26,37 +26,20 @@ export function SettingsNavigation() {
 
   const navigationCards = [
     {
-      id: 'api-info',
-      title: 'Informations API',
-      description: 'Gestion centralisée des clés API',
-      icon: Info,
-      path: '/settings',
-      color: 'blue',
-      active: pathname === '/settings',
-    },
-    {
       id: 'parameters',
       title: 'Paramètres Détaillés',
       description: 'Configuration par section',
       icon: Settings,
       path: '/settings/parametres',
       color: 'purple',
-      active: pathname === '/settings/parametres',
-    },
-    {
-      id: 'complete',
-      title: 'Paramètres Complets',
-      description: 'Tous les réglages en un seul endroit',
-      icon: FileText,
-      path: '/settings/complete',
-      color: 'emerald',
-      active: pathname === '/settings/complete',
+      active: pathname === '/settings/parametres' || pathname === '/settings',
     },
   ];
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="flex justify-center">
+        <div className="w-full max-w-md">
         {navigationCards.map((card) => {
           const IconComponent = card.icon;
           const isHovered = hoveredCard === card.id;
@@ -110,23 +93,33 @@ export function SettingsNavigation() {
                     {card.description}
                   </p>
 
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-slate-500">
-                      {card.active ? 'Page actuelle' : 'Accéder'}
-                    </span>
-                    <ChevronRight
+                  <div className="flex items-center justify-between mt-4">
+                    <Button
+                      variant={card.active ? 'outline' : 'default'}
+                      size="sm"
                       className={`
-                        h-4 w-4 transition-transform
-                        ${isHovered ? 'translate-x-1' : ''}
-                        ${card.active ? 'text-blue-400' : 'text-slate-500'}
+                        flex-1
+                        ${card.active
+                          ? 'border-purple-500/50 text-purple-400 hover:bg-purple-500/10'
+                          : 'bg-purple-600 hover:bg-purple-700 text-white'
+                        }
                       `}
-                    />
+                    >
+                      {card.active ? 'Page actuelle' : 'Accéder'}
+                      <ChevronRight
+                        className={`
+                          h-4 w-4 ml-2 transition-transform
+                          ${isHovered ? 'translate-x-1' : ''}
+                        `}
+                      />
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
             </Link>
           );
         })}
+        </div>
       </div>
 
       {/* Quick Actions */}
@@ -152,18 +145,18 @@ export function SettingsNavigation() {
  *
  * Compact navigation switcher for settings pages
  * Can be embedded in page headers
+ *
+ * Note: Only "Paramètres Détaillés" is available now
  */
 
 interface PageSwitcherProps {
-  currentPage: 'settings' | 'parametres' | 'complete';
+  currentPage: 'settings' | 'parametres';
   onPageChange?: (page: string) => void;
 }
 
 export function PageSwitcher({ currentPage, onPageChange }: PageSwitcherProps) {
   const pages = [
-    { id: 'settings', label: 'API Info', path: '/settings' },
-    { id: 'parametres', label: 'Détaillés', path: '/settings/parametres' },
-    { id: 'complete', label: 'Complets', path: '/settings/complete' },
+    { id: 'parametres', label: 'Paramètres Détaillés', path: '/settings/parametres' },
   ];
 
   return (
@@ -171,13 +164,9 @@ export function PageSwitcher({ currentPage, onPageChange }: PageSwitcherProps) {
       {pages.map((page) => (
         <Link key={page.id} href={page.path}>
           <Button
-            variant={currentPage === page.id ? 'default' : 'ghost'}
+            variant="default"
             size="sm"
-            className={
-              currentPage === page.id
-                ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                : 'text-slate-400 hover:text-white'
-            }
+            className="bg-purple-600 hover:bg-purple-700 text-white"
             onClick={() => onPageChange?.(page.id)}
           >
             {page.label}
