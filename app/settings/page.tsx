@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FileText, Key, AlertCircle, EyeOff } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { SettingsNavigation } from '@/components/SettingsNavigation';
+import { DashboardLayout } from '@/components/DashboardLayout';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -39,17 +40,8 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 py-4 px-6">
-        <div className="flex items-center gap-3">
-          <FileText className="h-6 w-6 text-blue-600" />
-          <h1 className="text-xl font-bold text-gray-900">Aide Devis IA</h1>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="container mx-auto px-6 py-12 max-w-4xl">
+    <DashboardLayout showNewQuoteButton={false}>
+      <div className="max-w-4xl mx-auto">
         {/* Page Title */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-white mb-2">Paramètres</h1>
@@ -243,7 +235,7 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
         </div>
-      </main>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }

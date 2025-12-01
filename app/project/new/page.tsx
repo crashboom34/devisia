@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, FileText, Mic, Keyboard, Loader2, Sparkles } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import UserMenu from '@/components/UserMenu';
+import { DashboardLayout } from '@/components/DashboardLayout';
 import VoiceRecorder from '@/components/VoiceRecorder';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Slider } from '@/components/ui/slider';
@@ -151,27 +151,16 @@ export default function NewProjectPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#020617]">
-      <header className="bg-slate-900/95 backdrop-blur-xl border-b border-slate-800/50 sticky top-0 z-50 shadow-2xl">
-        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-            <Link href="/dashboard">
-              <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0 hover:bg-slate-800">
-                <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5 text-slate-400" />
-              </Button>
-            </Link>
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="p-2.5 rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-600 shadow-lg shadow-emerald-500/20">
-                <FileText className="h-6 w-6 text-white" />
-              </div>
-              <span className="text-xl sm:text-2xl font-bold text-white tracking-tight">Devisia</span>
-            </div>
-          </div>
-          <UserMenu />
+    <DashboardLayout showNewQuoteButton={false}>
+      <div className="max-w-3xl mx-auto">
+        <div className="mb-4">
+          <Link href="/dashboard">
+            <Button variant="ghost" size="sm" className="hover:bg-slate-800 text-slate-400">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Retour au Dashboard
+            </Button>
+          </Link>
         </div>
-      </header>
-
-      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-3xl">
         <div className="mb-6 sm:mb-8 text-center">
           <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">Nouveau Projet</h1>
           <p className="text-sm sm:text-base text-slate-400">
@@ -447,7 +436,7 @@ export default function NewProjectPage() {
             </ul>
           </CardContent>
         </Card>
-      </main>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }

@@ -76,12 +76,6 @@ export default function UserMenu() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href="/dashboard" className="cursor-pointer">
-            <User className="mr-2 h-4 w-4" />
-            <span>Dashboard</span>
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
           <Link href="/settings" className="cursor-pointer">
             <Settings className="mr-2 h-4 w-4" />
             <span>Paramètres</span>

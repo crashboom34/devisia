@@ -14,6 +14,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { ActivityTimeline } from '@/components/dashboard/ActivityTimeline';
 import { KpiCard } from '@/components/dashboard/KpiCard';
 import { PageHeader } from '@/components/dashboard/PageHeader';
+import { Sidebar } from '@/components/Sidebar';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -87,30 +88,30 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#020617]">
-      {/* Header */}
-      <header className="bg-slate-900/95 backdrop-blur-xl border-b border-slate-800/50 sticky top-0 z-50 shadow-2xl">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="p-2.5 rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-600 shadow-lg shadow-emerald-500/20">
-              <FileText className="h-6 w-6 text-white" />
-            </div>
-            <span className="text-xl sm:text-2xl font-bold text-white tracking-tight">Devisia</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link href="/project/new">
-              <Button className="bg-gradient-to-r from-cyan-600 to-cyan-700 hover:from-cyan-700 hover:to-cyan-800 text-white shadow-lg shadow-cyan-600/20 font-medium transition-all duration-200">
-                <Plus className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">Nouveau Devis</span>
-                <span className="sm:hidden">Devis</span>
-              </Button>
-            </Link>
-            <UserMenu />
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-[#020617] flex">
+      {/* Sidebar Navigation */}
+      <Sidebar />
 
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-7xl space-y-8">
+      {/* Main Content Area */}
+      <div className="flex-1 ml-64">
+        {/* Header */}
+        <header className="bg-slate-900/95 backdrop-blur-xl border-b border-slate-800/50 sticky top-0 z-30 shadow-2xl">
+          <div className="px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between gap-4">
+            <div className="flex-1" />
+            <div className="flex items-center gap-3">
+              <Link href="/project/new">
+                <Button className="bg-gradient-to-r from-cyan-600 to-cyan-700 hover:from-cyan-700 hover:to-cyan-800 text-white shadow-lg shadow-cyan-600/20 font-medium transition-all duration-200">
+                  <Plus className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Nouveau Devis</span>
+                  <span className="sm:hidden">Devis</span>
+                </Button>
+              </Link>
+              <UserMenu />
+            </div>
+          </div>
+        </header>
+
+        <main className="px-4 sm:px-6 lg:px-8 py-8 max-w-7xl mx-auto space-y-8">
         {/* Page Header */}
         <div className="mb-8">
           <div className="flex items-start justify-between gap-4 mb-2">
@@ -382,7 +383,8 @@ export default function DashboardPage() {
             </Card>
           </div>
         </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }
