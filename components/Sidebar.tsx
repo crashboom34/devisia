@@ -60,7 +60,7 @@ const navigationItems: NavigationItem[] = [
   {
     id: 'settings',
     label: 'Paramètres',
-    href: '/settings',
+    href: '/settings/parametres',
     icon: Settings,
   },
   {

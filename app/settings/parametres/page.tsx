@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,7 +11,6 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import {
-  ArrowLeft,
   Save,
   Settings as SettingsIcon,
   FileText,
@@ -24,12 +22,10 @@ import {
   User,
   Globe,
   Phone,
-  Upload,
-  Menu
+  Upload
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import UserMenu from '@/components/UserMenu';
-import { PageSwitcher } from '@/components/SettingsNavigation';
+import { DashboardLayout } from '@/components/DashboardLayout';
 
 type SettingsSection = 'general' | 'devis' | 'notifications' | 'appearance' | 'security';
 
@@ -174,121 +170,19 @@ export default function ParametresPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#1a1a1a] flex">
-      {/* Left Sidebar */}
-      <aside className="w-48 bg-[#0f0f0f] border-r border-[#2a2a2a] flex flex-col">
-        {/* Logo */}
-        <div className="p-4 border-b border-[#2a2a2a]">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-white rounded flex items-center justify-center">
-              <span className="text-[#0f0f0f] text-xs font-bold">D</span>
-            </div>
-            <span className="text-white font-semibold">Devisia</span>
-          </div>
+    <DashboardLayout showNewQuoteButton={false}>
+      <div className="max-w-7xl mx-auto">
+        {/* Page Title */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-white mb-2">Paramètres</h1>
+          <p className="text-slate-400">Gérez les paramètres de votre compte et application</p>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 p-2">
-          <Link
-            href="/project/new"
-            className="flex items-center gap-3 px-3 py-2 rounded-md text-white bg-[#0ea5e9] hover:bg-[#0284c7] transition-colors mb-1"
-          >
-            <FileText className="h-4 w-4" />
-            <span className="text-sm font-medium">Nouveau Devis</span>
-          </Link>
-
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-3 px-3 py-2 rounded-md text-slate-300 hover:bg-[#2a2a2a] transition-colors"
-          >
-            <FileText className="h-4 w-4" />
-            <span className="text-sm">Devis</span>
-          </Link>
-
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-3 px-3 py-2 rounded-md text-slate-300 hover:bg-[#2a2a2a] transition-colors"
-          >
-            <FileText className="h-4 w-4" />
-            <span className="text-sm">Factures</span>
-          </Link>
-
-          <Link
-            href="/dashboard/clients"
-            className="flex items-center gap-3 px-3 py-2 rounded-md text-slate-300 hover:bg-[#2a2a2a] transition-colors"
-          >
-            <User className="h-4 w-4" />
-            <span className="text-sm">Clients</span>
-          </Link>
-
-          <div className="my-4 border-t border-[#2a2a2a]" />
-
-          <Link
-            href="/settings/parametres"
-            className="flex items-center gap-3 px-3 py-2 rounded-md text-white bg-[#0ea5e9] hover:bg-[#0284c7] transition-colors"
-          >
-            <SettingsIcon className="h-4 w-4" />
-            <span className="text-sm">Paramètres</span>
-          </Link>
-
-          <Link
-            href="/pricing/new"
-            className="flex items-center gap-3 px-3 py-2 rounded-md text-slate-300 hover:bg-[#2a2a2a] transition-colors"
-          >
-            <FileText className="h-4 w-4" />
-            <span className="text-sm">Abonnement</span>
-          </Link>
-        </nav>
-
-        {/* User Info */}
-        <div className="p-3 border-t border-[#2a2a2a]">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded bg-slate-600 flex items-center justify-center">
-              <span className="text-white text-xs font-medium">AM</span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-white text-sm font-medium truncate">Alex Mira</div>
-              <div className="text-slate-400 text-xs truncate">{user?.email}</div>
-            </div>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400">
-              <Menu className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top Bar */}
-        <header className="h-14 bg-[#0f0f0f] border-b border-[#2a2a2a] flex items-center px-6">
-          <button className="text-slate-300 hover:text-white mr-4">
-            <Menu className="h-5 w-5" />
-          </button>
-          <div className="flex items-center gap-2 text-sm text-slate-400">
-            <span>dashboard</span>
-            <span>›</span>
-            <span className="text-white">Paramètres</span>
-          </div>
-        </header>
-
-        {/* Content Area */}
-        <main className="flex-1 overflow-y-auto p-8">
-          {/* Page Title */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h1 className="text-3xl font-bold text-white mb-2">Paramètres</h1>
-                <p className="text-slate-400">Gérez les paramètres de votre compte et application</p>
-              </div>
-              <PageSwitcher currentPage="parametres" />
-            </div>
-          </div>
-
-          {/* Main Grid */}
+        {/* Main Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left Navigation */}
             <div className="lg:col-span-1">
-              <Card className="bg-[#242424] border-[#2a2a2a] shadow-xl">
+              <Card className="bg-gradient-to-br from-slate-800/90 to-slate-800/50 border-slate-700/50 shadow-xl">
                 <CardContent className="p-4">
                   <nav className="space-y-1">
                     {sections.map((section) => {
@@ -301,8 +195,8 @@ export default function ParametresPage() {
                           onClick={() => setActiveSection(section.id)}
                           className={`w-full flex items-start gap-3 px-3 py-3 rounded-lg transition-all ${
                             isActive
-                              ? 'bg-[#2a2a2a] text-white'
-                              : 'text-slate-300 hover:bg-[#1f1f1f] hover:text-white'
+                              ? 'bg-slate-700 text-white'
+                              : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                           }`}
                         >
                           <Icon className={`h-5 w-5 mt-0.5 flex-shrink-0 ${isActive ? '' : 'text-slate-400'}`} />
@@ -322,7 +216,7 @@ export default function ParametresPage() {
             <div className="lg:col-span-2">
               {/* Notifications Section */}
               {activeSection === 'notifications' && (
-                <Card className="bg-[#242424] border-[#2a2a2a] shadow-xl">
+                <Card className="bg-gradient-to-br from-slate-800/90 to-slate-800/50 border-slate-700/50 shadow-xl">
                   <CardHeader className="border-b border-[#2a2a2a]">
                     <div className="flex items-center gap-3">
                       <div className="p-2.5 rounded-lg bg-gradient-to-br from-orange-500/20 to-orange-600/20">
@@ -338,7 +232,7 @@ export default function ParametresPage() {
                   </CardHeader>
                   <CardContent className="p-6 space-y-4">
                     {/* Email Notifications */}
-                    <div className="flex items-start justify-between p-4 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a]">
+                    <div className="flex items-start justify-between p-4 rounded-lg bg-slate-900 border border-slate-700">
                       <div className="flex items-start gap-3">
                         <div className="p-2 rounded-lg bg-orange-500/10">
                           <Bell className="h-5 w-5 text-orange-400" />
@@ -360,7 +254,7 @@ export default function ParametresPage() {
                     </div>
 
                     {/* Quote Reminders */}
-                    <div className="flex items-start justify-between p-4 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a]">
+                    <div className="flex items-start justify-between p-4 rounded-lg bg-slate-900 border border-slate-700">
                       <div className="flex items-start gap-3">
                         <div className="p-2 rounded-lg bg-orange-500/10">
                           <FileText className="h-5 w-5 text-orange-400" />
@@ -382,7 +276,7 @@ export default function ParametresPage() {
                     </div>
 
                     {/* Marketing Emails */}
-                    <div className="flex items-start justify-between p-4 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a]">
+                    <div className="flex items-start justify-between p-4 rounded-lg bg-slate-900 border border-slate-700">
                       <div className="flex items-start gap-3">
                         <div className="p-2 rounded-lg bg-orange-500/10">
                           <Mail className="h-5 w-5 text-orange-400" />
@@ -426,7 +320,7 @@ export default function ParametresPage() {
 
               {/* Devis Section */}
               {activeSection === 'devis' && (
-                <Card className="bg-[#242424] border-[#2a2a2a] shadow-xl">
+                <Card className="bg-gradient-to-br from-slate-800/90 to-slate-800/50 border-slate-700/50 shadow-xl">
                   <CardHeader className="border-b border-[#2a2a2a]">
                     <div className="flex items-center gap-3">
                       <div className="p-2.5 rounded-lg bg-gradient-to-br from-orange-500/20 to-orange-600/20">
@@ -540,7 +434,7 @@ export default function ParametresPage() {
 
               {/* General Section */}
               {activeSection === 'general' && (
-                <Card className="bg-[#242424] border-[#2a2a2a] shadow-xl">
+                <Card className="bg-gradient-to-br from-slate-800/90 to-slate-800/50 border-slate-700/50 shadow-xl">
                   <CardHeader className="border-b border-[#2a2a2a]">
                     <div className="flex items-center gap-3">
                       <div className="p-2.5 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-600/20">
@@ -565,7 +459,7 @@ export default function ParametresPage() {
                           <div className="space-y-2 flex-1">
                             <Label className="text-slate-300 text-sm">Logo de l'entreprise</Label>
                             <div className="flex items-center gap-4">
-                              <div className="w-20 h-20 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center">
+                              <div className="w-20 h-20 rounded-lg bg-slate-900 border border-slate-700 flex items-center justify-center">
                                 <div className="text-center">
                                   <Upload className="h-6 w-6 text-slate-500 mx-auto" />
                                   <p className="text-xs text-orange-400 mt-1">Logo non configuré</p>
@@ -731,7 +625,7 @@ export default function ParametresPage() {
 
               {/* Security Section */}
               {activeSection === 'security' && (
-                <Card className="bg-[#242424] border-[#2a2a2a] shadow-xl">
+                <Card className="bg-gradient-to-br from-slate-800/90 to-slate-800/50 border-slate-700/50 shadow-xl">
                   <CardContent className="p-12 text-center">
                     <div className="max-w-md mx-auto">
                       <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-red-500/10 border-2 border-red-500/30 flex items-center justify-center">
@@ -749,7 +643,7 @@ export default function ParametresPage() {
 
               {/* Appearance Section */}
               {activeSection === 'appearance' && (
-                <Card className="bg-[#242424] border-[#2a2a2a] shadow-xl">
+                <Card className="bg-gradient-to-br from-slate-800/90 to-slate-800/50 border-slate-700/50 shadow-xl">
                   <CardContent className="p-12 text-center">
                     <div className="max-w-md mx-auto">
                       <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-purple-500/10 border-2 border-purple-500/30 flex items-center justify-center">
@@ -766,8 +660,7 @@ export default function ParametresPage() {
               )}
             </div>
           </div>
-        </main>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }
