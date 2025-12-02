@@ -138,13 +138,11 @@ Deno.serve(async (req: Request) => {
 function getAICapabilityLabel(tierLevel: number): string {
   switch (tierLevel) {
     case 1:
-      return 'Standard AI Intelligence';
+      return 'GPT-4.1 Mini AI';
     case 2:
-      return 'Advanced AI Intelligence';
+      return 'Mistral Large 2 AI';
     case 3:
-      return 'Premium AI Intelligence';
-    case 4:
-      return 'Enterprise-Grade AI Intelligence';
+      return 'GPT-4.1 Premium AI';
     default:
       return 'AI-Powered';
   }

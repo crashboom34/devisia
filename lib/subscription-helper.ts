@@ -115,13 +115,11 @@ export async function checkProjectLimit(userId: string): Promise<ProjectLimitInf
 export function getAICapabilityLabel(tierLevel: number): string {
   switch (tierLevel) {
     case 1:
-      return 'Standard AI Intelligence';
+      return 'GPT-4.1 Mini AI';
     case 2:
-      return 'Advanced AI Intelligence';
+      return 'Mistral Large 2 AI';
     case 3:
-      return 'Premium AI Intelligence';
-    case 4:
-      return 'Enterprise-Grade AI Intelligence';
+      return 'GPT-4.1 Premium AI';
     default:
       return 'AI-Powered';
   }
@@ -133,13 +131,11 @@ export function getAICapabilityLabel(tierLevel: number): string {
 export function getAICapabilityDescription(tierLevel: number): string {
   switch (tierLevel) {
     case 1:
-      return 'Reliable estimates for straightforward projects with solid accuracy';
+      return 'GPT-4.1 Mini - Fast and precise estimates at lower cost';
     case 2:
-      return 'Enhanced understanding of complex requirements and nuanced details';
+      return 'Mistral Large 2 - Advanced reasoning for complex projects';
     case 3:
-      return 'Superior accuracy for sophisticated projects with technical specifications';
-    case 4:
-      return 'Maximum intelligence with unparalleled accuracy and comprehensive analysis';
+      return 'GPT-4.1 - Maximum accuracy and comprehensive analysis';
     default:
       return 'AI-powered construction estimates';
   }
@@ -203,11 +199,11 @@ export function getUpgradeSuggestion(tierLevel: number): string | null {
   switch (tierLevel) {
     case 0:
     case 1:
-      return 'Upgrade to Professional for Advanced AI Intelligence and more projects';
+      return 'Upgrade to Business for Mistral Large 2 AI and more projects';
     case 2:
-      return 'Upgrade to Business for Premium AI Intelligence and priority support';
+      return 'Upgrade to Pro for GPT-4.1 Premium AI and unlimited projects';
     case 3:
-      return 'Upgrade to Enterprise for maximum AI capabilities and unlimited projects';
+      return null; // Already on highest tier
     default:
       return null;
   }

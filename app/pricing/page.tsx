@@ -25,16 +25,16 @@ export default function PricingPage() {
             <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
               <PricingCard
                 name="Starter"
-                price="19,99€"
+                price="9,99 €/mois"
                 description="Pour les artisans qui débutent ou qui veulent tester"
                 icon="file"
                 features={[
-                  "L'IA vous propose automatiquement un devis clair à partir de quelques questions.",
-                  "Ajoutez votre logo, mentions légales et TVA pour un rendu soigné.",
-                  "Retrouvez facilement tous vos devis, accessibles partout.",
-                  "Une équipe dispo pour répondre à vos questions par mail.",
-                  "Devis maximum: 5",
-                  "Clients maximum: 10",
+                  "IA GPT-4.1 Mini pour des devis précis",
+                  "Ajoutez votre logo, mentions légales et TVA",
+                  "Retrouvez facilement tous vos devis, accessibles partout",
+                  "Support par email",
+                  "Jusqu'à 10 devis par mois",
+                  "Jusqu'à 20 clients",
                 ]}
                 cta={{
                   label: 'Choisir Starter',
@@ -44,17 +44,17 @@ export default function PricingPage() {
 
               <PricingCard
                 name="Business"
-                price="29,99€"
+                price="19,99 €/mois"
                 description="Choisi par la majorité des artisans Devisia"
                 icon="users"
                 popular={true}
                 features={[
-                  "Générez rapidement tous vos devis clients avec l'IA.",
-                  "Gardez vos contacts et infos client organisés, sans perte de temps.",
-                  "Envoyez vos devis en PDF propre, sans restriction d'exports.",
-                  "Transformez vos devis en factures professionnelles instantanément.",
-                  "Devis maximum: 20",
-                  "Clients maximum: 40",
+                  "IA Mistral Large 2 pour devis complexes",
+                  "Gestion complète des contacts et clients",
+                  "Exports PDF illimités et professionnels",
+                  "Transformation devis en factures instantanée",
+                  "Jusqu'à 30 devis par mois",
+                  "Jusqu'à 60 clients",
                 ]}
                 cta={{
                   label: 'Choisir Business',
@@ -64,16 +64,16 @@ export default function PricingPage() {
 
               <PricingCard
                 name="Pro"
-                price="49,99€"
-                description="Pour les entreprises et artisans qui gèrent beaucoup de clients."
+                price="29,99 €/mois"
+                description="Pour les entreprises et artisans qui gèrent beaucoup de clients"
                 icon="crown"
                 features={[
-                  "Conçu pour les artisans à fort volume de demandes.",
-                  "Suivi complet de votre portefeuille client.",
-                  "Permettez à vos collaborateurs de travailler ensemble.",
-                  "Suivi précis des paiements et relances automatiques.",
-                  "Devis maximum: 40",
-                  "Clients maximum: 100",
+                  "IA GPT-4.1 pour l'excellence maximale",
+                  "Devis illimités pour forte demande",
+                  "Suivi complet du portefeuille client",
+                  "Collaboration d'équipe avancée",
+                  "Support prioritaire",
+                  "Clients illimités",
                 ]}
                 cta={{
                   label: 'Choisir Pro',
