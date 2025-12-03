@@ -71,14 +71,17 @@ export default function NewClientPage() {
         postal_code: formData.postalCode,
         city: formData.city,
         notes: formData.notes,
+        status: 'active',
+        total_quotes: 0,
+        total_revenue: 0,
       });
 
       if (error) throw error;
 
       router.push('/dashboard/clients');
     } catch (err) {
-      console.error('Error creating client:', err);
-      setError("Impossible d'enregistrer ce client. Merci de réessayer.");
+      console.error('Create client error', err);
+      setError('Une erreur est survenue lors de l’enregistrement du client. Veuillez vérifier les informations et réessayer.');
     } finally {
       setSaving(false);
     }
