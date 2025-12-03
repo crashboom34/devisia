@@ -71,16 +71,13 @@ export default function NewClientPage() {
         postal_code: formData.postalCode,
         city: formData.city,
         notes: formData.notes,
-        status: 'active',
-        total_quotes: 0,
-        total_revenue: 0,
       });
 
       if (error) throw error;
 
       router.push('/dashboard/clients');
     } catch (err) {
-      console.error('Create client error', err);
+      console.error('Create client Supabase error', err);
       setError('Une erreur est survenue lors de l’enregistrement du client. Veuillez vérifier les informations et réessayer.');
     } finally {
       setSaving(false);
