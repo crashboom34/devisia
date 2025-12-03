@@ -54,10 +54,15 @@ export default function NewClientPage() {
     setSaving(true);
 
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
+      const [{ data: sessionData }, { data: userData }] = await Promise.all([
+        supabase.auth.getSession(),
+        supabase.auth.getUser(),
+      ]);
 
-      if (!token) {
+      const token = sessionData.session?.access_token;
+      const user = userData.user;
+
+      if (!token || !user) {
         router.push('/auth/login');
         return;
       }
@@ -71,10 +76,28 @@ export default function NewClientPage() {
         body: JSON.stringify(formData),
       });
 
-      const result = await response.json();
-      if (!response.ok) {
-        setError(result?.error || "Impossible d'enregistrer ce client. Merci de réessayer.");
+      if (response.ok) {
+        router.push('/dashboard/clients');
         return;
+      }
+
+      // Tentative de secours côté client si l'API échoue (ex: config serveur manquante)
+      const result = await response.json().catch(() => ({}));
+      const fallbackInsert = await supabase.from('clients').insert({
+        user_id: user.id,
+        name: formData.name,
+        company: formData.company,
+        contact_name: formData.contactName,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address,
+        postal_code: formData.postalCode,
+        city: formData.city,
+        notes: formData.notes,
+      });
+
+      if (fallbackInsert.error) {
+        throw new Error(result?.error || fallbackInsert.error.message);
       }
 
       router.push('/dashboard/clients');
