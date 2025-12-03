@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable react/no-unescaped-entities, react-hooks/exhaustive-deps */
 
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';

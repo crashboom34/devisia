@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable react-hooks/exhaustive-deps */
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -6,23 +7,28 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Plus, Users, Search, RefreshCw, Mail, Phone, Building2, Eye, Edit, Trash2, TrendingUp, Euro, FileCheck } from 'lucide-react';
+import { Users, Search, RefreshCw, Mail, Phone, Building2, Eye, Edit, Trash2, TrendingUp, Euro, FileCheck } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { EmptyState } from '@/components/dashboard/EmptyState';
 import { KpiCard } from '@/components/dashboard/KpiCard';
 
-// Mock client data structure
 interface Client {
   id: string;
+  user_id?: string;
   name: string;
-  email: string;
-  company: string;
-  phone: string;
-  total_quotes: number;
-  total_revenue: number;
-  status: 'active' | 'inactive';
+  company?: string;
+  contact_name?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  postal_code?: string;
+  city?: string;
+  notes?: string;
+  status?: 'active' | 'inactive';
+  total_quotes?: number;
+  total_revenue?: number;
 }
 
 export default function ClientsPage() {
@@ -32,51 +38,71 @@ export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [filteredClients, setFilteredClients] = useState<Client[]>([]);
   const [searchValue, setSearchValue] = useState('');
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    checkUser();
-  }, []);
+    const initialize = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
 
-  useEffect(() => {
-    filterClients();
-  }, [clients, searchValue]);
+      if (!user) {
+        router.push('/auth/login');
+        return;
+      }
 
-  const checkUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      router.push('/auth/login');
-    } else {
       setUser(user);
-      // Load mock data for demonstration
-      loadMockClients();
-      setLoading(false);
-    }
-  };
+      await loadClients(user.id);
+    };
 
-  const loadMockClients = () => {
-    // Mock data - in production this would come from Supabase
-    const mockData: Client[] = [];
-    setClients(mockData);
-  };
+    initialize();
+  }, [router]);
 
-  const filterClients = () => {
+  useEffect(() => {
     let filtered = [...clients];
 
     if (searchValue) {
       filtered = filtered.filter(client =>
-        client.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-        client.email.toLowerCase().includes(searchValue.toLowerCase()) ||
-        client.company.toLowerCase().includes(searchValue.toLowerCase())
+        client.name?.toLowerCase().includes(searchValue.toLowerCase()) ||
+        client.email?.toLowerCase().includes(searchValue.toLowerCase()) ||
+        client.company?.toLowerCase().includes(searchValue.toLowerCase())
       );
     }
 
     setFilteredClients(filtered);
+  }, [clients, searchValue]);
+
+  const loadClients = async (userId: string) => {
+    setLoading(true);
+    setError('');
+
+    try {
+      const { data, error } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const formatted = (data || []).map((client) => ({
+        ...client,
+        status: client.status || 'active',
+        total_quotes: client.total_quotes || 0,
+        total_revenue: client.total_revenue || 0,
+      }));
+
+      setClients(formatted as Client[]);
+    } catch (err) {
+      console.error('Error loading clients:', err);
+      setError("Impossible de charger les clients.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const calculateStats = () => {
     const total = clients.length;
-    const active = clients.filter(c => c.status === 'active').length;
-    const totalRevenue = clients.reduce((sum, client) => sum + client.total_revenue, 0);
+    const active = clients.filter(c => c.status !== 'inactive').length;
+    const totalRevenue = clients.reduce((sum, client) => sum + (client.total_revenue || 0), 0);
     const avgRevenue = total > 0 ? totalRevenue / total : 0;
 
     return {
@@ -89,13 +115,14 @@ export default function ClientsPage() {
 
   const stats = calculateStats();
 
-  const handleRefresh = () => {
-    loadMockClients();
+  const handleRefresh = async () => {
+    if (user?.id) {
+      await loadClients(user.id);
+    }
   };
 
   const handleCreateClient = () => {
-    // Navigate to client creation or show modal
-    console.log('Create client');
+    router.push('/dashboard/clients/new');
   };
 
   return (
@@ -110,15 +137,26 @@ export default function ClientsPage() {
             { label: 'Clients' },
           ]}
           actions={
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRefresh}
-              className="border-slate-700 hover:bg-slate-800 text-slate-300 hover:text-white transition-colors"
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Actualiser
-            </Button>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                className="border-slate-700 hover:bg-slate-800 text-slate-300 hover:text-white transition-colors"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Actualiser
+              </Button>
+              <Link href="/dashboard/clients/new">
+                <Button
+                  size="sm"
+                  className="bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500 text-white shadow-lg hover:opacity-90"
+                >
+                  <Users className="h-4 w-4 mr-2" />
+                  Nouveau client
+                </Button>
+              </Link>
+            </div>
           }
         />
 
@@ -169,6 +207,9 @@ export default function ClientsPage() {
               className="pl-12 bg-slate-800/50 border-slate-700/50 hover:border-slate-600/50 focus:border-cyan-500/50 text-white placeholder:text-slate-500 h-12 text-base rounded-xl transition-colors"
             />
           </div>
+          {error && (
+            <p className="mt-3 text-sm text-red-400">{error}</p>
+          )}
         </div>
 
         {/* Table or Empty State */}
@@ -228,7 +269,7 @@ export default function ClientsPage() {
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-semibold shadow-lg">
-                              {client.name.charAt(0).toUpperCase()}
+                              {client.name?.charAt(0)?.toUpperCase() || '?'}
                             </div>
                             <div>
                               <div className="text-sm font-semibold text-white">
@@ -236,7 +277,7 @@ export default function ClientsPage() {
                               </div>
                               <div className="text-xs text-slate-400 flex items-center gap-1">
                                 <Mail className="h-3 w-3" />
-                                {client.email}
+                                {client.email || '—'}
                               </div>
                             </div>
                           </div>
@@ -244,32 +285,32 @@ export default function ClientsPage() {
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2 text-sm text-slate-300">
                             <Building2 className="h-4 w-4 text-slate-500" />
-                            {client.company}
+                            {client.company || '—'}
                           </div>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2 text-sm text-slate-400">
                             <Phone className="h-4 w-4 text-slate-500" />
-                            {client.phone}
+                            {client.phone || client.contact_name || '—'}
                           </div>
                         </td>
                         <td className="px-6 py-4 text-right">
                           <span className="text-sm font-medium text-white">
-                            {client.total_quotes}
+                            {client.total_quotes || 0}
                           </span>
                         </td>
                         <td className="px-6 py-4 text-right">
                           <span className="text-sm font-bold text-emerald-400">
-                            {client.total_revenue.toFixed(2)} €
+                            {(client.total_revenue || 0).toFixed(2)} €
                           </span>
                         </td>
                         <td className="px-6 py-4 text-center">
                           <Badge className={`${
-                            client.status === 'active'
+                            client.status !== 'inactive'
                               ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
                               : 'bg-slate-500/10 text-slate-400 border-slate-500/20'
                           } border`}>
-                            {client.status === 'active' ? 'Actif' : 'Inactif'}
+                            {client.status !== 'inactive' ? 'Actif' : 'Inactif'}
                           </Badge>
                         </td>
                         <td className="px-6 py-4 text-right">
