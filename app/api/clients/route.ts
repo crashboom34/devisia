@@ -1,24 +1,31 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+export const runtime = 'nodejs';
 
-const getSupabaseServer = () => {
-  if (!supabaseUrl || !serviceRoleKey) {
-    return null;
-  }
+const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  return createClient(supabaseUrl, serviceRoleKey);
+const getSupabaseServer = (token?: string) => {
+  if (!supabaseUrl) return null;
+
+  const supabaseKey = supabaseServiceRoleKey || supabaseAnonKey;
+  if (!supabaseKey) return null;
+
+  return createClient(supabaseUrl, supabaseKey, {
+    global: token
+      ? {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      : undefined,
+  });
 };
 
 export async function POST(request: Request) {
   try {
-    const supabaseServer = getSupabaseServer();
-    if (!supabaseServer) {
-      return NextResponse.json({ error: "Configuration Supabase manquante côté serveur." }, { status: 500 });
-    }
-
     const authHeader = request.headers.get('authorization') || '';
     const token = authHeader.startsWith('Bearer ')
       ? authHeader.replace('Bearer ', '')
@@ -26,6 +33,13 @@ export async function POST(request: Request) {
 
     if (!token) {
       return NextResponse.json({ error: 'Authentification requise.' }, { status: 401 });
+    }
+
+    const supabaseServer = getSupabaseServer(token);
+    if (!supabaseServer) {
+      return NextResponse.json({
+        error: "Configuration Supabase manquante côté serveur (SUPABASE_URL / NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_ANON_KEY ou SUPABASE_SERVICE_ROLE_KEY).",
+      }, { status: 500 });
     }
 
     const { data: userResult, error: userError } = await supabaseServer.auth.getUser(token);
