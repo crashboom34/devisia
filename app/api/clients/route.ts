@@ -4,15 +4,21 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!supabaseUrl || !serviceRoleKey) {
-  // Fail fast at module load so deployments surface configuration issues
-  throw new Error('Supabase environment variables are missing for client creation API.');
-}
+const getSupabaseServer = () => {
+  if (!supabaseUrl || !serviceRoleKey) {
+    return null;
+  }
 
-const supabaseServer = createClient(supabaseUrl, serviceRoleKey);
+  return createClient(supabaseUrl, serviceRoleKey);
+};
 
 export async function POST(request: Request) {
   try {
+    const supabaseServer = getSupabaseServer();
+    if (!supabaseServer) {
+      return NextResponse.json({ error: "Configuration Supabase manquante côté serveur." }, { status: 500 });
+    }
+
     const authHeader = request.headers.get('authorization') || '';
     const token = authHeader.startsWith('Bearer ')
       ? authHeader.replace('Bearer ', '')
