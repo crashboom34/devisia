@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable react/no-unescaped-entities */
 
 import { SettingsPageManager } from '@/components/SettingsPageManager';
 import { GeneralSettingsPage } from '@/components/settings-pages/GeneralSettingsPage';
