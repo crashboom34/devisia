@@ -39,6 +39,7 @@ export default function ClientsPage() {
   const [filteredClients, setFilteredClients] = useState<Client[]>([]);
   const [searchValue, setSearchValue] = useState('');
   const [error, setError] = useState('');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     const initialize = async () => {
@@ -123,6 +124,45 @@ export default function ClientsPage() {
 
   const handleCreateClient = () => {
     router.push('/dashboard/clients/new');
+  };
+
+  const handleViewClient = (clientId: string) => {
+    router.push(`/dashboard/clients/${clientId}`);
+  };
+
+  const handleEditClient = (clientId: string) => {
+    router.push(`/dashboard/clients/${clientId}/edit`);
+  };
+
+  const handleDeleteClient = async (clientId: string) => {
+    const confirmed = window.confirm('Êtes-vous sûr de vouloir supprimer ce client ? Cette action est irréversible.');
+    if (!confirmed) return;
+
+    setDeletingId(clientId);
+    setError('');
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push('/auth/login');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('clients')
+        .delete()
+        .eq('id', clientId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      await loadClients(user.id);
+    } catch (err) {
+      console.error('Delete client error', err);
+      setError('Impossible de supprimer ce client. Vérifiez qu’il n’est pas lié à des devis ou factures.');
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   return (
@@ -315,16 +355,29 @@ export default function ClientsPage() {
                         </td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex items-center justify-end gap-2">
-                            <Button size="sm" variant="ghost" className="text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10 transition-colors">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10 transition-colors"
+                              onClick={() => handleViewClient(client.id)}
+                            >
                               <Eye className="h-4 w-4" />
                             </Button>
-                            <Button size="sm" variant="ghost" className="text-slate-400 hover:text-blue-400 hover:bg-blue-500/10 transition-colors">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-slate-400 hover:text-blue-400 hover:bg-blue-500/10 transition-colors"
+                              onClick={() => handleEditClient(client.id)}
+                            >
                               <Edit className="h-4 w-4" />
                             </Button>
-                            <Button size="sm" variant="ghost" className="text-slate-400 hover:text-orange-400 hover:bg-orange-500/10 transition-colors">
-                              <Mail className="h-4 w-4" />
-                            </Button>
-                            <Button size="sm" variant="ghost" className="text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                              onClick={() => handleDeleteClient(client.id)}
+                              disabled={deletingId === client.id}
+                            >
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
