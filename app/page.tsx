@@ -1,11 +1,13 @@
 import { HeroSection } from '@/components/marketing/HeroSection';
 import { FeatureCard } from '@/components/marketing/FeatureCard';
-import { StatBlock } from '@/components/marketing/StatBlock';
 import { CTASection } from '@/components/marketing/CTASection';
 import { SiteHeader } from '@/components/marketing/SiteHeader';
 import { SiteFooter } from '@/components/marketing/SiteFooter';
 import { Sparkles, Clock, FileText, Mic, Zap, BarChart3, CheckCircle, Download } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import { TestimonialsSection } from '@/components/marketing/TestimonialsSection';
+import { LogosSection } from '@/components/marketing/LogosSection';
+import { ForWhoSection } from '@/components/marketing/ForWhoSection';
 
 export default function Home() {
   return (
@@ -40,16 +42,8 @@ export default function Home() {
           }
         />
 
-        <section className="py-20 bg-brand-darkLight">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
-              <StatBlock value="10 000+" label="Devis créés" />
-              <StatBlock value="98%" label="Satisfaction" />
-              <StatBlock value="2 min" label="Temps moyen" />
-              <StatBlock value="50+" label="Modèles BTP" />
-            </div>
-          </div>
-        </section>
+        <TestimonialsSection />
+        <LogosSection />
 
         <section id="features" className="py-24 bg-brand-dark">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -162,6 +156,8 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        <ForWhoSection />
 
         <CTASection
           title="Prêt à transformer votre façon de créer des devis ?"
