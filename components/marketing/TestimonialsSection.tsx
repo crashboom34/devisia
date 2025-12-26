@@ -1,25 +1,33 @@
-import { Card } from '@/components/ui/card';
+import { TestimonialCard } from './TestimonialCard';
 
 const testimonials = [
   {
-    name: 'Jean, plombier-chauffagiste – Nîmes',
+    name: 'Jean',
+    roleAndCity: 'Plombier-chauffagiste – Nîmes',
     quote:
-      '« Avant, je faisais mes devis le soir sur Excel. Aujourd’hui, je les prépare en 5 minutes entre deux chantiers. Je gagne au moins 2–3 heures par jour. »',
+      "« Avant, je faisais mes devis le soir sur Excel. Aujourd'hui, je les prépare en 5 minutes entre deux chantiers. Je gagne au moins 2–3 heures par jour. »",
+    avatarUrl: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Jean',
   },
   {
-    name: 'Sonia, artisan maçonnerie – Montpellier',
+    name: 'Sonia',
+    roleAndCity: 'Artisan maçonnerie – Montpellier',
     quote:
-      '« Je galérais avec la mise en page et les totaux. Devisia s’occupe de tout, je n’ai plus peur d’envoyer un devis mal calculé. »',
+      "« Je galérais avec la mise en page et les totaux. Devisia s'occupe de tout, je n'ai plus peur d'envoyer un devis mal calculé. »",
+    avatarUrl: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Sonia',
   },
   {
-    name: 'Karim, gérant d’une entreprise générale – Béziers',
+    name: 'Karim',
+    roleAndCity: "Gérant d'entreprise générale – Béziers",
     quote:
-      '« Toute l’équipe utilise les mêmes modèles. On a enfin des devis cohérents, même quand plusieurs personnes les font. »',
+      "« Toute l'équipe utilise les mêmes modèles. On a enfin des devis cohérents, même quand plusieurs personnes les font. »",
+    avatarUrl: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Karim',
   },
   {
-    name: 'Lucie, conductrice de travaux – Lunel',
+    name: 'Lucie',
+    roleAndCity: 'Conductrice de travaux – Lunel',
     quote:
-      '« Je prépare les devis directement après la visite de chantier. Le client reçoit tout dans la journée, et ça se voit sur le taux de signature. »',
+      "« Je prépare les devis directement après la visite de chantier. Le client reçoit tout dans la journée, et ça se voit sur le taux de signature. »",
+    avatarUrl: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Lucie',
   },
 ];
 
@@ -39,17 +47,15 @@ export function TestimonialsSection() {
           </div>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
           {testimonials.map((testimonial) => (
-            <Card
+            <TestimonialCard
               key={testimonial.name}
-              className="bg-brand-darkCard border-gray-800 p-6 h-full shadow-lg shadow-black/30"
-            >
-              <div className="flex h-full flex-col gap-4">
-                <p className="text-gray-100 text-lg leading-relaxed">{testimonial.quote}</p>
-                <p className="text-sm font-medium text-gray-300">{testimonial.name}</p>
-              </div>
-            </Card>
+              quote={testimonial.quote}
+              name={testimonial.name}
+              roleAndCity={testimonial.roleAndCity}
+              avatarUrl={testimonial.avatarUrl}
+            />
           ))}
         </div>
       </div>

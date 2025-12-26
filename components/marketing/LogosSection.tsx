@@ -1,9 +1,9 @@
-const logos = [
-  'Hérault Plomberie Services',
-  'BatiSud Rénovation',
-  'Occitanie Maçonnerie',
-  'Pro Elec 34',
-  'MultiTravaux Construction',
+const TRUST_COMPANIES = [
+  { name: 'Hérault Plomberie Services', acronym: 'HPS' },
+  { name: 'BatiSud Rénovation', acronym: 'BR' },
+  { name: 'Occitanie Maçonnerie', acronym: 'OM' },
+  { name: 'Pro Elec 34', acronym: 'PE34' },
+  { name: 'MultiTravaux Construction', acronym: 'MTC' },
 ];
 
 export function LogosSection() {
@@ -17,17 +17,20 @@ export function LogosSection() {
           </p>
         </div>
 
-        <div className="rounded-2xl border border-gray-800 bg-brand-darkCard/60 p-6 sm:p-8 shadow-inner shadow-black/30">
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 md:gap-6 items-center">
-            {logos.map((logo) => (
-              <div
-                key={logo}
-                className="flex items-center justify-center px-4 py-3 rounded-lg bg-brand-dark text-gray-400 text-sm sm:text-base font-medium border border-transparent hover:border-gray-800 transition"
-              >
-                {logo}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mt-6">
+          {TRUST_COMPANIES.map((company) => (
+            <div
+              key={company.name}
+              className="flex items-center gap-3 rounded-2xl border border-slate-700/60 bg-slate-900/70 px-5 py-3 shadow-sm hover:-translate-y-0.5 hover:border-emerald-400/70 hover:shadow-emerald-500/10 transition"
+            >
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 via-cyan-400 to-blue-500 text-[11px] font-semibold text-slate-950 uppercase shrink-0">
+                {company.acronym}
               </div>
-            ))}
-          </div>
+              <span className="text-sm font-medium text-slate-100 leading-tight">
+                {company.name}
+              </span>
+            </div>
+          ))}
         </div>
       </div>
     </section>
