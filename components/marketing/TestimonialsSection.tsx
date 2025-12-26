@@ -2,32 +2,32 @@ import { TestimonialCard } from './TestimonialCard';
 
 const testimonials = [
   {
-    name: 'Jean',
+    name: 'Jean Moreau',
     roleAndCity: 'Plombier-chauffagiste – Nîmes',
     quote:
       "« Avant, je faisais mes devis le soir sur Excel. Aujourd'hui, je les prépare en 5 minutes entre deux chantiers. Je gagne au moins 2–3 heures par jour. »",
-    avatarUrl: 'https://i.pravatar.cc/150?img=12',
+    avatarUrl: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=300&h=300&fit=crop',
   },
   {
-    name: 'Sonia',
+    name: 'Marc Dupont',
     roleAndCity: 'Artisan maçonnerie – Montpellier',
     quote:
       "« Je galérais avec la mise en page et les totaux. Devisia s'occupe de tout, je n'ai plus peur d'envoyer un devis mal calculé. »",
-    avatarUrl: 'https://i.pravatar.cc/150?img=47',
+    avatarUrl: 'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=300&h=300&fit=crop',
   },
   {
-    name: 'Karim',
+    name: 'Karim Belkacem',
     roleAndCity: "Gérant d'entreprise générale – Béziers",
     quote:
       "« Toute l'équipe utilise les mêmes modèles. On a enfin des devis cohérents, même quand plusieurs personnes les font. »",
-    avatarUrl: 'https://i.pravatar.cc/150?img=33',
+    avatarUrl: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=300&h=300&fit=crop',
   },
   {
-    name: 'Lucie',
-    roleAndCity: 'Conductrice de travaux – Lunel',
+    name: 'Thomas Laurent',
+    roleAndCity: 'Conducteur de travaux – Lunel',
     quote:
       "« Je prépare les devis directement après la visite de chantier. Le client reçoit tout dans la journée, et ça se voit sur le taux de signature. »",
-    avatarUrl: 'https://i.pravatar.cc/150?img=45',
+    avatarUrl: 'https://images.pexels.com/photos/91227/pexels-photo-91227.jpeg?auto=compress&cs=tinysrgb&w=300&h=300&fit=crop',
   },
 ];
 
