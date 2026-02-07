@@ -134,6 +134,7 @@ export default function NewProjectPage() {
             scenarioType,
             temperature,
             templateId: selectedTemplateId || undefined,
+            adminTier: typeof window !== 'undefined' ? localStorage.getItem('admin_current_mode') : undefined,
           }),
         });
 

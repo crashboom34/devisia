@@ -13,7 +13,7 @@ interface EstimateRequest {
   scenarioType: "eco" | "standard" | "premium";
   temperature?: number;
   templateId?: string;
-  // modelId removed - automatic assignment based on subscription tier only
+  adminTier?: string;
 }
 
 Deno.serve(async (req: Request) => {
@@ -41,7 +41,7 @@ Deno.serve(async (req: Request) => {
       throw new Error("Unauthorized");
     }
 
-    const { projectId, projectDescription, scenarioType, temperature, templateId }: EstimateRequest = await req.json();
+    const { projectId, projectDescription, scenarioType, temperature, templateId, adminTier }: EstimateRequest = await req.json();
 
     if (!projectId || !projectDescription || !scenarioType) {
       throw new Error("Missing required fields");
@@ -84,21 +84,16 @@ Deno.serve(async (req: Request) => {
       return fallbackModels || [];
     };
 
-    // AUTOMATIC MODEL SELECTION BASED ON SUBSCRIPTION
-    // Users cannot select models - assignment is automatic based on their subscription tier
-    console.log("Determining AI model based on user subscription...");
-
-    // Get user's AI model via subscription tier
-    const { data: modelData, error: modelLookupError } = await supabase.rpc(
-      'get_user_ai_model',
-      { p_user_id: user.id }
-    );
+    // MODEL SELECTION: admin tier override > subscription > fallback
+    console.log("Determining AI model...");
 
     let selectedModelId = null;
 
-    if (modelLookupError || !modelData || modelData.length === 0) {
-      console.warn("No subscription model found, checking admin status:", modelLookupError);
+    // 1) Admin tier override: admin sends their simulated plan from frontend
+    const tierMap: Record<string, string> = { 'unlimited': 'pro', 'pro': 'pro', 'business': 'business', 'starter': 'starter' };
+    const resolvedTierName = adminTier ? tierMap[adminTier] : null;
 
+    if (resolvedTierName) {
       const { data: adminData } = await supabase
         .from("admin_users")
         .select("id")
@@ -106,50 +101,63 @@ Deno.serve(async (req: Request) => {
         .maybeSingle();
 
       if (adminData) {
-        const { data: proTier } = await supabase
+        const { data: tier } = await supabase
           .from("subscription_tiers")
           .select("ai_model_id")
-          .eq("name", "pro")
+          .eq("name", resolvedTierName)
           .eq("is_active", true)
           .maybeSingle();
 
-        if (proTier?.ai_model_id) {
-          selectedModelId = proTier.ai_model_id;
-          console.log("Admin user - using Pro tier model");
+        if (tier?.ai_model_id) {
+          selectedModelId = tier.ai_model_id;
+          console.log(`Admin override - using ${resolvedTierName} tier model`);
         }
+      } else {
+        console.warn("adminTier sent but user is not admin, ignoring");
       }
+    }
 
-      if (!selectedModelId) {
-        const { data: starterTier } = await supabase
-          .from("subscription_tiers")
-          .select("ai_model_id")
-          .eq("name", "starter")
+    // 2) Normal subscription lookup
+    if (!selectedModelId) {
+      const { data: modelData, error: modelLookupError } = await supabase.rpc(
+        'get_user_ai_model',
+        { p_user_id: user.id }
+      );
+
+      if (!modelLookupError && modelData && modelData.length > 0) {
+        selectedModelId = modelData[0].model_id;
+        console.log(`Subscription-assigned model: ${modelData[0].model_identifier}`);
+      }
+    }
+
+    // 3) Fallback: starter tier model, then cheapest active model
+    if (!selectedModelId) {
+      console.warn("No subscription model found, using fallback");
+      const { data: starterTier } = await supabase
+        .from("subscription_tiers")
+        .select("ai_model_id")
+        .eq("name", "starter")
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (starterTier?.ai_model_id) {
+        selectedModelId = starterTier.ai_model_id;
+        console.log("Using Starter tier default model");
+      } else {
+        const { data: fallbackModel } = await supabase
+          .from("ai_models")
+          .select("id")
           .eq("is_active", true)
+          .order("cost_per_1k_tokens_input", { ascending: true })
+          .limit(1)
           .maybeSingle();
 
-        if (starterTier?.ai_model_id) {
-          selectedModelId = starterTier.ai_model_id;
-          console.log("Using Starter tier default model");
+        if (fallbackModel) {
+          selectedModelId = fallbackModel.id;
         } else {
-          const { data: fallbackModel } = await supabase
-            .from("ai_models")
-            .select("id")
-            .eq("is_active", true)
-            .order("cost_per_1k_tokens_input", { ascending: true })
-            .limit(1)
-            .maybeSingle();
-
-          if (fallbackModel) {
-            selectedModelId = fallbackModel.id;
-            console.log("Using lowest cost fallback model");
-          } else {
-            throw new Error("No AI model available");
-          }
+          throw new Error("No AI model available");
         }
       }
-    } else {
-      selectedModelId = modelData[0].model_id;
-      console.log(`Subscription-assigned model: ${modelData[0].model_identifier}`);
     }
 
     const { data: model, error: modelError } = await supabase

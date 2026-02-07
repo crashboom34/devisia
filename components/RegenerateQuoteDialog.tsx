@@ -131,6 +131,7 @@ export default function RegenerateQuoteDialog({
           estimateId,
           modelId: selectedModel,
           projectDescription,
+          adminTier: typeof window !== 'undefined' ? localStorage.getItem('admin_current_mode') : undefined,
         }),
       });
 
