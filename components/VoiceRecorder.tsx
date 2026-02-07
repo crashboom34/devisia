@@ -1,11 +1,10 @@
 'use client';
-/* eslint-disable react/no-unescaped-entities, react-hooks/exhaustive-deps */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Mic, MicOff, Pause, Play, Check, RotateCcw, Edit2 } from 'lucide-react';
+import { Mic, MicOff, Pause, Play, Check, RotateCcw, Edit2, AlertCircle } from 'lucide-react';
 
 interface VoiceRecorderProps {
   value: string;
@@ -22,305 +21,221 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
   const [isEditing, setIsEditing] = useState(false);
   const [isValidated, setIsValidated] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [duration, setDuration] = useState(0);
 
   const recognitionRef = useRef<any>(null);
-  const isRestartingRef = useRef<boolean>(false);
-  const isListeningRef = useRef<boolean>(false);
-  const isPausedRef = useRef<boolean>(false);
-  const isRecognitionActiveRef = useRef<boolean>(false);
-  const baseTextRef = useRef<string>('');
+  const isRestartingRef = useRef(false);
+  const isListeningRef = useRef(false);
+  const isPausedRef = useRef(false);
+  const isRecognitionActiveRef = useRef(false);
+  const baseTextRef = useRef('');
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     setTranscript(value);
   }, [value]);
 
   useEffect(() => {
-    if (value) {
-      setIsValidated(true);
-    } else {
-      setIsValidated(false);
-    }
+    setIsValidated(!!value);
   }, [value]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (isListening && !isPaused) {
+      timerRef.current = setInterval(() => {
+        setDuration((d) => d + 1);
+      }, 1000);
+    } else {
+      if (timerRef.current) clearInterval(timerRef.current);
+    }
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [isListening, isPaused]);
 
-      if (!SpeechRecognition) {
-        setIsSupported(false);
-        return;
+  const formatDuration = useCallback((seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setIsSupported(false);
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'fr-FR';
+
+    recognition.onstart = () => {
+      isRecognitionActiveRef.current = true;
+    };
+
+    recognition.onresult = (event: any) => {
+      const lastIndex = event.results.length - 1;
+      const lastResult = event.results[lastIndex];
+      const lastTranscript = lastResult[0].transcript;
+      const isLastFinal = lastResult.isFinal;
+
+      let sessionTranscript = '';
+      let sessionInterim = '';
+
+      if (isLastFinal) {
+        sessionTranscript = lastTranscript.trim();
+      } else {
+        sessionInterim = lastTranscript.trim();
       }
 
-      const recognition = new SpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = 'fr-FR';
-
-      recognition.onstart = () => {
-        console.log('[VoiceRecorder] onstart - Recognition started');
-        isRecognitionActiveRef.current = true;
-      };
-
-      recognition.onresult = (event: any) => {
-        console.log('[VoiceRecorder] ========================================');
-        console.log('[VoiceRecorder] onresult - resultIndex:', event.resultIndex, 'totalResults:', event.results.length);
-
-        // Log ALL results to understand what the browser sends
-        for (let i = 0; i < event.results.length; i++) {
-          console.log('[VoiceRecorder] Result[' + i + '] - isFinal:', event.results[i].isFinal, '- text:', event.results[i][0].transcript);
-        }
-
-        // ✅ VRAIE SOLUTION : N'UTILISER QUE LE DERNIER RÉSULTAT
-        const lastIndex = event.results.length - 1;
-        const lastResult = event.results[lastIndex];
-        const lastTranscript = lastResult[0].transcript;
-        const isLastFinal = lastResult.isFinal;
-
-        console.log('[VoiceRecorder] Using ONLY last result[' + lastIndex + '] - isFinal:', isLastFinal, '- text:', lastTranscript);
-
-        let sessionTranscript = '';
-        let sessionInterim = '';
-
-        if (isLastFinal) {
-          sessionTranscript = lastTranscript.trim();
-        } else {
-          sessionInterim = lastTranscript.trim();
-        }
-
-        // ✅ FILTRE ANTI-DUPLICATION AU NIVEAU DES MOTS (sécurité)
-        if (sessionTranscript) {
-          const words = sessionTranscript.split(/\s+/);
-          const cleanedWords: string[] = [];
-
-          for (const word of words) {
-            const lastWord = cleanedWords[cleanedWords.length - 1];
-            if (word !== lastWord) {
-              cleanedWords.push(word);
-            } else {
-              console.log('[VoiceRecorder] Removed duplicate word:', word);
-            }
+      if (sessionTranscript) {
+        const words = sessionTranscript.split(/\s+/);
+        const cleanedWords: string[] = [];
+        for (const word of words) {
+          if (word !== cleanedWords[cleanedWords.length - 1]) {
+            cleanedWords.push(word);
           }
-
-          sessionTranscript = cleanedWords.join(' ');
-          console.log('[VoiceRecorder] Session cleaned transcript:', sessionTranscript);
         }
+        sessionTranscript = cleanedWords.join(' ');
+      }
 
-        // ✅ COMBINER baseText + sessionTranscript
-        const baseText = baseTextRef.current.trim();
-        const combined = baseText && sessionTranscript
-          ? baseText + ' ' + sessionTranscript
-          : baseText || sessionTranscript;
+      const baseText = baseTextRef.current.trim();
+      const combined = baseText && sessionTranscript
+        ? baseText + ' ' + sessionTranscript
+        : baseText || sessionTranscript;
 
-        const combinedInterim = baseText && sessionInterim
-          ? baseText + ' ' + sessionInterim
-          : baseText || sessionInterim;
+      const combinedInterim = baseText && sessionInterim
+        ? baseText + ' ' + sessionInterim
+        : baseText || sessionInterim;
 
-        console.log('[VoiceRecorder] baseText:', baseText);
-        console.log('[VoiceRecorder] sessionTranscript:', sessionTranscript);
-        console.log('[VoiceRecorder] combined:', combined);
+      if (sessionTranscript) {
+        setTranscript(combined);
+        setInterimTranscript('');
+        onChange(combined);
+      } else if (sessionInterim) {
+        setTranscript(baseText);
+        setInterimTranscript(combinedInterim);
+      }
+    };
 
-        // ✅ Mettre à jour l'affichage ET propager au parent
-        if (sessionTranscript) {
-          setTranscript(combined);
-          setInterimTranscript('');
-          console.log('[VoiceRecorder] Calling onChange with:', combined);
-          onChange(combined);  // Propager au parent immédiatement
-        } else if (sessionInterim) {
-          // Pour l'interim, on affiche mais ne propage pas encore
-          setTranscript(baseText);
-          setInterimTranscript(combinedInterim);
-        }
+    recognition.onerror = (event: any) => {
+      isRecognitionActiveRef.current = false;
 
-        console.log('[VoiceRecorder] ========================================');
-      };
+      if (event.error === 'no-speech') return;
 
-      recognition.onerror = (event: any) => {
-        console.error('[VoiceRecorder] onerror - Error type:', event.error);
-        console.log('[VoiceRecorder] onerror - States:', {
-          isListening: isListeningRef.current,
-          isPaused: isPausedRef.current,
-          isActive: isRecognitionActiveRef.current
-        });
-
-        isRecognitionActiveRef.current = false;
-
-        // Ces erreurs ne sont pas des vraies erreurs, juste des événements normaux
-        if (event.error === 'no-speech') {
-          console.log('[VoiceRecorder] No speech detected, continuing...');
-          return;
-        }
-
-        if (event.error === 'aborted') {
-          console.log('[VoiceRecorder] Recognition aborted (normal behavior)');
-          // Ne pas afficher de message d'erreur, c'est un arrêt normal
-          setIsListening(false);
-          isListeningRef.current = false;
-          isPausedRef.current = false;
-          return;
-        }
-
-        let message = '';
-        switch (event.error) {
-          case 'not-allowed':
-          case 'permission-denied':
-            message = 'Accès au microphone refusé. Veuillez autoriser l\'accès dans les paramètres de votre navigateur.';
-            break;
-          case 'network':
-            message = 'Erreur réseau. Vérifiez votre connexion internet.';
-            break;
-          default:
-            message = `Erreur: ${event.error}. Sur mobile, HTTPS est requis pour la reconnaissance vocale.`;
-        }
-
-        setErrorMessage(message);
+      if (event.error === 'aborted') {
         setIsListening(false);
         isListeningRef.current = false;
         isPausedRef.current = false;
-      };
+        return;
+      }
 
-      recognition.onend = () => {
-        console.log('[VoiceRecorder] onend - Recognition ended');
-        const currentIsListening = isListeningRef.current;
-        const currentIsPaused = isPausedRef.current;
-        const currentIsRestarting = isRestartingRef.current;
+      let message = '';
+      switch (event.error) {
+        case 'not-allowed':
+        case 'permission-denied':
+          message = 'Acces au microphone refuse. Veuillez autoriser l\'acces dans les parametres de votre navigateur.';
+          break;
+        case 'network':
+          message = 'Erreur reseau. Verifiez votre connexion internet.';
+          break;
+        default:
+          message = `Erreur: ${event.error}. Sur mobile, HTTPS est requis pour la reconnaissance vocale.`;
+      }
 
-        console.log('[VoiceRecorder] onend - States:', {
-          isListening: currentIsListening,
-          isPaused: currentIsPaused,
-          isRestarting: currentIsRestarting,
-          isActive: isRecognitionActiveRef.current
-        });
+      setErrorMessage(message);
+      setIsListening(false);
+      isListeningRef.current = false;
+      isPausedRef.current = false;
+    };
 
-        isRecognitionActiveRef.current = false;
+    recognition.onend = () => {
+      const currentIsListening = isListeningRef.current;
+      const currentIsPaused = isPausedRef.current;
+      const currentIsRestarting = isRestartingRef.current;
 
-        if (currentIsListening && !currentIsPaused && !currentIsRestarting) {
-          console.log('[VoiceRecorder] onend - Scheduling restart in 100ms');
-          isRestartingRef.current = true;
+      isRecognitionActiveRef.current = false;
 
-          setTimeout(() => {
-            console.log('[VoiceRecorder] onend - Restart timeout fired');
-            console.log('[VoiceRecorder] onend - Current states:', {
-              isListening: isListeningRef.current,
-              isPaused: isPausedRef.current,
-              isActive: isRecognitionActiveRef.current
-            });
-
-            if (isListeningRef.current && !isPausedRef.current && !isRecognitionActiveRef.current) {
-              try {
-                console.log('[VoiceRecorder] onend - Attempting restart...');
-                recognition.start();
-                console.log('[VoiceRecorder] onend - Restart successful');
-              } catch (error) {
-                console.error('[VoiceRecorder] onend - Failed to restart:', error);
-                setIsListening(false);
-                isListeningRef.current = false;
-                setErrorMessage('Impossible de redémarrer la reconnaissance vocale.');
-              }
-            } else {
-              console.log('[VoiceRecorder] onend - Restart aborted (conditions not met)');
+      if (currentIsListening && !currentIsPaused && !currentIsRestarting) {
+        isRestartingRef.current = true;
+        setTimeout(() => {
+          if (isListeningRef.current && !isPausedRef.current && !isRecognitionActiveRef.current) {
+            try {
+              recognition.start();
+            } catch {
+              setIsListening(false);
+              isListeningRef.current = false;
+              setErrorMessage('Impossible de redemarrer la reconnaissance vocale.');
             }
-            isRestartingRef.current = false;
-          }, 100);
-        } else {
-          console.log('[VoiceRecorder] onend - No restart needed');
-        }
-      };
+          }
+          isRestartingRef.current = false;
+        }, 100);
+      }
+    };
 
-      recognitionRef.current = recognition;
-    }
+    recognitionRef.current = recognition;
 
     return () => {
       if (recognitionRef.current) {
         recognitionRef.current.stop();
       }
     };
-  }, []);
+  }, [onChange]);
 
   const startListening = () => {
-    console.log('[VoiceRecorder] startListening called');
-    console.log('[VoiceRecorder] startListening - Current states:', {
-      isListening: isListeningRef.current,
-      isPaused: isPausedRef.current,
-      isActive: isRecognitionActiveRef.current,
-      hasRecognition: !!recognitionRef.current
-    });
+    if (!recognitionRef.current || isListening || isRecognitionActiveRef.current) return;
 
-    if (recognitionRef.current && !isListening && !isRecognitionActiveRef.current) {
-      console.log('[VoiceRecorder] startListening - Initializing...');
+    baseTextRef.current = value.trim();
+    setInterimTranscript('');
+    setIsValidated(false);
+    setIsEditing(false);
+    setErrorMessage('');
+    setDuration(0);
+    isRestartingRef.current = false;
 
-      // ✅ Utiliser la VRAIE valeur du champ parent comme baseText
-      const currentText = value.trim();
-      baseTextRef.current = currentText;
-      console.log('[VoiceRecorder] startListening - baseText set to:', currentText);
-      console.log('[VoiceRecorder] startListening - This is the REAL parent value');
-
-      setInterimTranscript('');
-      setIsValidated(false);
-      setIsEditing(false);
-      setErrorMessage('');
-      isRestartingRef.current = false;
-
-      try {
-        console.log('[VoiceRecorder] startListening - Calling recognition.start()...');
-        recognitionRef.current.start();
-        console.log('[VoiceRecorder] startListening - recognition.start() called successfully');
-
-        setIsListening(true);
-        isListeningRef.current = true;
-        setIsPaused(false);
-        isPausedRef.current = false;
-      } catch (error: any) {
-        console.error('[VoiceRecorder] startListening - Error:', error);
-        console.error('[VoiceRecorder] startListening - Error name:', error?.name);
-        console.error('[VoiceRecorder] startListening - Error message:', error?.message);
-
-        isListeningRef.current = false;
-        isRecognitionActiveRef.current = false;
-
-        if (error?.name === 'InvalidStateError') {
-          setErrorMessage('La reconnaissance vocale est déjà en cours. Veuillez attendre.');
-        } else {
-          setErrorMessage('Impossible de démarrer la reconnaissance vocale. Assurez-vous d\'être en HTTPS sur mobile.');
-        }
+    try {
+      recognitionRef.current.start();
+      setIsListening(true);
+      isListeningRef.current = true;
+      setIsPaused(false);
+      isPausedRef.current = false;
+    } catch (error: any) {
+      isListeningRef.current = false;
+      isRecognitionActiveRef.current = false;
+      if (error?.name === 'InvalidStateError') {
+        setErrorMessage('La reconnaissance vocale est deja en cours. Veuillez attendre.');
+      } else {
+        setErrorMessage('Impossible de demarrer la reconnaissance vocale. Assurez-vous d\'etre en HTTPS sur mobile.');
       }
-    } else {
-      console.log('[VoiceRecorder] startListening - Conditions not met, aborting');
-      if (isListening) console.log('[VoiceRecorder] startListening - Already listening');
-      if (isRecognitionActiveRef.current) console.log('[VoiceRecorder] startListening - Recognition already active');
-      if (!recognitionRef.current) console.log('[VoiceRecorder] startListening - No recognition instance');
     }
   };
 
   const pauseListening = () => {
-    console.log('[VoiceRecorder] pauseListening called');
     if (recognitionRef.current && isListening) {
       isRestartingRef.current = false;
       recognitionRef.current.stop();
       setIsPaused(true);
       isPausedRef.current = true;
-      console.log('[VoiceRecorder] pauseListening - Paused');
     }
   };
 
   const resumeListening = () => {
-    console.log('[VoiceRecorder] resumeListening called');
     if (recognitionRef.current && isPaused && !isRecognitionActiveRef.current) {
       isRestartingRef.current = false;
       try {
-        console.log('[VoiceRecorder] resumeListening - Calling recognition.start()...');
         recognitionRef.current.start();
         setIsPaused(false);
         isPausedRef.current = false;
-        console.log('[VoiceRecorder] resumeListening - Resumed');
-      } catch (error) {
-        console.error('[VoiceRecorder] resumeListening - Error:', error);
+      } catch {
         setErrorMessage('Impossible de reprendre la reconnaissance vocale.');
       }
     }
   };
 
   const stopListening = () => {
-    console.log('[VoiceRecorder] stopListening called');
     if (recognitionRef.current) {
       isRestartingRef.current = false;
       recognitionRef.current.stop();
@@ -330,7 +245,6 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
       isPausedRef.current = false;
       isRecognitionActiveRef.current = false;
       setInterimTranscript('');
-      console.log('[VoiceRecorder] stopListening - Stopped');
     }
   };
 
@@ -345,15 +259,13 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
   };
 
   const handleReset = () => {
-    console.log('[VoiceRecorder] handleReset - Clearing everything');
     setTranscript('');
     setInterimTranscript('');
     setIsValidated(false);
     setIsEditing(false);
+    setDuration(0);
     baseTextRef.current = '';
-    if (isListening) {
-      stopListening();
-    }
+    if (isListening) stopListening();
     onChange('');
   };
 
@@ -375,37 +287,48 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
     return (
       <Card className="bg-yellow-900/20 border-yellow-700">
         <CardContent className="pt-6">
-          <p className="text-sm text-yellow-400 mb-2">
-            La reconnaissance vocale n'est pas supportée par votre navigateur.
-          </p>
-          <p className="text-xs text-yellow-500">
-            Navigateurs compatibles: Chrome/Edge (Android), Safari 14.5+ (iOS).
-            HTTPS est requis sur mobile.
-          </p>
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-yellow-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm text-yellow-400 mb-1 font-medium">
+                Reconnaissance vocale non disponible
+              </p>
+              <p className="text-xs text-yellow-500">
+                Navigateurs compatibles: Chrome/Edge (Android), Safari 14.5+ (iOS). HTTPS requis sur mobile.
+              </p>
+            </div>
+          </div>
         </CardContent>
       </Card>
     );
   }
 
   const displayText = transcript + (interimTranscript ? ` ${interimTranscript}` : '');
+  const wordCount = displayText.trim() ? displayText.trim().split(/\s+/).length : 0;
 
   return (
     <div className="space-y-4">
       {errorMessage && (
         <Card className="bg-red-900/20 border-red-700">
           <CardContent className="pt-6">
-            <p className="text-sm text-red-400">{errorMessage}</p>
-            {errorMessage.includes('HTTPS') && (
-              <p className="text-xs text-red-500 mt-2">
-                Pour utiliser la dictée vocale sur mobile, déployez l'application sur Vercel (HTTPS automatique) ou utilisez un tunnel HTTPS local.
-              </p>
-            )}
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm text-red-400">{errorMessage}</p>
+                {errorMessage.includes('HTTPS') && (
+                  <p className="text-xs text-red-500 mt-1">
+                    Pour la dictee vocale sur mobile, HTTPS est obligatoire.
+                  </p>
+                )}
+              </div>
+            </div>
           </CardContent>
         </Card>
       )}
+
       <Card className={`transition-all bg-brand-darkCard border-gray-800 ${
-        isListening ? 'ring-2 ring-red-500' :
-        isValidated ? 'ring-2 ring-brand-green' : ''
+        isListening ? 'ring-2 ring-red-500/70 shadow-lg shadow-red-500/10' :
+        isValidated ? 'ring-2 ring-brand-green shadow-lg shadow-brand-green/10' : ''
       }`}>
         <CardContent className="pt-6">
           {isEditing ? (
@@ -419,10 +342,7 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
               />
               <div className="flex gap-2">
                 <Button
-                  onClick={() => {
-                    setIsEditing(false);
-                    setIsValidated(true);
-                  }}
+                  onClick={() => { setIsEditing(false); setIsValidated(true); }}
                   variant="outline"
                   size="sm"
                   className="border-gray-700 text-gray-300 hover:bg-brand-darkLight"
@@ -463,10 +383,40 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center h-[200px] text-gray-500">
-                  <Mic className="h-12 w-12 mb-4" />
+                  <div className="relative">
+                    <Mic className="h-12 w-12 mb-4" />
+                  </div>
                   <p className="text-center text-gray-400">
                     {placeholder || "Cliquez sur le micro pour commencer à dicter"}
                   </p>
+                  <p className="text-xs text-gray-600 mt-2">
+                    Parlez clairement en direction de votre microphone
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {(isListening || wordCount > 0) && (
+            <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-800">
+              <div className="flex items-center gap-4 text-xs text-gray-500">
+                {isListening && (
+                  <span className="font-mono">{formatDuration(duration)}</span>
+                )}
+                {wordCount > 0 && (
+                  <span>{wordCount} mot{wordCount > 1 ? 's' : ''}</span>
+                )}
+              </div>
+              {isListening && (
+                <div className="flex items-center gap-2">
+                  <div className="flex space-x-1">
+                    <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
+                    <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse delay-75" />
+                    <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse delay-150" />
+                  </div>
+                  <span className="text-xs text-red-400 font-medium">
+                    {isPaused ? 'En pause' : 'Ecoute...'}
+                  </span>
                 </div>
               )}
             </div>
@@ -477,55 +427,32 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
       {!isEditing && (
         <div className="flex flex-wrap gap-3 justify-center">
           {!isListening && !transcript && (
-            <Button
-              onClick={startListening}
-              size="lg"
-              className="bg-red-600 hover:bg-red-700 text-white"
-            >
+            <Button onClick={startListening} size="lg" className="bg-red-600 hover:bg-red-700 text-white">
               <Mic className="h-5 w-5 mr-2" />
-              Commencer la Dictée
+              Commencer la Dictee
             </Button>
           )}
 
           {isListening && !isPaused && (
             <>
-              <Button
-                onClick={pauseListening}
-                size="lg"
-                variant="outline"
-                className="border-gray-700 text-gray-300 hover:bg-brand-darkLight"
-              >
+              <Button onClick={pauseListening} size="lg" variant="outline" className="border-gray-700 text-gray-300 hover:bg-brand-darkLight">
                 <Pause className="h-5 w-5 mr-2" />
                 Pause
               </Button>
-              <Button
-                onClick={stopListening}
-                size="lg"
-                variant="outline"
-                className="text-red-400 border-red-600 hover:bg-red-900/20"
-              >
+              <Button onClick={stopListening} size="lg" variant="outline" className="text-red-400 border-red-600 hover:bg-red-900/20">
                 <MicOff className="h-5 w-5 mr-2" />
-                Arrêter
+                Arreter
               </Button>
             </>
           )}
 
           {isPaused && (
             <>
-              <Button
-                onClick={resumeListening}
-                size="lg"
-                className="bg-red-600 hover:bg-red-700 text-white"
-              >
+              <Button onClick={resumeListening} size="lg" className="bg-red-600 hover:bg-red-700 text-white">
                 <Play className="h-5 w-5 mr-2" />
                 Reprendre
               </Button>
-              <Button
-                onClick={stopListening}
-                size="lg"
-                variant="outline"
-                className="border-gray-700 text-gray-300 hover:bg-brand-darkLight"
-              >
+              <Button onClick={stopListening} size="lg" variant="outline" className="border-gray-700 text-gray-300 hover:bg-brand-darkLight">
                 <MicOff className="h-5 w-5 mr-2" />
                 Terminer
               </Button>
@@ -534,20 +461,11 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
 
           {transcript && !isListening && !isValidated && (
             <>
-              <Button
-                onClick={handleReset}
-                size="lg"
-                variant="outline"
-                className="border-gray-700 text-gray-300 hover:bg-brand-darkLight"
-              >
+              <Button onClick={handleReset} size="lg" variant="outline" className="border-gray-700 text-gray-300 hover:bg-brand-darkLight">
                 <RotateCcw className="h-5 w-5 mr-2" />
                 Recommencer
               </Button>
-              <Button
-                onClick={handleValidate}
-                size="lg"
-                className="bg-brand-green hover:bg-green-600 text-white"
-              >
+              <Button onClick={handleValidate} size="lg" className="bg-brand-green hover:bg-green-600 text-white">
                 <Check className="h-5 w-5 mr-2" />
                 Valider
               </Button>
@@ -555,39 +473,18 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
           )}
 
           {transcript && isListening && (
-            <Button
-              onClick={handleReset}
-              size="lg"
-              variant="outline"
-            >
+            <Button onClick={handleReset} size="lg" variant="outline">
               <RotateCcw className="h-5 w-5 mr-2" />
               Recommencer
             </Button>
           )}
 
           {isValidated && !isListening && (
-            <Button
-              onClick={handleReset}
-              size="lg"
-              variant="outline"
-            >
+            <Button onClick={handleReset} size="lg" variant="outline">
               <RotateCcw className="h-5 w-5 mr-2" />
               Recommencer
             </Button>
           )}
-        </div>
-      )}
-
-      {isListening && (
-        <div className="flex items-center justify-center gap-2">
-          <div className="flex space-x-1">
-            <div className="w-2 h-2 bg-red-600 rounded-full animate-pulse" />
-            <div className="w-2 h-2 bg-red-600 rounded-full animate-pulse delay-75" />
-            <div className="w-2 h-2 bg-red-600 rounded-full animate-pulse delay-150" />
-          </div>
-          <span className="text-sm text-red-600 font-medium">
-            Enregistrement en cours...
-          </span>
         </div>
       )}
     </div>

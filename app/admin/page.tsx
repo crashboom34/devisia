@@ -1,5 +1,4 @@
 'use client';
-/* eslint-disable react/no-unescaped-entities, react-hooks/exhaustive-deps */
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -7,12 +6,12 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileText, ArrowLeft, Shield, Database, TrendingUp, Users } from 'lucide-react';
+import { FileText, ArrowLeft, Shield, Database, TrendingUp, Users, Eye } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import AdminPlanPreview from '@/components/AdminPlanPreview';
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -38,14 +37,13 @@ export default function AdminDashboard() {
       .from('admin_users')
       .select('*')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     if (!adminData) {
       router.push('/dashboard');
       return;
     }
 
-    setUser(user);
     setIsAdmin(true);
     setLoading(false);
   };
@@ -84,19 +82,20 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Chargement...</p>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="flex items-center gap-3">
+          <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+          <p className="text-gray-500">Chargement...</p>
+        </div>
       </div>
     );
   }
 
-  if (!isAdmin) {
-    return null;
-  }
+  if (!isAdmin) return null;
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b">
+      <header className="bg-white border-b shadow-sm">
         <div className="container mx-auto px-4 py-4 flex items-center gap-4">
           <Link href="/dashboard">
             <Button variant="ghost" size="icon">
@@ -114,7 +113,7 @@ export default function AdminDashboard() {
         <h1 className="text-3xl font-bold text-gray-900 mb-8">Dashboard Administrateur</h1>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
-          <Card>
+          <Card className="hover:shadow-md transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Utilisateurs</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
@@ -125,7 +124,7 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="hover:shadow-md transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Abonnements</CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
@@ -136,48 +135,52 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="hover:shadow-md transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Appels API</CardTitle>
               <Database className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.totalApiCalls}</div>
-              <p className="text-xs text-muted-foreground">Requêtes totales</p>
+              <p className="text-xs text-muted-foreground">Requetes totales</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="hover:shadow-md transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Coût Total</CardTitle>
+              <CardTitle className="text-sm font-medium">Cout Total</CardTitle>
               <FileText className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.totalCost.toFixed(2)} €</div>
-              <p className="text-xs text-muted-foreground">Coût API cumulé</p>
+              <div className="text-2xl font-bold">{stats.totalCost.toFixed(2)} EUR</div>
+              <p className="text-xs text-muted-foreground">Cout API cumule</p>
             </CardContent>
           </Card>
         </div>
 
         <Tabs defaultValue="models" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="models">Modèles IA</TabsTrigger>
+          <TabsList className="flex-wrap">
+            <TabsTrigger value="models">Modeles IA</TabsTrigger>
             <TabsTrigger value="config">Configuration</TabsTrigger>
             <TabsTrigger value="subscriptions">Abonnements</TabsTrigger>
             <TabsTrigger value="usage">Utilisation</TabsTrigger>
+            <TabsTrigger value="preview" className="gap-1.5">
+              <Eye className="h-3.5 w-3.5" />
+              Preview Plans
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="models">
             <Card>
               <CardHeader>
-                <CardTitle>Modèles IA Disponibles</CardTitle>
+                <CardTitle>Modeles IA Disponibles</CardTitle>
                 <CardDescription>
-                  Gérez les modèles IA disponibles pour les utilisateurs
+                  Gerez les modeles IA disponibles pour les utilisateurs
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <Link href="/admin/models">
-                  <Button>Gérer les modèles</Button>
+                  <Button>Gerer les modeles</Button>
                 </Link>
               </CardContent>
             </Card>
@@ -186,14 +189,14 @@ export default function AdminDashboard() {
           <TabsContent value="config">
             <Card>
               <CardHeader>
-                <CardTitle>Configuration Système</CardTitle>
+                <CardTitle>Configuration Systeme</CardTitle>
                 <CardDescription>
-                  Configurez les clés API et paramètres système
+                  Configurez les cles API et parametres systeme
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <Link href="/admin/config">
-                  <Button>Configuration système</Button>
+                  <Button>Configuration systeme</Button>
                 </Link>
               </CardContent>
             </Card>
@@ -204,12 +207,12 @@ export default function AdminDashboard() {
               <CardHeader>
                 <CardTitle>Gestion des Abonnements</CardTitle>
                 <CardDescription>
-                  Gérez les tiers d'abonnement et les souscriptions
+                  Gerez les tiers d&apos;abonnement et les souscriptions
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <Link href="/admin/subscriptions">
-                  <Button>Gérer les abonnements</Button>
+                  <Button>Gerer les abonnements</Button>
                 </Link>
               </CardContent>
             </Card>
@@ -218,9 +221,9 @@ export default function AdminDashboard() {
           <TabsContent value="usage">
             <Card>
               <CardHeader>
-                <CardTitle>Logs d'Utilisation</CardTitle>
+                <CardTitle>Logs d&apos;Utilisation</CardTitle>
                 <CardDescription>
-                  Consultez les logs d'utilisation des APIs
+                  Consultez les logs d&apos;utilisation des APIs
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -229,6 +232,10 @@ export default function AdminDashboard() {
                 </Link>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="preview">
+            <AdminPlanPreview />
           </TabsContent>
         </Tabs>
       </main>
