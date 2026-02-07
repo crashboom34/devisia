@@ -34,6 +34,8 @@ export default function LoginPage() {
       console.error('Login error:', err);
       if (err.message === 'Failed to fetch') {
         setError('Impossible de se connecter au serveur. Vérifiez votre connexion internet.');
+      } else if (err.message.includes('Invalid login credentials')) {
+        setError('Email ou mot de passe incorrect. Si vous n\'avez pas encore de compte, créez-en un.');
       } else {
         setError(err.message || 'Une erreur est survenue lors de la connexion');
       }
