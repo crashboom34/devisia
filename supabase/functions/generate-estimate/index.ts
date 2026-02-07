@@ -97,22 +97,55 @@ Deno.serve(async (req: Request) => {
     let selectedModelId = null;
 
     if (modelLookupError || !modelData || modelData.length === 0) {
-      console.warn("No subscription model found, using fallback:", modelLookupError);
+      console.warn("No subscription model found, checking admin status:", modelLookupError);
 
-      // Fallback: Get the lowest cost model (free tier default)
-      const { data: fallbackModel } = await supabase
-        .from("ai_models")
+      const { data: adminData } = await supabase
+        .from("admin_users")
         .select("id")
-        .eq("is_active", true)
-        .order("cost_per_1k_tokens_input", { ascending: true })
-        .limit(1)
+        .eq("user_id", user.id)
         .maybeSingle();
 
-      if (fallbackModel) {
-        selectedModelId = fallbackModel.id;
-        console.log("Using free tier fallback model");
-      } else {
-        throw new Error("No AI model available");
+      if (adminData) {
+        const { data: proTier } = await supabase
+          .from("subscription_tiers")
+          .select("ai_model_id")
+          .eq("name", "pro")
+          .eq("is_active", true)
+          .maybeSingle();
+
+        if (proTier?.ai_model_id) {
+          selectedModelId = proTier.ai_model_id;
+          console.log("Admin user - using Pro tier model");
+        }
+      }
+
+      if (!selectedModelId) {
+        const { data: starterTier } = await supabase
+          .from("subscription_tiers")
+          .select("ai_model_id")
+          .eq("name", "starter")
+          .eq("is_active", true)
+          .maybeSingle();
+
+        if (starterTier?.ai_model_id) {
+          selectedModelId = starterTier.ai_model_id;
+          console.log("Using Starter tier default model");
+        } else {
+          const { data: fallbackModel } = await supabase
+            .from("ai_models")
+            .select("id")
+            .eq("is_active", true)
+            .order("cost_per_1k_tokens_input", { ascending: true })
+            .limit(1)
+            .maybeSingle();
+
+          if (fallbackModel) {
+            selectedModelId = fallbackModel.id;
+            console.log("Using lowest cost fallback model");
+          } else {
+            throw new Error("No AI model available");
+          }
+        }
       }
     } else {
       selectedModelId = modelData[0].model_id;

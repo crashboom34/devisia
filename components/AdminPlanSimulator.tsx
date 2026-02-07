@@ -3,11 +3,13 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Shield, FileText, Users, Crown, Eye, Zap } from 'lucide-react';
+import { Shield, FileText, Users, Crown, Eye, Zap, Loader2 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 const PLANS = [
   {
     id: 'unlimited',
+    tierName: 'pro',
     name: 'Admin Illimite',
     icon: Shield,
     color: 'bg-purple-600',
@@ -15,6 +17,7 @@ const PLANS = [
   },
   {
     id: 'starter',
+    tierName: 'starter',
     name: 'Starter (Simulation)',
     icon: FileText,
     color: 'bg-emerald-600',
@@ -22,6 +25,7 @@ const PLANS = [
   },
   {
     id: 'business',
+    tierName: 'business',
     name: 'Business (Simulation)',
     icon: Users,
     color: 'bg-sky-600',
@@ -29,6 +33,7 @@ const PLANS = [
   },
   {
     id: 'pro',
+    tierName: 'pro',
     name: 'Pro (Simulation)',
     icon: Crown,
     color: 'bg-amber-600',
@@ -36,15 +41,51 @@ const PLANS = [
   },
 ];
 
-export default function AdminPlanSimulator() {
+interface AdminPlanSimulatorProps {
+  userId?: string;
+}
+
+export default function AdminPlanSimulator({ userId }: AdminPlanSimulatorProps) {
   const [currentMode, setCurrentMode] = useState<string>(() => {
     if (typeof window === 'undefined') return 'unlimited';
     return localStorage.getItem('admin_current_mode') || 'unlimited';
   });
+  const [switching, setSwitching] = useState(false);
 
-  const switchMode = (modeId: string) => {
+  const switchMode = async (modeId: string) => {
+    if (switching) return;
+    setSwitching(true);
+
+    const plan = PLANS.find(p => p.id === modeId);
+    if (!plan) {
+      setSwitching(false);
+      return;
+    }
+
+    try {
+      let currentUserId = userId;
+      if (!currentUserId) {
+        const { data: { user } } = await supabase.auth.getUser();
+        currentUserId = user?.id;
+      }
+
+      if (currentUserId) {
+        const { data, error } = await supabase.rpc('switch_admin_plan', {
+          p_user_id: currentUserId,
+          p_tier_name: plan.tierName,
+        });
+
+        if (error) {
+          console.error('Error switching plan:', error);
+        }
+      }
+    } catch (err) {
+      console.error('Error switching plan:', err);
+    }
+
     setCurrentMode(modeId);
     localStorage.setItem('admin_current_mode', modeId);
+    setSwitching(false);
     window.location.reload();
   };
 
@@ -65,7 +106,7 @@ export default function AdminPlanSimulator() {
             </CardDescription>
           </div>
           <Badge variant="secondary" className="gap-1.5">
-            <Icon className="h-3.5 w-3.5" />
+            {switching ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Icon className="h-3.5 w-3.5" />}
             {currentPlan.name}
           </Badge>
         </div>
@@ -79,11 +120,12 @@ export default function AdminPlanSimulator() {
               <button
                 key={plan.id}
                 onClick={() => switchMode(plan.id)}
+                disabled={switching}
                 className={`relative group rounded-lg border-2 p-4 text-left transition-all ${
                   isActive
                     ? `${plan.color} border-transparent text-white shadow-lg`
                     : 'border-gray-700 bg-slate-900/40 hover:border-gray-600 hover:bg-slate-900/60'
-                }`}
+                } ${switching ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <div className="flex items-center gap-2 mb-2">
                   <PlanIcon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-gray-400'}`} />

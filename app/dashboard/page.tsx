@@ -156,7 +156,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Admin Plan Simulator */}
-        {isAdmin && <AdminPlanSimulator />}
+        {isAdmin && <AdminPlanSimulator userId={user?.id} />}
 
         {/* Quick Navigation */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
