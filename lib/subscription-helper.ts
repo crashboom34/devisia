@@ -74,18 +74,48 @@ export async function getUserSubscriptionInfo(userId: string): Promise<Subscript
 }
 
 /**
+ * Check if user is an admin
+ */
+export async function isUserAdmin(userId: string): Promise<boolean> {
+  try {
+    const { data: adminData } = await supabase
+      .from('admin_users')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    return !!adminData;
+  } catch (error) {
+    console.error('Error checking admin status:', error);
+    return false;
+  }
+}
+
+/**
  * Check if user has reached their project limit
  * Uses database function for secure calculation
+ * Admins have unlimited access unless they simulate a plan
  */
 export async function checkProjectLimit(userId: string): Promise<ProjectLimitInfo> {
   try {
+    const isAdmin = await isUserAdmin(userId);
+
+    if (isAdmin) {
+      return {
+        limit: -1,
+        used: 0,
+        remaining: -1,
+        has_reached_limit: false,
+        tier_name: 'Admin - Illimite',
+      };
+    }
+
     const { data, error } = await supabase.rpc('check_project_limit', {
       p_user_id: userId,
     });
 
     if (error) {
       console.error('Error checking project limit:', error);
-      // Return safe defaults
       return {
         limit: 5,
         used: 0,
@@ -144,25 +174,43 @@ export function getAICapabilityDescription(tierLevel: number): string {
 /**
  * Check if user can create a new project
  * Returns both permission and helpful message
+ * Admins have unlimited access
  */
 export async function canCreateProject(userId: string): Promise<{
   allowed: boolean;
   message?: string;
   upgrade_url?: string;
+  isAdmin?: boolean;
 }> {
+  const isAdmin = await isUserAdmin(userId);
+
+  if (isAdmin) {
+    return {
+      allowed: true,
+      message: 'Acces administrateur illimite',
+      isAdmin: true,
+    };
+  }
+
   const limitInfo = await checkProjectLimit(userId);
 
   if (limitInfo.has_reached_limit) {
     return {
       allowed: false,
-      message: `You've reached your limit of ${limitInfo.limit} projects per month on the ${limitInfo.tier_name} plan.`,
+      message: `Vous avez atteint votre limite de ${limitInfo.limit} projets par mois sur le plan ${limitInfo.tier_name}.`,
       upgrade_url: '/pricing/new',
+      isAdmin: false,
     };
   }
 
+  const remainingText = limitInfo.limit === -1
+    ? 'Projets illimites'
+    : `${limitInfo.remaining} projet${limitInfo.remaining > 1 ? 's' : ''} restant${limitInfo.remaining > 1 ? 's' : ''} ce mois`;
+
   return {
     allowed: true,
-    message: `You have ${limitInfo.remaining} of ${limitInfo.limit} projects remaining this month.`,
+    message: remainingText,
+    isAdmin: false,
   };
 }
 

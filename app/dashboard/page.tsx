@@ -16,6 +16,8 @@ import { ActivityTimeline } from '@/components/dashboard/ActivityTimeline';
 import { KpiCard } from '@/components/dashboard/KpiCard';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { Sidebar } from '@/components/Sidebar';
+import AdminPlanSimulator from '@/components/AdminPlanSimulator';
+import { checkProjectLimit, isUserAdmin, type ProjectLimitInfo } from '@/lib/subscription-helper';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -24,6 +26,8 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [estimatesCount, setEstimatesCount] = useState({ total: 0, completed: 0, processing: 0, pending: 0 });
   const [chartPeriod, setChartPeriod] = useState<'7days' | '30days' | '3months'>('30days');
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [projectLimits, setProjectLimits] = useState<ProjectLimitInfo | null>(null);
 
   useEffect(() => {
     checkUser();
@@ -36,6 +40,12 @@ export default function DashboardPage() {
       router.push('/auth/login');
     } else {
       setUser(user);
+
+      const adminStatus = await isUserAdmin(user.id);
+      setIsAdmin(adminStatus);
+
+      const limits = await checkProjectLimit(user.id);
+      setProjectLimits(limits);
     }
   };
 
@@ -134,6 +144,9 @@ export default function DashboardPage() {
             </Button>
           </div>
         </div>
+
+        {/* Admin Plan Simulator */}
+        {isAdmin && <AdminPlanSimulator />}
 
         {/* Quick Navigation */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -363,21 +376,73 @@ export default function DashboardPage() {
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between p-3 bg-slate-900/50 rounded-lg">
-                    <span className="text-sm font-medium text-slate-400">Devis générés</span>
-                    <span className="text-lg font-bold text-white">{estimatesCount.total}</span>
+                    <span className="text-sm font-medium text-slate-400">Projets utilisés</span>
+                    <span className="text-lg font-bold text-white">
+                      {projectLimits?.used || 0}
+                      {projectLimits?.limit === -1 ? ' (Illimité)' : ` / ${projectLimits?.limit || 0}`}
+                    </span>
                   </div>
-                  <div className="p-4 bg-red-500/10 rounded-xl border border-red-500/20">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm font-medium text-red-400">Limite atteinte</span>
-                      <span className="text-sm font-bold text-red-400">100%</span>
+
+                  {isAdmin ? (
+                    <div className="p-4 bg-purple-500/10 rounded-xl border border-purple-500/20">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-sm font-medium text-purple-400">Accès Administrateur</span>
+                        <span className="text-sm font-bold text-purple-400">Illimité</span>
+                      </div>
+                      <div className="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden">
+                        <div className="bg-gradient-to-r from-purple-500 to-purple-600 h-2.5 rounded-full shadow-lg shadow-purple-500/50 animate-pulse" style={{ width: '100%' }}></div>
+                      </div>
+                      <p className="text-xs text-slate-400 mt-3 leading-relaxed">
+                        Vous avez un accès illimité en tant qu&apos;administrateur
+                      </p>
                     </div>
-                    <div className="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden">
-                      <div className="bg-gradient-to-r from-red-500 to-red-600 h-2.5 rounded-full shadow-lg shadow-red-500/50" style={{ width: '100%' }}></div>
+                  ) : projectLimits?.has_reached_limit ? (
+                    <div className="p-4 bg-red-500/10 rounded-xl border border-red-500/20">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-sm font-medium text-red-400">Limite atteinte</span>
+                        <span className="text-sm font-bold text-red-400">
+                          {Math.round(((projectLimits?.used || 0) / (projectLimits?.limit || 1)) * 100)}%
+                        </span>
+                      </div>
+                      <div className="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden">
+                        <div
+                          className="bg-gradient-to-r from-red-500 to-red-600 h-2.5 rounded-full shadow-lg shadow-red-500/50"
+                          style={{ width: `${Math.min(((projectLimits?.used || 0) / (projectLimits?.limit || 1)) * 100, 100)}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-slate-400 mt-3 leading-relaxed">
+                        Passez à un plan supérieur pour continuer à générer des devis
+                      </p>
                     </div>
-                    <p className="text-xs text-slate-400 mt-3 leading-relaxed">
-                      Passez à un plan supérieur pour continuer à générer des devis
-                    </p>
-                  </div>
+                  ) : (
+                    <div className="p-4 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-sm font-medium text-emerald-400">Utilisation</span>
+                        <span className="text-sm font-bold text-emerald-400">
+                          {projectLimits?.limit === -1
+                            ? 'Illimité'
+                            : `${Math.round(((projectLimits?.used || 0) / (projectLimits?.limit || 1)) * 100)}%`
+                          }
+                        </span>
+                      </div>
+                      <div className="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden">
+                        <div
+                          className="bg-gradient-to-r from-emerald-500 to-emerald-600 h-2.5 rounded-full shadow-lg shadow-emerald-500/50"
+                          style={{
+                            width: projectLimits?.limit === -1
+                              ? '100%'
+                              : `${Math.min(((projectLimits?.used || 0) / (projectLimits?.limit || 1)) * 100, 100)}%`
+                          }}
+                        />
+                      </div>
+                      <p className="text-xs text-slate-400 mt-3 leading-relaxed">
+                        {projectLimits?.remaining === -1
+                          ? 'Projets illimités disponibles'
+                          : `${projectLimits?.remaining || 0} projet${(projectLimits?.remaining || 0) > 1 ? 's' : ''} restant${(projectLimits?.remaining || 0) > 1 ? 's' : ''} ce mois`
+                        }
+                      </p>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

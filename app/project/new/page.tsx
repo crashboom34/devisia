@@ -17,7 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { EstimateTemplate } from '@/lib/supabase';
-import { getUserSubscriptionInfo, type SubscriptionInfo } from '@/lib/subscription-helper';
+import { getUserSubscriptionInfo, canCreateProject, type SubscriptionInfo } from '@/lib/subscription-helper';
 
 export default function NewProjectPage() {
   const router = useRouter();
@@ -86,6 +86,16 @@ export default function NewProjectPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const createPermission = await canCreateProject(user.id);
+    if (!createPermission.allowed) {
+      alert(createPermission.message || 'Vous avez atteint votre limite de projets');
+      if (createPermission.upgrade_url) {
+        router.push(createPermission.upgrade_url);
+      }
+      return;
+    }
+
     setLoading(true);
     setLoadingStage('creating');
 
