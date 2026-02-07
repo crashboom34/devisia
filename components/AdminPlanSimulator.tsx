@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Shield, Infinity, FileText, Users, Crown, Eye } from 'lucide-react';
+import { Shield, FileText, Users, Crown, Eye, Zap } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 const PLANS = [
@@ -121,7 +121,7 @@ export default function AdminPlanSimulator() {
                 <div className="flex items-center gap-2 mb-2">
                   <PlanIcon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-gray-400'}`} />
                   {plan.id === 'unlimited' && (
-                    <Infinity className={`h-4 w-4 ${isActive ? 'text-white' : 'text-purple-400'}`} />
+                    <Zap className={`h-4 w-4 ${isActive ? 'text-white' : 'text-purple-400'}`} />
                   )}
                 </div>
                 <h3 className={`font-semibold text-sm mb-1 ${isActive ? 'text-white' : 'text-gray-200'}`}>
