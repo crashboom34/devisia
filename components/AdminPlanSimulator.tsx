@@ -1,11 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Shield, FileText, Users, Crown, Eye, Zap } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 
 const PLANS = [
   {
@@ -39,47 +37,16 @@ const PLANS = [
 ];
 
 export default function AdminPlanSimulator() {
-  const [currentMode, setCurrentMode] = useState<string>('unlimited');
-  const [userId, setUserId] = useState<string | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  useEffect(() => {
-    checkAdmin();
-    loadCurrentMode();
-  }, []);
-
-  const checkAdmin = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    setUserId(user.id);
-
-    const { data: adminData } = await supabase
-      .from('admin_users')
-      .select('*')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    setIsAdmin(!!adminData);
-  };
-
-  const loadCurrentMode = () => {
-    if (typeof window === 'undefined') return;
-    const saved = localStorage.getItem('admin_current_mode');
-    if (saved) {
-      setCurrentMode(saved);
-    }
-  };
+  const [currentMode, setCurrentMode] = useState<string>(() => {
+    if (typeof window === 'undefined') return 'unlimited';
+    return localStorage.getItem('admin_current_mode') || 'unlimited';
+  });
 
   const switchMode = (modeId: string) => {
     setCurrentMode(modeId);
     localStorage.setItem('admin_current_mode', modeId);
     window.location.reload();
   };
-
-  if (!isAdmin) {
-    return null;
-  }
 
   const currentPlan = PLANS.find((p) => p.id === currentMode) || PLANS[0];
   const Icon = currentPlan.icon;

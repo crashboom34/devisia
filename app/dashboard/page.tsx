@@ -30,53 +30,63 @@ export default function DashboardPage() {
   const [projectLimits, setProjectLimits] = useState<ProjectLimitInfo | null>(null);
 
   useEffect(() => {
-    checkUser();
-    loadProjects();
+    initDashboard();
   }, []);
 
-  const checkUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+  const initDashboard = async () => {
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    if (!currentUser) {
       router.push('/auth/login');
-    } else {
-      setUser(user);
-
-      const adminStatus = await isUserAdmin(user.id);
-      setIsAdmin(adminStatus);
-
-      const limits = await checkProjectLimit(user.id);
-      setProjectLimits(limits);
+      return;
     }
+    setUser(currentUser);
+
+    const [adminStatus, limits, projectsResult, estimatesResult] = await Promise.all([
+      isUserAdmin(currentUser.id),
+      checkProjectLimit(currentUser.id),
+      supabase.from('projects').select('*').order('created_at', { ascending: false }),
+      supabase.from('estimates').select('id, scenario_type').eq('user_id', currentUser.id),
+    ]);
+
+    setIsAdmin(adminStatus);
+    setProjectLimits(limits);
+
+    const projectsData = projectsResult.data || [];
+    setProjects(projectsData);
+
+    const estimatesData = estimatesResult.data || [];
+    setEstimatesCount({
+      total: estimatesData.length,
+      completed: estimatesData.filter(e => e.scenario_type).length,
+      processing: projectsData.filter(p => p.status === 'processing').length,
+      pending: projectsData.filter(p => p.status === 'draft').length,
+    });
+
+    setLoading(false);
   };
 
-  const loadProjects = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*')
-        .order('created_at', { ascending: false });
+  const handleRefreshData = async () => {
+    if (!user) return;
+    setLoading(true);
+    const [projectsResult, estimatesResult, limits] = await Promise.all([
+      supabase.from('projects').select('*').order('created_at', { ascending: false }),
+      supabase.from('estimates').select('id, scenario_type').eq('user_id', user.id),
+      checkProjectLimit(user.id),
+    ]);
 
-      if (error) throw error;
-      setProjects(data || []);
+    const projectsData = projectsResult.data || [];
+    setProjects(projectsData);
+    setProjectLimits(limits);
 
-      const { data: estimates } = await supabase
-        .from('estimates')
-        .select('id, scenario_type')
-        .eq('user_id', (await supabase.auth.getUser()).data.user?.id);
+    const estimatesData = estimatesResult.data || [];
+    setEstimatesCount({
+      total: estimatesData.length,
+      completed: estimatesData.filter(e => e.scenario_type).length,
+      processing: projectsData.filter(p => p.status === 'processing').length,
+      pending: projectsData.filter(p => p.status === 'draft').length,
+    });
 
-      if (estimates) {
-        setEstimatesCount({
-          total: estimates.length,
-          completed: estimates.filter(e => e.scenario_type).length,
-          processing: data?.filter(p => p.status === 'processing').length || 0,
-          pending: data?.filter(p => p.status === 'draft').length || 0,
-        });
-      }
-    } catch (err) {
-      console.error('Error loading projects:', err);
-    } finally {
-      setLoading(false);
-    }
+    setLoading(false);
   };
 
   const recentActivities = projects.slice(0, 5).map(project => ({
@@ -95,7 +105,7 @@ export default function DashboardPage() {
   };
 
   const handleRefresh = () => {
-    loadProjects();
+    handleRefreshData();
   };
 
   return (
