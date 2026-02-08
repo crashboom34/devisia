@@ -570,6 +570,7 @@ RÉPONDS UNIQUEMENT EN JSON VALIDE (sans texte avant ou après).`;
     const { data: estimate, error: insertError } = await supabase
       .from("estimates")
       .insert({
+        user_id: user.id,
         project_id: projectId,
         scenario_type: scenarioType,
         total_amount: totalTTC,
