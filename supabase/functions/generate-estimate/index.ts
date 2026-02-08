@@ -607,8 +607,15 @@ RÉPONDS UNIQUEMENT EN JSON VALIDE (sans texte avant ou après).`;
       response_time: responseTime,
     });
 
+    const usedFallback = usedModel.id !== model.id;
     return new Response(
-      JSON.stringify({ success: true, estimate }),
+      JSON.stringify({
+        success: true,
+        estimate,
+        ...(usedFallback && {
+          warning: `Le modèle ${model.display_name} n'a pas pu être utilisé. Modèle de remplacement: ${usedModel.display_name}`,
+        }),
+      }),
       {
         headers: {
           ...corsHeaders,
