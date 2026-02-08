@@ -393,7 +393,7 @@ export default function DashboardPage() {
                     </span>
                   </div>
 
-                  {isAdmin ? (
+                  {isAdmin && projectLimits?.limit === -1 ? (
                     <div className="p-4 bg-purple-500/10 rounded-xl border border-purple-500/20">
                       <div className="flex items-center justify-between mb-3">
                         <span className="text-sm font-medium text-purple-400">Accès Administrateur</span>

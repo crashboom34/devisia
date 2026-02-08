@@ -94,12 +94,47 @@ export async function isUserAdmin(userId: string): Promise<boolean> {
 /**
  * Check if user has reached their project limit
  * Uses database function for secure calculation
- * Admins have unlimited access unless they simulate a plan
+ * Admins see their simulated plan limits OR unlimited if no plan simulation
  */
 export async function checkProjectLimit(userId: string): Promise<ProjectLimitInfo> {
   try {
-    const isAdmin = await isUserAdmin(userId);
+    // First, check if admin has a simulated plan (active subscription)
+    const { data: subscription } = await supabase
+      .from('user_subscriptions')
+      .select(`
+        *,
+        subscription_tiers:tier_id (
+          name,
+          display_name,
+          max_projects_per_month
+        )
+      `)
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .maybeSingle();
 
+    // If admin is simulating a plan, use the RPC to get real limits
+    if (subscription) {
+      const { data, error } = await supabase.rpc('check_project_limit', {
+        p_user_id: userId,
+      });
+
+      if (error) {
+        console.error('Error checking project limit:', error);
+        return {
+          limit: 5,
+          used: 0,
+          remaining: 5,
+          has_reached_limit: false,
+          tier_name: 'Free',
+        };
+      }
+
+      return data;
+    }
+
+    // If no subscription but is admin, give unlimited access
+    const isAdmin = await isUserAdmin(userId);
     if (isAdmin) {
       return {
         limit: -1,
@@ -110,6 +145,7 @@ export async function checkProjectLimit(userId: string): Promise<ProjectLimitInf
       };
     }
 
+    // Regular user with no subscription - use RPC
     const { data, error } = await supabase.rpc('check_project_limit', {
       p_user_id: userId,
     });
@@ -174,7 +210,7 @@ export function getAICapabilityDescription(tierLevel: number): string {
 /**
  * Check if user can create a new project
  * Returns both permission and helpful message
- * Admins have unlimited access
+ * Respects simulated plan limits for admins
  */
 export async function canCreateProject(userId: string): Promise<{
   allowed: boolean;
@@ -182,24 +218,15 @@ export async function canCreateProject(userId: string): Promise<{
   upgrade_url?: string;
   isAdmin?: boolean;
 }> {
-  const isAdmin = await isUserAdmin(userId);
-
-  if (isAdmin) {
-    return {
-      allowed: true,
-      message: 'Acces administrateur illimite',
-      isAdmin: true,
-    };
-  }
-
   const limitInfo = await checkProjectLimit(userId);
+  const isAdmin = await isUserAdmin(userId);
 
   if (limitInfo.has_reached_limit) {
     return {
       allowed: false,
       message: `Vous avez atteint votre limite de ${limitInfo.limit} projets par mois sur le plan ${limitInfo.tier_name}.`,
       upgrade_url: '/pricing/new',
-      isAdmin: false,
+      isAdmin: isAdmin,
     };
   }
 
@@ -210,7 +237,7 @@ export async function canCreateProject(userId: string): Promise<{
   return {
     allowed: true,
     message: remainingText,
-    isAdmin: false,
+    isAdmin: isAdmin,
   };
 }
 
