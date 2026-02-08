@@ -139,8 +139,14 @@ export default function NewProjectPage() {
         });
 
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(`Failed to generate ${scenarioType} estimate: ${errorData.error}`);
+          let errorMsg = 'Erreur inconnue';
+          try {
+            const errorData = await response.json();
+            errorMsg = errorData.error || errorData.message || `Erreur HTTP ${response.status}`;
+          } catch {
+            errorMsg = `Erreur HTTP ${response.status}`;
+          }
+          throw new Error(errorMsg);
         }
 
         await response.json();

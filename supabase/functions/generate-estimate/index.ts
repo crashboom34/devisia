@@ -175,21 +175,27 @@ Deno.serve(async (req: Request) => {
     console.log(`Starting generation with model: ${model.display_name} (${model.model_id})`);
     console.log(`Temperature: ${apiTemperature}`);
 
-    // Récupérer la clé API OpenRouter depuis system_config
     const { data: configData } = await supabase
       .from("system_config")
       .select("value")
       .eq("key", "openrouter_api_key")
       .maybeSingle();
 
-    const openrouterApiKey = configData?.value || Deno.env.get("OPENROUTER_API_KEY");
+    let openrouterApiKey: string | undefined;
+    if (configData?.value) {
+      const raw = configData.value;
+      openrouterApiKey = typeof raw === "string" ? raw : (raw as any)?.toString();
+    }
+    if (!openrouterApiKey) {
+      openrouterApiKey = Deno.env.get("OPENROUTER_API_KEY");
+    }
 
     if (!openrouterApiKey) {
       console.error("No OpenRouter API key found in system_config or environment");
-      throw new Error("OpenRouter API key not configured");
+      throw new Error("Clé API OpenRouter non configurée. Allez dans Admin > Configuration pour ajouter votre clé API OpenRouter.");
     }
 
-    console.log("OpenRouter API key found:", openrouterApiKey ? "Yes" : "No");
+    console.log("OpenRouter API key found: Yes");
 
     // Liste des modèles à essayer (modèle sélectionné + fallbacks)
     let modelsToTry = [model];
@@ -610,9 +616,10 @@ RÉPONDS UNIQUEMENT EN JSON VALIDE (sans texte avant ou après).`;
       }
     );
   } catch (error) {
-    console.error("Error generating estimate:", error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Error generating estimate:", errorMessage);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: errorMessage }),
       {
         status: 400,
         headers: {
