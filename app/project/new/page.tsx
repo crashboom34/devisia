@@ -236,13 +236,13 @@ export default function NewProjectPage() {
                     </div>
                   ) : (
                     <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
-                      <SelectTrigger className="text-sm sm:text-base">
+                      <SelectTrigger className="text-sm sm:text-base bg-slate-800/50 border-slate-700 text-white">
                         <SelectValue placeholder="Sélectionner un type de projet (optionnel)" />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none" className="text-white hover:bg-slate-800">Aucun template (génération libre)</SelectItem>
+                      <SelectContent className="bg-slate-900 border-slate-700">
+                        <SelectItem value="none" className="text-white hover:bg-slate-800 focus:bg-slate-800 focus:text-white">Aucun template (génération libre)</SelectItem>
                         {templates.map((template) => (
-                          <SelectItem key={template.id} value={template.template_id} className="text-white hover:bg-slate-800">
+                          <SelectItem key={template.id} value={template.template_id} className="text-white hover:bg-slate-800 focus:bg-slate-800 focus:text-white">
                             {template.name}
                             <span className="text-xs text-slate-500 ml-2">• {template.category}</span>
                           </SelectItem>
@@ -326,10 +326,10 @@ export default function NewProjectPage() {
                       <SelectTrigger id="template" className="text-sm sm:text-base bg-slate-800/50 border-slate-700 text-white">
                         <SelectValue placeholder="Sélectionner un type de projet (optionnel)" />
                       </SelectTrigger>
-                      <SelectContent className="bg-brand-darkCard border-gray-800">
-                        <SelectItem value="none" className="text-white hover:bg-slate-800">Aucun template (génération libre)</SelectItem>
+                      <SelectContent className="bg-slate-900 border-slate-700">
+                        <SelectItem value="none" className="text-white hover:bg-slate-800 focus:bg-slate-800 focus:text-white">Aucun template (génération libre)</SelectItem>
                         {templates.map((template) => (
-                          <SelectItem key={template.id} value={template.template_id} className="text-white hover:bg-slate-800">
+                          <SelectItem key={template.id} value={template.template_id} className="text-white hover:bg-slate-800 focus:bg-slate-800 focus:text-white">
                             {template.name}
                             <span className="text-xs text-slate-500 ml-2">• {template.category}</span>
                           </SelectItem>
