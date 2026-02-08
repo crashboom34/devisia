@@ -112,6 +112,7 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
         : baseText || sessionInterim;
 
       if (sessionTranscript) {
+        baseTextRef.current = combined;
         setTranscript(combined);
         setInterimTranscript('');
         onChange(combined);
