@@ -18,6 +18,7 @@ import { supabase } from '@/lib/supabase';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CANONICAL_MAPPING } from '@/lib/tier-model';
+import { PLAN_LABELS } from '@/lib/plan-labels';
 
 interface AIModel {
   id: string;
@@ -463,6 +464,14 @@ export default function AdminSubscriptionsPage() {
                         </SelectContent>
                       </Select>
                       <p className="text-xs text-slate-500">This information is hidden from users</p>
+                      {formData.name && PLAN_LABELS[formData.name.toLowerCase()] && (
+                        <div className="mt-2 flex items-center gap-2 px-3 py-2 bg-slate-700/40 border border-slate-600 rounded-md">
+                          <span className="text-xs text-slate-400">Label affiché aux utilisateurs :</span>
+                          <span className="text-xs font-semibold text-cyan-300">
+                            {PLAN_LABELS[formData.name.toLowerCase()].label}
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -553,12 +562,19 @@ export default function AdminSubscriptionsPage() {
                       </TableCell>
                       <TableCell>
                         {tier.ai_model_name ? (
-                          <div className="flex items-center gap-2">
-                            <Sparkles className="h-4 w-4 text-cyan-400" />
-                            <div className="text-sm">
-                              <div className="text-white">{tier.ai_model_name}</div>
-                              <div className="text-xs text-slate-500">{tier.ai_provider}</div>
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-2">
+                              <Sparkles className="h-4 w-4 text-cyan-400" />
+                              <div className="text-sm">
+                                <div className="text-white">{tier.ai_model_name}</div>
+                                <div className="text-xs text-slate-500">{tier.ai_provider}</div>
+                              </div>
                             </div>
+                            {PLAN_LABELS[tier.name] && (
+                              <div className="text-xs text-cyan-300 pl-6">
+                                Affiché : <strong>{PLAN_LABELS[tier.name].label}</strong>
+                              </div>
+                            )}
                           </div>
                         ) : (
                           <span className="text-slate-500 text-sm">No model assigned</span>

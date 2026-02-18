@@ -75,14 +75,14 @@ export const PLAN_PRICES = {
 
 export const PLAN_FEATURES: Record<string, string[]> = {
   starter: [
-    "IA Mistral Large 3 pour des devis précis",
+    "Génération de devis rapide et fiable",
     "Jusqu'à 10 devis par mois",
     "Jusqu'à 20 clients",
     "1 utilisateur",
     "Support par email",
   ],
   business: [
-    "IA Mistral Large 3 pour devis complexes",
+    "Génération de devis précise sur chantiers variés",
     "Jusqu'à 30 devis par mois",
     "Jusqu'à 60 clients",
     "Jusqu'à 3 utilisateurs",
@@ -90,7 +90,7 @@ export const PLAN_FEATURES: Record<string, string[]> = {
     "Transformation des devis en factures",
   ],
   pro: [
-    "IA GPT-4.1 pour l'excellence maximale",
+    "Génération optimale sur devis complexes multi-lots",
     "Devis illimités pour forte demande",
     "Clients et utilisateurs illimités",
     "Suivi complet du portefeuille client",

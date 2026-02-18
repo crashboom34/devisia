@@ -71,8 +71,8 @@ export default function FeaturesPage() {
               />
               <FeatureCard
                 icon={Zap}
-                title="Modèles d'IA Multiples"
-                description="Choisissez entre GPT-4, Claude ou d'autres modèles selon vos besoins de précision et de coût."
+                title="Moteur adapté à votre plan"
+                description="Chaque plan embarque un moteur de génération calibré pour son niveau d'usage, du chantier simple au devis complexe multi-lots."
               />
             </div>
           </div>

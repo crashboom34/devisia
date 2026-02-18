@@ -110,35 +110,33 @@ export default function SettingsPage() {
                 Fournisseur
               </label>
               <div className="w-full px-4 py-3 bg-gray-950 border border-gray-700 rounded-lg text-gray-500 cursor-not-allowed">
-                OpenRouter (Recommandé - Tous les modèles)
+                Géré par Devisia (inclus dans votre abonnement)
               </div>
             </div>
 
             {/* Model Field - Disabled */}
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-2">
-                Modèle IA
+                Moteur de génération
               </label>
               <div className="w-full px-4 py-3 bg-gray-950 border border-gray-700 rounded-lg text-gray-500 cursor-not-allowed">
-                Llama 3.1 8B (Gratuit)
+                Adapté automatiquement à votre plan
               </div>
               <p className="text-xs text-gray-500 mt-2">
-                Les modèles gratuits ne nécessitent pas de paiement. Les autres sont facturés selon l'usage.
+                Le moteur de génération est géré par Devisia et évolue pour améliorer la qualité, sans action de votre part.
               </p>
             </div>
 
             {/* API Key Field - Disabled */}
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-2">
-                Clé API
+                Clé API personnalisée
               </label>
               <div className="w-full px-4 py-3 bg-gray-950 border border-gray-700 rounded-lg text-gray-500 cursor-not-allowed font-mono">
-                sk-or-...
+                Non disponible
               </div>
               <p className="text-xs text-gray-500 mt-2">
-                Obtenez votre clé sur{' '}
-                <span className="text-blue-400">openrouter.ai</span>{' '}
-                (Gratuit + modèles gratuits disponibles)
+                Cette fonctionnalité n&apos;est plus disponible. Le moteur est entièrement géré par Devisia.
               </p>
             </div>
 

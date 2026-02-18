@@ -5,8 +5,9 @@ import Link from 'next/link';
 import { SiteHeader } from '@/components/marketing/SiteHeader';
 import { SiteFooter } from '@/components/marketing/SiteFooter';
 import { CTASection } from '@/components/marketing/CTASection';
-import { Check, FileText, Users, Crown, Sparkles, Gift } from 'lucide-react';
-import { PLAN_PRICES, PLAN_FEATURES, TIER_TO_MODEL_LABEL } from '@/lib/tier-model';
+import { Check, FileText, Users, Crown, Info, Gift } from 'lucide-react';
+import { PLAN_PRICES, PLAN_FEATURES } from '@/lib/tier-model';
+import { PLAN_LABELS, PLAN_VALUE_PROPS, PLAN_TOOLTIP } from '@/lib/plan-labels';
 
 type BillingPeriod = 'monthly' | 'yearly';
 
@@ -113,7 +114,8 @@ export default function PricingPage() {
               {PLANS.map((plan) => {
                 const prices = PLAN_PRICES[plan.key];
                 const features = PLAN_FEATURES[plan.key];
-                const modelLabel = TIER_TO_MODEL_LABEL[plan.key];
+                const modeLabel = PLAN_LABELS[plan.key]?.label ?? '';
+                const valueProp = PLAN_VALUE_PROPS[plan.key] ?? '';
                 const Icon = plan.icon;
                 const priceId = plan.stripePriceIds[billing];
 
@@ -179,9 +181,19 @@ export default function PricingPage() {
                         )}
                       </div>
 
-                      <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-800 border border-gray-700">
-                        <Sparkles className="h-3 w-3 text-brand-green" />
-                        <span className="text-xs text-gray-300 font-medium">{modelLabel}</span>
+                      <div className="mt-4 flex flex-col gap-1.5">
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-brand-green/10 border border-brand-green/20 self-start">
+                          <span className="text-xs text-brand-green font-semibold">{modeLabel}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-gray-500">{valueProp}</span>
+                          <span className="relative group cursor-default">
+                            <Info className="h-3 w-3 text-gray-600 hover:text-gray-400 transition-colors" />
+                            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-56 bg-gray-900 border border-gray-700 text-gray-300 text-xs rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 text-center shadow-xl">
+                              {PLAN_TOOLTIP}
+                            </span>
+                          </span>
+                        </div>
                       </div>
                     </div>
 
@@ -240,8 +252,8 @@ export default function PricingPage() {
                   a: "En choisissant la facturation annuelle, vous payez 10 mois et bénéficiez de 12 mois d'accès — soit 2 mois offerts. Le paiement est effectué en une seule fois.",
                 },
                 {
-                  q: "Quelle est la différence entre Mistral Large 3 et GPT-4.1 ?",
-                  a: "Mistral Large 3 offre d'excellents devis BTP pour la plupart des projets. GPT-4.1 (plan Pro) est le modèle le plus avancé d'OpenAI, idéal pour les projets complexes, les grandes équipes et les exigences maximales en précision.",
+                  q: "Quelle est la différence entre Mode Essentiel, Mode Avancé et Mode Expert ?",
+                  a: "Chaque plan embarque un moteur de génération calibré pour son niveau d'usage. Mode Essentiel est rapide et fiable pour les chantiers simples. Mode Avancé apporte plus de cohérence sur des projets variés. Mode Expert est optimisé pour les devis complexes multi-lots et les grandes équipes.",
                 },
                 {
                   q: "Où sont hébergées mes données ?",
