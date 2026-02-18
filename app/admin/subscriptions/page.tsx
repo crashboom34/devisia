@@ -13,10 +13,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Plus, Edit, Shield, CreditCard, Sparkles, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Shield, CreditCard, Sparkles, AlertCircle, RotateCcw } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { CANONICAL_MAPPING } from '@/lib/tier-model';
 
 interface AIModel {
   id: string;
@@ -200,6 +201,25 @@ export default function AdminSubscriptionsPage() {
     }
   };
 
+  const applyDefaultMapping = async () => {
+    for (const entry of CANONICAL_MAPPING) {
+      const { data: model } = await supabase
+        .from('ai_models')
+        .select('id')
+        .eq('model_id', entry.modelId)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (!model) continue;
+
+      await supabase
+        .from('subscription_tiers')
+        .update({ ai_model_id: model.id })
+        .eq('name', entry.tier);
+    }
+    await loadTiers();
+  };
+
   const resetForm = () => {
     setFormData({
       name: '',
@@ -262,6 +282,50 @@ export default function AdminSubscriptionsPage() {
             Users only see generic labels like "Advanced AI Intelligence" without technical details.
           </AlertDescription>
         </Alert>
+
+        <Card className="bg-gradient-to-br from-slate-800/90 to-slate-800/50 border border-slate-700/50 shadow-2xl mb-6">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-cyan-400" />
+                  Mapping Plan → Modele IA (Canonique)
+                </CardTitle>
+                <CardDescription className="text-slate-400">
+                  Reference officielle — applique automatiquement a chaque generation de devis
+                </CardDescription>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={applyDefaultMapping}
+                className="border-slate-600 text-slate-300 hover:text-white hover:bg-slate-700"
+              >
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Reappliquer mapping par defaut
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {CANONICAL_MAPPING.map((entry) => (
+                <div
+                  key={entry.tier}
+                  className="rounded-lg border border-slate-700/50 bg-slate-900/40 p-4"
+                >
+                  <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Plan</div>
+                  <div className="text-lg font-semibold text-white capitalize mb-3">{entry.tier}</div>
+                  <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Modele IA</div>
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-cyan-400 flex-shrink-0" />
+                    <span className="text-sm text-cyan-300">{entry.label}</span>
+                  </div>
+                  <div className="text-xs text-slate-600 mt-1 font-mono">{entry.modelId}</div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
 
         <Card className="bg-gradient-to-br from-slate-800/90 to-slate-800/50 border border-slate-700/50 shadow-2xl">
           <CardHeader>
