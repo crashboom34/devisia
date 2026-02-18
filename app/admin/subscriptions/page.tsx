@@ -528,7 +528,7 @@ export default function AdminSubscriptionsPage() {
                     <TableHead className="text-slate-300">Level</TableHead>
                     <TableHead className="text-slate-300">Price</TableHead>
                     <TableHead className="text-slate-300">AI Model</TableHead>
-                    <TableHead className="text-slate-300">Limits</TableHead>
+                    <TableHead className="text-slate-300">Limites</TableHead>
                     <TableHead className="text-slate-300">Status</TableHead>
                     <TableHead className="text-slate-300 text-right">Actions</TableHead>
                   </TableRow>
@@ -565,8 +565,16 @@ export default function AdminSubscriptionsPage() {
                         )}
                       </TableCell>
                       <TableCell className="text-slate-300 text-sm">
-                        <div>{tier.max_projects_per_month} projects/mo</div>
-                        <div className="text-xs text-slate-500">{tier.max_estimates_per_project} estimates/project</div>
+                        <div>{tier.max_projects_per_month >= 999999 ? 'Illimités' : `${tier.max_projects_per_month} devis/mois`}</div>
+                        <div className="text-xs text-slate-500">
+                          {(tier as any).max_clients >= 999999 ? 'Clients illimités' : `${(tier as any).max_clients ?? '—'} clients max`}
+                        </div>
+                        <div className="text-xs text-slate-500">
+                          {(tier as any).max_users >= 999999 ? 'Utilisateurs illimités' : `${(tier as any).max_users ?? 1} utilisateur(s)`}
+                        </div>
+                        {(tier as any).fair_use_limit && (
+                          <div className="text-xs text-slate-600 italic">fair-use: {(tier as any).fair_use_limit}/mois</div>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Switch

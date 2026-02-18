@@ -124,6 +124,8 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    await enforceMonthlyLimit(supabase, user.id);
+
     const { model, resolvedTier } = await selectModel(supabase, user.id, adminTier);
 
     console.log(`[generate-estimate] Tier resolved: ${resolvedTier}`);
@@ -264,6 +266,55 @@ Deno.serve(async (req: Request) => {
     );
   }
 });
+
+async function enforceMonthlyLimit(supabase: any, userId: string) {
+  const { data: sub } = await supabase
+    .from("user_subscriptions")
+    .select("tier_id, subscription_tiers(name, max_projects_per_month, fair_use_limit)")
+    .eq("user_id", userId)
+    .eq("status", "active")
+    .maybeSingle();
+
+  const tierName: string = sub?.subscription_tiers?.name ?? "starter";
+  const maxPerMonth: number = sub?.subscription_tiers?.max_projects_per_month ?? 10;
+  const fairUse: number = sub?.subscription_tiers?.fair_use_limit ?? 50;
+
+  if (maxPerMonth >= 999999) {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const { count } = await supabase
+      .from("estimates")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .gte("created_at", monthStart);
+
+    const used = count ?? 0;
+    if (used >= fairUse) {
+      console.warn(`[generate-estimate] Fair-use cap reached for plan ${tierName}: ${used}/${fairUse}`);
+      throw new Error(
+        `Limite d'utilisation équitable atteinte (${used}/${fairUse} devis ce mois). Contactez-nous pour un plan Entreprise sur mesure.`
+      );
+    }
+    return;
+  }
+
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  const { count } = await supabase
+    .from("estimates")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .gte("created_at", monthStart);
+
+  const used = count ?? 0;
+  console.log(`[generate-estimate] Monthly usage: ${used}/${maxPerMonth} (plan: ${tierName})`);
+
+  if (used >= maxPerMonth) {
+    throw new Error(
+      `Limite mensuelle atteinte (${used}/${maxPerMonth} devis). Passez au plan supérieur pour continuer.`
+    );
+  }
+}
 
 async function selectModel(supabase: any, userId: string, adminTier?: string): Promise<{ model: any; resolvedTier: string }> {
   const tierMap: Record<string, string> = {
