@@ -9,7 +9,7 @@ const TRUST_COMPANIES = [
     name: 'BatiSud Rénovation',
     initials: 'BSR',
     color: 'from-sky-500 to-blue-600',
-    logo: '/Generated_Image_February_18%2C_2026_-_10_52PM_(2).png',
+    logo: '/Generated_Image_February_18%2C_2026_-_10_52PM_%282%29.png',
   },
   {
     name: 'Occitanie Maçonnerie',
