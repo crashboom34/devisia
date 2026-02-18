@@ -205,17 +205,13 @@ Deno.serve(async (req: Request) => {
       project_id: projectId || null,
       model_id: modelConfig.id,
       provider: modelConfig.provider,
+      model_used: modelConfig.display_name,
       endpoint: 'llm-proxy',
       tokens_input: usage.prompt_tokens,
       tokens_output: usage.completion_tokens,
       cost,
       duration_ms: durationMs,
       status: 'success',
-      request_metadata: {
-        model_name: modelConfig.display_name,
-        temperature,
-        max_tokens: maxTokens,
-      },
     });
 
     return new Response(
@@ -250,10 +246,14 @@ Deno.serve(async (req: Request) => {
           await supabase.from('api_usage_logs').insert({
             user_id: user.id,
             provider: 'unknown',
+            model_used: 'unknown',
             endpoint: 'llm-proxy',
+            tokens_input: 0,
+            tokens_output: 0,
+            cost: 0,
+            duration_ms: 0,
             status: 'error',
             error_message: errorMessage,
-            request_metadata: { error: errorMessage },
           });
         }
       }
