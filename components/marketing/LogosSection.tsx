@@ -25,6 +25,7 @@ const TRUST_COMPANIES = [
     name: 'MultiTravaux Construction',
     initials: 'MTC',
     color: 'from-cyan-500 to-teal-600',
+    logo: '/Generated_Image_February_18%2C_2026_-_10_54PM.png',
   },
 ];
 
