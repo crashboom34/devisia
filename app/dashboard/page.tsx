@@ -16,6 +16,8 @@ import { ActivityTimeline } from '@/components/dashboard/ActivityTimeline';
 import { KpiCard } from '@/components/dashboard/KpiCard';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { Sidebar } from '@/components/Sidebar';
+import AdminPlanSimulator from '@/components/AdminPlanSimulator';
+import { checkProjectLimit, isUserAdmin, type ProjectLimitInfo } from '@/lib/subscription-helper';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -24,49 +26,67 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [estimatesCount, setEstimatesCount] = useState({ total: 0, completed: 0, processing: 0, pending: 0 });
   const [chartPeriod, setChartPeriod] = useState<'7days' | '30days' | '3months'>('30days');
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [projectLimits, setProjectLimits] = useState<ProjectLimitInfo | null>(null);
 
   useEffect(() => {
-    checkUser();
-    loadProjects();
+    initDashboard();
   }, []);
 
-  const checkUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+  const initDashboard = async () => {
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    if (!currentUser) {
       router.push('/auth/login');
-    } else {
-      setUser(user);
+      return;
     }
+    setUser(currentUser);
+
+    const [adminStatus, limits, projectsResult, estimatesResult] = await Promise.all([
+      isUserAdmin(currentUser.id),
+      checkProjectLimit(currentUser.id),
+      supabase.from('projects').select('*').order('created_at', { ascending: false }),
+      supabase.from('estimates').select('id, scenario_type').eq('user_id', currentUser.id),
+    ]);
+
+    setIsAdmin(adminStatus);
+    setProjectLimits(limits);
+
+    const projectsData = projectsResult.data || [];
+    setProjects(projectsData);
+
+    const estimatesData = estimatesResult.data || [];
+    setEstimatesCount({
+      total: estimatesData.length,
+      completed: estimatesData.filter(e => e.scenario_type).length,
+      processing: projectsData.filter(p => p.status === 'processing').length,
+      pending: projectsData.filter(p => p.status === 'draft').length,
+    });
+
+    setLoading(false);
   };
 
-  const loadProjects = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*')
-        .order('created_at', { ascending: false });
+  const handleRefreshData = async () => {
+    if (!user) return;
+    setLoading(true);
+    const [projectsResult, estimatesResult, limits] = await Promise.all([
+      supabase.from('projects').select('*').order('created_at', { ascending: false }),
+      supabase.from('estimates').select('id, scenario_type').eq('user_id', user.id),
+      checkProjectLimit(user.id),
+    ]);
 
-      if (error) throw error;
-      setProjects(data || []);
+    const projectsData = projectsResult.data || [];
+    setProjects(projectsData);
+    setProjectLimits(limits);
 
-      const { data: estimates } = await supabase
-        .from('estimates')
-        .select('id, scenario_type')
-        .eq('user_id', (await supabase.auth.getUser()).data.user?.id);
+    const estimatesData = estimatesResult.data || [];
+    setEstimatesCount({
+      total: estimatesData.length,
+      completed: estimatesData.filter(e => e.scenario_type).length,
+      processing: projectsData.filter(p => p.status === 'processing').length,
+      pending: projectsData.filter(p => p.status === 'draft').length,
+    });
 
-      if (estimates) {
-        setEstimatesCount({
-          total: estimates.length,
-          completed: estimates.filter(e => e.scenario_type).length,
-          processing: data?.filter(p => p.status === 'processing').length || 0,
-          pending: data?.filter(p => p.status === 'draft').length || 0,
-        });
-      }
-    } catch (err) {
-      console.error('Error loading projects:', err);
-    } finally {
-      setLoading(false);
-    }
+    setLoading(false);
   };
 
   const recentActivities = projects.slice(0, 5).map(project => ({
@@ -85,7 +105,7 @@ export default function DashboardPage() {
   };
 
   const handleRefresh = () => {
-    loadProjects();
+    handleRefreshData();
   };
 
   return (
@@ -134,6 +154,9 @@ export default function DashboardPage() {
             </Button>
           </div>
         </div>
+
+        {/* Admin Plan Simulator */}
+        {isAdmin && <AdminPlanSimulator userId={user?.id} />}
 
         {/* Quick Navigation */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -363,21 +386,73 @@ export default function DashboardPage() {
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between p-3 bg-slate-900/50 rounded-lg">
-                    <span className="text-sm font-medium text-slate-400">Devis générés</span>
-                    <span className="text-lg font-bold text-white">{estimatesCount.total}</span>
+                    <span className="text-sm font-medium text-slate-400">Projets utilisés</span>
+                    <span className="text-lg font-bold text-white">
+                      {projectLimits?.used || 0}
+                      {projectLimits?.limit === -1 ? ' (Illimité)' : ` / ${projectLimits?.limit || 0}`}
+                    </span>
                   </div>
-                  <div className="p-4 bg-red-500/10 rounded-xl border border-red-500/20">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm font-medium text-red-400">Limite atteinte</span>
-                      <span className="text-sm font-bold text-red-400">100%</span>
+
+                  {isAdmin && projectLimits?.limit === -1 ? (
+                    <div className="p-4 bg-purple-500/10 rounded-xl border border-purple-500/20">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-sm font-medium text-purple-400">Accès Administrateur</span>
+                        <span className="text-sm font-bold text-purple-400">Illimité</span>
+                      </div>
+                      <div className="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden">
+                        <div className="bg-gradient-to-r from-purple-500 to-purple-600 h-2.5 rounded-full shadow-lg shadow-purple-500/50 animate-pulse" style={{ width: '100%' }}></div>
+                      </div>
+                      <p className="text-xs text-slate-400 mt-3 leading-relaxed">
+                        Vous avez un accès illimité en tant qu&apos;administrateur
+                      </p>
                     </div>
-                    <div className="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden">
-                      <div className="bg-gradient-to-r from-red-500 to-red-600 h-2.5 rounded-full shadow-lg shadow-red-500/50" style={{ width: '100%' }}></div>
+                  ) : projectLimits?.has_reached_limit ? (
+                    <div className="p-4 bg-red-500/10 rounded-xl border border-red-500/20">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-sm font-medium text-red-400">Limite atteinte</span>
+                        <span className="text-sm font-bold text-red-400">
+                          {Math.round(((projectLimits?.used || 0) / (projectLimits?.limit || 1)) * 100)}%
+                        </span>
+                      </div>
+                      <div className="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden">
+                        <div
+                          className="bg-gradient-to-r from-red-500 to-red-600 h-2.5 rounded-full shadow-lg shadow-red-500/50"
+                          style={{ width: `${Math.min(((projectLimits?.used || 0) / (projectLimits?.limit || 1)) * 100, 100)}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-slate-400 mt-3 leading-relaxed">
+                        Passez à un plan supérieur pour continuer à générer des devis
+                      </p>
                     </div>
-                    <p className="text-xs text-slate-400 mt-3 leading-relaxed">
-                      Passez à un plan supérieur pour continuer à générer des devis
-                    </p>
-                  </div>
+                  ) : (
+                    <div className="p-4 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-sm font-medium text-emerald-400">Utilisation</span>
+                        <span className="text-sm font-bold text-emerald-400">
+                          {projectLimits?.limit === -1
+                            ? 'Illimité'
+                            : `${Math.round(((projectLimits?.used || 0) / (projectLimits?.limit || 1)) * 100)}%`
+                          }
+                        </span>
+                      </div>
+                      <div className="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden">
+                        <div
+                          className="bg-gradient-to-r from-emerald-500 to-emerald-600 h-2.5 rounded-full shadow-lg shadow-emerald-500/50"
+                          style={{
+                            width: projectLimits?.limit === -1
+                              ? '100%'
+                              : `${Math.min(((projectLimits?.used || 0) / (projectLimits?.limit || 1)) * 100, 100)}%`
+                          }}
+                        />
+                      </div>
+                      <p className="text-xs text-slate-400 mt-3 leading-relaxed">
+                        {projectLimits?.remaining === -1
+                          ? 'Projets illimités disponibles'
+                          : `${projectLimits?.remaining || 0} projet${(projectLimits?.remaining || 0) > 1 ? 's' : ''} restant${(projectLimits?.remaining || 0) > 1 ? 's' : ''} ce mois`
+                        }
+                      </p>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

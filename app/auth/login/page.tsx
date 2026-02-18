@@ -34,6 +34,8 @@ export default function LoginPage() {
       console.error('Login error:', err);
       if (err.message === 'Failed to fetch') {
         setError('Impossible de se connecter au serveur. Vérifiez votre connexion internet.');
+      } else if (err.message.includes('Invalid login credentials')) {
+        setError('Email ou mot de passe incorrect. Si vous n\'avez pas encore de compte, créez-en un.');
       } else {
         setError(err.message || 'Une erreur est survenue lors de la connexion');
       }
@@ -84,7 +86,12 @@ export default function LoginPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-gray-300">Mot de passe</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password" className="text-gray-300">Mot de passe</Label>
+                  <Link href="/auth/forgot-password" className="text-xs text-brand-green hover:text-green-400 transition-colors">
+                    Mot de passe oublié ?
+                  </Link>
+                </div>
                 <Input
                   id="password"
                   type="password"

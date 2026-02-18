@@ -6,10 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Eye, EyeOff, Download, ChevronDown, ChevronUp, Edit2, Save, X, Trash2, RefreshCw, History } from 'lucide-react';
+import { Eye, EyeOff, Download, ChevronDown, ChevronUp, Edit2, Save, X, Trash2, History } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import EditableEstimateRow from './EditableEstimateRow';
-import RegenerateQuoteDialog from './RegenerateQuoteDialog';
 
 type ViewMode = 'client' | 'detailed' | 'internal';
 
@@ -72,7 +71,6 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
   const [isEditing, setIsEditing] = useState(false);
   const [editedEstimate, setEditedEstimate] = useState<EstimateData>(estimate);
   const [isSaving, setIsSaving] = useState(false);
-  const [showRegenerateDialog, setShowRegenerateDialog] = useState(false);
 
   const toggleCategory = (index: number) => {
     const newExpanded = new Set(expandedCategories);
@@ -309,18 +307,6 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
                   <Edit2 className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
                   Modifier
                 </Button>
-                {projectDescription && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowRegenerateDialog(true)}
-                    className="text-xs sm:text-sm border-brand-green text-brand-green hover:bg-brand-green/10"
-                    title="Régénérer avec un modèle IA plus performant"
-                  >
-                    <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
-                    Meilleur modèle
-                  </Button>
-                )}
               </>
             ) : (
               <>
@@ -619,22 +605,6 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
         )}
       </CardContent>
 
-      {projectDescription && (
-        <RegenerateQuoteDialog
-          open={showRegenerateDialog}
-          onOpenChange={setShowRegenerateDialog}
-          estimateId={estimate.id}
-          currentModel={estimate.model_used || 'Unknown'}
-          currentTotal={estimate.total_ttc}
-          scenarioType={estimate.scenario_type}
-          projectDescription={projectDescription}
-          onSuccess={() => {
-            if (onRegenerate) {
-              onRegenerate();
-            }
-          }}
-        />
-      )}
     </Card>
   );
 }

@@ -27,7 +27,7 @@ Deno.serve(async (req: Request) => {
       throw new Error('Unauthorized');
     }
 
-    const { estimateId, modelId, projectDescription } = await req.json();
+    const { estimateId, modelId, projectDescription, adminTier } = await req.json();
 
     // Récupérer l'ancien devis
     const { data: oldEstimate, error: fetchError } = await supabase
@@ -76,6 +76,7 @@ Deno.serve(async (req: Request) => {
         projectDescription: projectDescription,
         scenarioType: oldEstimate.scenario_type,
         modelId: modelId,
+        adminTier: adminTier || undefined,
       }),
     });
 

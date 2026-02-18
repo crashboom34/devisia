@@ -17,7 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { EstimateTemplate } from '@/lib/supabase';
-import { getUserSubscriptionInfo, type SubscriptionInfo } from '@/lib/subscription-helper';
+import { getUserSubscriptionInfo, canCreateProject, type SubscriptionInfo } from '@/lib/subscription-helper';
 
 export default function NewProjectPage() {
   const router = useRouter();
@@ -86,6 +86,16 @@ export default function NewProjectPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const createPermission = await canCreateProject(user.id);
+    if (!createPermission.allowed) {
+      alert(createPermission.message || 'Vous avez atteint votre limite de projets');
+      if (createPermission.upgrade_url) {
+        router.push(createPermission.upgrade_url);
+      }
+      return;
+    }
+
     setLoading(true);
     setLoadingStage('creating');
 
@@ -124,12 +134,19 @@ export default function NewProjectPage() {
             scenarioType,
             temperature,
             templateId: selectedTemplateId || undefined,
+            adminTier: typeof window !== 'undefined' ? localStorage.getItem('admin_current_mode') : undefined,
           }),
         });
 
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(`Failed to generate ${scenarioType} estimate: ${errorData.error}`);
+          let errorMsg = 'Erreur inconnue';
+          try {
+            const errorData = await response.json();
+            errorMsg = errorData.error || errorData.message || `Erreur HTTP ${response.status}`;
+          } catch {
+            errorMsg = `Erreur HTTP ${response.status}`;
+          }
+          throw new Error(errorMsg);
         }
 
         await response.json();
@@ -225,13 +242,13 @@ export default function NewProjectPage() {
                     </div>
                   ) : (
                     <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
-                      <SelectTrigger className="text-sm sm:text-base">
+                      <SelectTrigger className="text-sm sm:text-base bg-slate-800/50 border-slate-700 text-white">
                         <SelectValue placeholder="Sélectionner un type de projet (optionnel)" />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none" className="text-white hover:bg-slate-800">Aucun template (génération libre)</SelectItem>
+                      <SelectContent className="bg-slate-900 border-slate-700">
+                        <SelectItem value="none" className="text-white hover:bg-slate-800 focus:bg-slate-800 focus:text-white">Aucun template (génération libre)</SelectItem>
                         {templates.map((template) => (
-                          <SelectItem key={template.id} value={template.template_id} className="text-white hover:bg-slate-800">
+                          <SelectItem key={template.id} value={template.template_id} className="text-white hover:bg-slate-800 focus:bg-slate-800 focus:text-white">
                             {template.name}
                             <span className="text-xs text-slate-500 ml-2">• {template.category}</span>
                           </SelectItem>
@@ -315,10 +332,10 @@ export default function NewProjectPage() {
                       <SelectTrigger id="template" className="text-sm sm:text-base bg-slate-800/50 border-slate-700 text-white">
                         <SelectValue placeholder="Sélectionner un type de projet (optionnel)" />
                       </SelectTrigger>
-                      <SelectContent className="bg-brand-darkCard border-gray-800">
-                        <SelectItem value="none" className="text-white hover:bg-slate-800">Aucun template (génération libre)</SelectItem>
+                      <SelectContent className="bg-slate-900 border-slate-700">
+                        <SelectItem value="none" className="text-white hover:bg-slate-800 focus:bg-slate-800 focus:text-white">Aucun template (génération libre)</SelectItem>
                         {templates.map((template) => (
-                          <SelectItem key={template.id} value={template.template_id} className="text-white hover:bg-slate-800">
+                          <SelectItem key={template.id} value={template.template_id} className="text-white hover:bg-slate-800 focus:bg-slate-800 focus:text-white">
                             {template.name}
                             <span className="text-xs text-slate-500 ml-2">• {template.category}</span>
                           </SelectItem>

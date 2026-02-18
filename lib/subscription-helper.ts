@@ -74,18 +74,84 @@ export async function getUserSubscriptionInfo(userId: string): Promise<Subscript
 }
 
 /**
+ * Check if user is an admin
+ */
+export async function isUserAdmin(userId: string): Promise<boolean> {
+  try {
+    const { data: adminData } = await supabase
+      .from('admin_users')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    return !!adminData;
+  } catch (error) {
+    console.error('Error checking admin status:', error);
+    return false;
+  }
+}
+
+/**
  * Check if user has reached their project limit
  * Uses database function for secure calculation
+ * Admins see their simulated plan limits OR unlimited if no plan simulation
  */
 export async function checkProjectLimit(userId: string): Promise<ProjectLimitInfo> {
   try {
+    // First, check if admin has a simulated plan (active subscription)
+    const { data: subscription } = await supabase
+      .from('user_subscriptions')
+      .select(`
+        *,
+        subscription_tiers:tier_id (
+          name,
+          display_name,
+          max_projects_per_month
+        )
+      `)
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .maybeSingle();
+
+    // If admin is simulating a plan, use the RPC to get real limits
+    if (subscription) {
+      const { data, error } = await supabase.rpc('check_project_limit', {
+        p_user_id: userId,
+      });
+
+      if (error) {
+        console.error('Error checking project limit:', error);
+        return {
+          limit: 5,
+          used: 0,
+          remaining: 5,
+          has_reached_limit: false,
+          tier_name: 'Free',
+        };
+      }
+
+      return data;
+    }
+
+    // If no subscription but is admin, give unlimited access
+    const isAdmin = await isUserAdmin(userId);
+    if (isAdmin) {
+      return {
+        limit: -1,
+        used: 0,
+        remaining: -1,
+        has_reached_limit: false,
+        tier_name: 'Admin - Illimite',
+      };
+    }
+
+    // Regular user with no subscription - use RPC
     const { data, error } = await supabase.rpc('check_project_limit', {
       p_user_id: userId,
     });
 
     if (error) {
       console.error('Error checking project limit:', error);
-      // Return safe defaults
       return {
         limit: 5,
         used: 0,
@@ -144,25 +210,34 @@ export function getAICapabilityDescription(tierLevel: number): string {
 /**
  * Check if user can create a new project
  * Returns both permission and helpful message
+ * Respects simulated plan limits for admins
  */
 export async function canCreateProject(userId: string): Promise<{
   allowed: boolean;
   message?: string;
   upgrade_url?: string;
+  isAdmin?: boolean;
 }> {
   const limitInfo = await checkProjectLimit(userId);
+  const isAdmin = await isUserAdmin(userId);
 
   if (limitInfo.has_reached_limit) {
     return {
       allowed: false,
-      message: `You've reached your limit of ${limitInfo.limit} projects per month on the ${limitInfo.tier_name} plan.`,
+      message: `Vous avez atteint votre limite de ${limitInfo.limit} projets par mois sur le plan ${limitInfo.tier_name}.`,
       upgrade_url: '/pricing/new',
+      isAdmin: isAdmin,
     };
   }
 
+  const remainingText = limitInfo.limit === -1
+    ? 'Projets illimites'
+    : `${limitInfo.remaining} projet${limitInfo.remaining > 1 ? 's' : ''} restant${limitInfo.remaining > 1 ? 's' : ''} ce mois`;
+
   return {
     allowed: true,
-    message: `You have ${limitInfo.remaining} of ${limitInfo.limit} projects remaining this month.`,
+    message: remainingText,
+    isAdmin: isAdmin,
   };
 }
 

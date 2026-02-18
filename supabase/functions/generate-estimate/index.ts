@@ -13,7 +13,7 @@ interface EstimateRequest {
   scenarioType: "eco" | "standard" | "premium";
   temperature?: number;
   templateId?: string;
-  // modelId removed - automatic assignment based on subscription tier only
+  adminTier?: string;
 }
 
 Deno.serve(async (req: Request) => {
@@ -41,7 +41,7 @@ Deno.serve(async (req: Request) => {
       throw new Error("Unauthorized");
     }
 
-    const { projectId, projectDescription, scenarioType, temperature, templateId }: EstimateRequest = await req.json();
+    const { projectId, projectDescription, scenarioType, temperature, templateId, adminTier }: EstimateRequest = await req.json();
 
     if (!projectId || !projectDescription || !scenarioType) {
       throw new Error("Missing required fields");
@@ -84,39 +84,80 @@ Deno.serve(async (req: Request) => {
       return fallbackModels || [];
     };
 
-    // AUTOMATIC MODEL SELECTION BASED ON SUBSCRIPTION
-    // Users cannot select models - assignment is automatic based on their subscription tier
-    console.log("Determining AI model based on user subscription...");
-
-    // Get user's AI model via subscription tier
-    const { data: modelData, error: modelLookupError } = await supabase.rpc(
-      'get_user_ai_model',
-      { p_user_id: user.id }
-    );
+    // MODEL SELECTION: admin tier override > subscription > fallback
+    console.log("Determining AI model...");
 
     let selectedModelId = null;
 
-    if (modelLookupError || !modelData || modelData.length === 0) {
-      console.warn("No subscription model found, using fallback:", modelLookupError);
+    // 1) Admin tier override: admin sends their simulated plan from frontend
+    const tierMap: Record<string, string> = { 'unlimited': 'pro', 'pro': 'pro', 'business': 'business', 'starter': 'starter' };
+    const resolvedTierName = adminTier ? tierMap[adminTier] : null;
 
-      // Fallback: Get the lowest cost model (free tier default)
-      const { data: fallbackModel } = await supabase
-        .from("ai_models")
+    if (resolvedTierName) {
+      const { data: adminData } = await supabase
+        .from("admin_users")
         .select("id")
-        .eq("is_active", true)
-        .order("cost_per_1k_tokens_input", { ascending: true })
-        .limit(1)
+        .eq("user_id", user.id)
         .maybeSingle();
 
-      if (fallbackModel) {
-        selectedModelId = fallbackModel.id;
-        console.log("Using free tier fallback model");
+      if (adminData) {
+        const { data: tier } = await supabase
+          .from("subscription_tiers")
+          .select("ai_model_id")
+          .eq("name", resolvedTierName)
+          .eq("is_active", true)
+          .maybeSingle();
+
+        if (tier?.ai_model_id) {
+          selectedModelId = tier.ai_model_id;
+          console.log(`Admin override - using ${resolvedTierName} tier model`);
+        }
       } else {
-        throw new Error("No AI model available");
+        console.warn("adminTier sent but user is not admin, ignoring");
       }
-    } else {
-      selectedModelId = modelData[0].model_id;
-      console.log(`Subscription-assigned model: ${modelData[0].model_identifier}`);
+    }
+
+    // 2) Normal subscription lookup
+    if (!selectedModelId) {
+      const { data: modelData, error: modelLookupError } = await supabase.rpc(
+        'get_user_ai_model',
+        { p_user_id: user.id }
+      );
+
+      if (!modelLookupError && modelData && modelData.length > 0) {
+        selectedModelId = modelData[0].model_id;
+        console.log(`Subscription-assigned model: ${modelData[0].model_identifier}`);
+      }
+    }
+
+    // 3) Fallback: starter tier model, then cheapest active model
+    if (!selectedModelId) {
+      console.warn("No subscription model found, using fallback");
+      const { data: starterTier } = await supabase
+        .from("subscription_tiers")
+        .select("ai_model_id")
+        .eq("name", "starter")
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (starterTier?.ai_model_id) {
+        selectedModelId = starterTier.ai_model_id;
+        console.log("Using Starter tier default model");
+      } else {
+        const { data: fallbackModel } = await supabase
+          .from("ai_models")
+          .select("id")
+          .eq("is_active", true)
+          .order("cost_per_1k_tokens_input", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+
+        if (fallbackModel) {
+          selectedModelId = fallbackModel.id;
+        } else {
+          throw new Error("No AI model available");
+        }
+      }
     }
 
     const { data: model, error: modelError } = await supabase
@@ -134,21 +175,27 @@ Deno.serve(async (req: Request) => {
     console.log(`Starting generation with model: ${model.display_name} (${model.model_id})`);
     console.log(`Temperature: ${apiTemperature}`);
 
-    // Récupérer la clé API OpenRouter depuis system_config
     const { data: configData } = await supabase
       .from("system_config")
       .select("value")
       .eq("key", "openrouter_api_key")
       .maybeSingle();
 
-    const openrouterApiKey = configData?.value || Deno.env.get("OPENROUTER_API_KEY");
+    let openrouterApiKey: string | undefined;
+    if (configData?.value) {
+      const raw = configData.value;
+      openrouterApiKey = typeof raw === "string" ? raw : (raw as any)?.toString();
+    }
+    if (!openrouterApiKey) {
+      openrouterApiKey = Deno.env.get("OPENROUTER_API_KEY");
+    }
 
     if (!openrouterApiKey) {
       console.error("No OpenRouter API key found in system_config or environment");
-      throw new Error("OpenRouter API key not configured");
+      throw new Error("Clé API OpenRouter non configurée. Allez dans Admin > Configuration pour ajouter votre clé API OpenRouter.");
     }
 
-    console.log("OpenRouter API key found:", openrouterApiKey ? "Yes" : "No");
+    console.log("OpenRouter API key found: Yes");
 
     // Liste des modèles à essayer (modèle sélectionné + fallbacks)
     let modelsToTry = [model];
@@ -523,6 +570,7 @@ RÉPONDS UNIQUEMENT EN JSON VALIDE (sans texte avant ou après).`;
     const { data: estimate, error: insertError } = await supabase
       .from("estimates")
       .insert({
+        user_id: user.id,
         project_id: projectId,
         scenario_type: scenarioType,
         total_amount: totalTTC,
@@ -559,8 +607,15 @@ RÉPONDS UNIQUEMENT EN JSON VALIDE (sans texte avant ou après).`;
       response_time: responseTime,
     });
 
+    const usedFallback = usedModel.id !== model.id;
     return new Response(
-      JSON.stringify({ success: true, estimate }),
+      JSON.stringify({
+        success: true,
+        estimate,
+        ...(usedFallback && {
+          warning: `Le modèle ${model.display_name} n'a pas pu être utilisé. Modèle de remplacement: ${usedModel.display_name}`,
+        }),
+      }),
       {
         headers: {
           ...corsHeaders,
@@ -569,9 +624,10 @@ RÉPONDS UNIQUEMENT EN JSON VALIDE (sans texte avant ou après).`;
       }
     );
   } catch (error) {
-    console.error("Error generating estimate:", error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Error generating estimate:", errorMessage);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: errorMessage }),
       {
         status: 400,
         headers: {
