@@ -3,7 +3,7 @@ const TRUST_COMPANIES = [
     name: 'Hérault Plomberie Services',
     initials: 'HPS',
     color: 'from-teal-500 to-emerald-600',
-    logo: '/Generated_Image_February_18,_2026_-_10_52PM.png',
+    logo: '/Generated_Image_February_18%2C_2026_-_10_52PM.png',
   },
   {
     name: 'BatiSud Rénovation',
