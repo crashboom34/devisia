@@ -3,11 +3,13 @@ const TRUST_COMPANIES = [
     name: 'Hérault Plomberie Services',
     initials: 'HPS',
     color: 'from-teal-500 to-emerald-600',
+    logo: '/Generated_Image_February_18%2C_2026_-_10_52PM.png',
   },
   {
     name: 'BatiSud Rénovation',
     initials: 'BSR',
     color: 'from-sky-500 to-blue-600',
+    logo: '/Generated_Image_February_18%2C_2026_-_10_52PM_%282%29.png',
   },
   {
     name: 'Occitanie Maçonnerie',
@@ -23,6 +25,7 @@ const TRUST_COMPANIES = [
     name: 'MultiTravaux Construction',
     initials: 'MTC',
     color: 'from-cyan-500 to-teal-600',
+    logo: '/Generated_Image_February_18%2C_2026_-_10_54PM.png',
   },
 ];
 
@@ -43,9 +46,15 @@ export function LogosSection() {
               key={company.name}
               className="group flex flex-col items-center gap-3 rounded-2xl border border-slate-700/60 bg-slate-900/70 px-4 py-5 shadow-sm hover:-translate-y-0.5 hover:border-slate-600 hover:shadow-lg hover:shadow-black/20 transition-all duration-300"
             >
-              <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${company.color} shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                <span className="text-sm font-bold text-white tracking-tight">{company.initials}</span>
-              </div>
+              {'logo' in company && company.logo ? (
+                <div className="h-12 w-12 rounded-xl overflow-hidden shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <img src={company.logo} alt={company.name} className="h-full w-full object-cover" />
+                </div>
+              ) : (
+                <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${company.color} shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                  <span className="text-sm font-bold text-white tracking-tight">{company.initials}</span>
+                </div>
+              )}
               <span className="text-xs sm:text-sm font-medium text-slate-200 leading-tight text-center">
                 {company.name}
               </span>

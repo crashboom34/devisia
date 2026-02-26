@@ -28,11 +28,18 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import dynamic from 'next/dynamic';
 import { supabase } from '@/lib/supabase';
 import UserMenu from '@/components/UserMenu';
-import EstimateTable from '@/components/EstimateTable';
-import ProjectRoomsPhotos from '@/components/ProjectRoomsPhotos';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+const EstimateTable = dynamic(() => import('@/components/EstimateTable'), {
+  loading: () => <div className="animate-pulse h-64 bg-gray-800 rounded-lg" />,
+});
+
+const ProjectRoomsPhotos = dynamic(() => import('@/components/ProjectRoomsPhotos'), {
+  loading: () => <div className="animate-pulse h-64 bg-gray-800 rounded-lg" />,
+});
 import type { Project } from '@/lib/supabase';
 
 interface ProjectDetailClientProps {

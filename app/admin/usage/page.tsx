@@ -1,7 +1,7 @@
 'use client';
 /* eslint-disable react/no-unescaped-entities, react-hooks/exhaustive-deps */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -17,11 +17,13 @@ interface APIUsageLog {
   project_id: string | null;
   provider: string;
   endpoint: string;
+  model_used: string | null;
   tokens_input: number;
   tokens_output: number;
   cost: number;
   duration_ms: number;
   status: string;
+  error_message: string | null;
   created_at: string;
   profiles?: {
     email: string;
@@ -51,7 +53,7 @@ export default function AdminUsagePage() {
       .from('admin_users')
       .select('*')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     if (!adminData) {
       router.push('/admin');
@@ -111,14 +113,40 @@ export default function AdminUsagePage() {
         return <span className="px-2 py-1 text-xs rounded bg-red-200 text-red-700">Error</span>;
       case 'rate_limited':
         return <span className="px-2 py-1 text-xs rounded bg-yellow-200 text-yellow-700">Rate Limited</span>;
+      case 'timeout':
+        return <span className="px-2 py-1 text-xs rounded bg-orange-200 text-orange-700">Timeout</span>;
       default:
         return <span className="px-2 py-1 text-xs rounded bg-gray-200 text-gray-700">{status}</span>;
     }
   };
 
-  const totalCost = logs.reduce((sum, log) => sum + parseFloat(log.cost.toString()), 0);
-  const totalTokensInput = logs.reduce((sum, log) => sum + log.tokens_input, 0);
-  const totalTokensOutput = logs.reduce((sum, log) => sum + log.tokens_output, 0);
+  const totalCost = logs.reduce((sum, log) => sum + parseFloat(log.cost?.toString() || '0'), 0);
+  const totalTokensInput = logs.reduce((sum, log) => sum + (log.tokens_input || 0), 0);
+  const totalTokensOutput = logs.reduce((sum, log) => sum + (log.tokens_output || 0), 0);
+
+  const periodStats = useMemo(() => {
+    const now = new Date();
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    const last7 = logs.filter(l => new Date(l.created_at) >= sevenDaysAgo);
+    const last30 = logs.filter(l => new Date(l.created_at) >= thirtyDaysAgo);
+
+    return {
+      week: {
+        cost: last7.reduce((s, l) => s + parseFloat(l.cost?.toString() || '0'), 0),
+        tokensIn: last7.reduce((s, l) => s + (l.tokens_input || 0), 0),
+        tokensOut: last7.reduce((s, l) => s + (l.tokens_output || 0), 0),
+        calls: last7.length,
+      },
+      month: {
+        cost: last30.reduce((s, l) => s + parseFloat(l.cost?.toString() || '0'), 0),
+        tokensIn: last30.reduce((s, l) => s + (l.tokens_input || 0), 0),
+        tokensOut: last30.reduce((s, l) => s + (l.tokens_output || 0), 0),
+        calls: last30.length,
+      },
+    };
+  }, [logs]);
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Chargement...</div>;
@@ -133,7 +161,7 @@ export default function AdminUsagePage() {
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </Link>
-          <h1 className="text-2xl font-bold text-gray-900">Logs d'Utilisation API</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Logs d&apos;Utilisation API</h1>
         </div>
       </header>
 
@@ -141,7 +169,7 @@ export default function AdminUsagePage() {
         <div className="grid gap-4 md:grid-cols-3 mb-6">
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Coût Total</CardTitle>
+              <CardTitle className="text-sm font-medium">Cout Total</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{formatCurrency(totalCost)}</div>
@@ -167,13 +195,67 @@ export default function AdminUsagePage() {
           </Card>
         </div>
 
+        <div className="grid gap-4 md:grid-cols-2 mb-6">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium">Totaux 7 derniers jours</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-500">Appels</p>
+                  <p className="text-lg font-semibold">{periodStats.week.calls}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Cout</p>
+                  <p className="text-lg font-semibold">{formatCurrency(periodStats.week.cost)}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Tokens In</p>
+                  <p className="text-lg font-semibold">{periodStats.week.tokensIn.toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Tokens Out</p>
+                  <p className="text-lg font-semibold">{periodStats.week.tokensOut.toLocaleString()}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium">Totaux 30 derniers jours</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-500">Appels</p>
+                  <p className="text-lg font-semibold">{periodStats.month.calls}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Cout</p>
+                  <p className="text-lg font-semibold">{formatCurrency(periodStats.month.cost)}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Tokens In</p>
+                  <p className="text-lg font-semibold">{periodStats.month.tokensIn.toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Tokens Out</p>
+                  <p className="text-lg font-semibold">{periodStats.month.tokensOut.toLocaleString()}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         <Card>
           <CardHeader>
             <div className="flex justify-between items-center">
               <div>
                 <CardTitle>Logs API</CardTitle>
                 <CardDescription>
-                  Historique des appels API avec détails
+                  Historique des appels API avec details
                 </CardDescription>
               </div>
               <div className="flex gap-2">
@@ -186,6 +268,7 @@ export default function AdminUsagePage() {
                     <SelectItem value="success">Success</SelectItem>
                     <SelectItem value="error">Error</SelectItem>
                     <SelectItem value="rate_limited">Rate Limited</SelectItem>
+                    <SelectItem value="timeout">Timeout</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -214,11 +297,12 @@ export default function AdminUsagePage() {
                   <TableRow>
                     <TableHead>Date</TableHead>
                     <TableHead>Utilisateur</TableHead>
-                    <TableHead>Provider</TableHead>
+                    <TableHead>Modele</TableHead>
+                    <TableHead>Endpoint</TableHead>
                     <TableHead className="text-right">Tokens In</TableHead>
                     <TableHead className="text-right">Tokens Out</TableHead>
-                    <TableHead className="text-right">Coût</TableHead>
-                    <TableHead className="text-right">Durée</TableHead>
+                    <TableHead className="text-right">Cout</TableHead>
+                    <TableHead className="text-right">Duree</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -227,11 +311,12 @@ export default function AdminUsagePage() {
                     <TableRow key={log.id}>
                       <TableCell className="text-xs">{formatDate(log.created_at)}</TableCell>
                       <TableCell className="text-sm">{log.profiles?.email || 'N/A'}</TableCell>
-                      <TableCell className="capitalize text-sm">{log.provider}</TableCell>
-                      <TableCell className="text-right text-sm">{log.tokens_input.toLocaleString()}</TableCell>
-                      <TableCell className="text-right text-sm">{log.tokens_output.toLocaleString()}</TableCell>
-                      <TableCell className="text-right text-sm font-mono">{formatCurrency(log.cost)}</TableCell>
-                      <TableCell className="text-right text-sm">{log.duration_ms}ms</TableCell>
+                      <TableCell className="text-sm">{log.model_used || '-'}</TableCell>
+                      <TableCell className="text-sm">{log.endpoint}</TableCell>
+                      <TableCell className="text-right text-sm">{(log.tokens_input || 0).toLocaleString()}</TableCell>
+                      <TableCell className="text-right text-sm">{(log.tokens_output || 0).toLocaleString()}</TableCell>
+                      <TableCell className="text-right text-sm font-mono">{formatCurrency(log.cost || 0)}</TableCell>
+                      <TableCell className="text-right text-sm">{log.duration_ms || 0}ms</TableCell>
                       <TableCell>{getStatusBadge(log.status)}</TableCell>
                     </TableRow>
                   ))}
@@ -241,7 +326,7 @@ export default function AdminUsagePage() {
 
             {logs.length === 0 && (
               <div className="text-center py-12">
-                <p className="text-gray-500">Aucun log trouvé</p>
+                <p className="text-gray-500">Aucun log trouve</p>
               </div>
             )}
           </CardContent>

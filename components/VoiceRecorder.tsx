@@ -16,23 +16,29 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
   const [isListening, setIsListening] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [transcript, setTranscript] = useState(value);
-  const [interimTranscript, setInterimTranscript] = useState('');
+  const [interimText, setInterimText] = useState('');
   const [isSupported, setIsSupported] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [isValidated, setIsValidated] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string>('');
+  const [errorMessage, setErrorMessage] = useState('');
   const [duration, setDuration] = useState(0);
 
   const recognitionRef = useRef<any>(null);
-  const isRestartingRef = useRef(false);
   const isListeningRef = useRef(false);
   const isPausedRef = useRef(false);
   const isRecognitionActiveRef = useRef(false);
-  const baseTextRef = useRef('');
+  const isRestartingRef = useRef(false);
+  const finalTextRef = useRef('');
+  const lastFinalChunkRef = useRef('');
+  const onChangeRef = useRef(onChange);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const sessionFinalCountRef = useRef(0);
+
+  onChangeRef.current = onChange;
 
   useEffect(() => {
     setTranscript(value);
+    finalTextRef.current = value;
   }, [value]);
 
   useEffect(() => {
@@ -74,51 +80,45 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
 
     recognition.onstart = () => {
       isRecognitionActiveRef.current = true;
+      sessionFinalCountRef.current = 0;
     };
 
     recognition.onresult = (event: any) => {
-      const lastIndex = event.results.length - 1;
-      const lastResult = event.results[lastIndex];
-      const lastTranscript = lastResult[0].transcript;
-      const isLastFinal = lastResult.isFinal;
+      let sessionFinal = '';
+      let currentInterim = '';
 
-      let sessionTranscript = '';
-      let sessionInterim = '';
+      for (let i = 0; i < event.results.length; i++) {
+        const result = event.results[i];
+        const text = result[0].transcript.trim();
+        if (!text) continue;
 
-      if (isLastFinal) {
-        sessionTranscript = lastTranscript.trim();
-      } else {
-        sessionInterim = lastTranscript.trim();
-      }
-
-      if (sessionTranscript) {
-        const words = sessionTranscript.split(/\s+/);
-        const cleanedWords: string[] = [];
-        for (const word of words) {
-          if (word !== cleanedWords[cleanedWords.length - 1]) {
-            cleanedWords.push(word);
+        if (result.isFinal) {
+          if (i >= sessionFinalCountRef.current) {
+            const deduped = deduplicateChunk(text, lastFinalChunkRef.current);
+            if (deduped) {
+              sessionFinal += (sessionFinal ? ' ' : '') + deduped;
+              lastFinalChunkRef.current = deduped;
+            }
+            sessionFinalCountRef.current = i + 1;
           }
+        } else {
+          currentInterim = text;
         }
-        sessionTranscript = cleanedWords.join(' ');
       }
 
-      const baseText = baseTextRef.current.trim();
-      const combined = baseText && sessionTranscript
-        ? baseText + ' ' + sessionTranscript
-        : baseText || sessionTranscript;
+      if (sessionFinal) {
+        const base = finalTextRef.current.trim();
+        const updated = base ? base + ' ' + sessionFinal : sessionFinal;
+        finalTextRef.current = updated;
+        setTranscript(updated);
+        setInterimText('');
+        onChangeRef.current(updated);
+      }
 
-      const combinedInterim = baseText && sessionInterim
-        ? baseText + ' ' + sessionInterim
-        : baseText || sessionInterim;
-
-      if (sessionTranscript) {
-        baseTextRef.current = combined;
-        setTranscript(combined);
-        setInterimTranscript('');
-        onChange(combined);
-      } else if (sessionInterim) {
-        setTranscript(baseText);
-        setInterimTranscript(combinedInterim);
+      if (currentInterim) {
+        setInterimText(currentInterim);
+      } else if (!sessionFinal) {
+        setInterimText('');
       }
     };
 
@@ -128,9 +128,11 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
       if (event.error === 'no-speech') return;
 
       if (event.error === 'aborted') {
-        setIsListening(false);
-        isListeningRef.current = false;
-        isPausedRef.current = false;
+        if (!isRestartingRef.current) {
+          setIsListening(false);
+          isListeningRef.current = false;
+          isPausedRef.current = false;
+        }
         return;
       }
 
@@ -154,13 +156,9 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
     };
 
     recognition.onend = () => {
-      const currentIsListening = isListeningRef.current;
-      const currentIsPaused = isPausedRef.current;
-      const currentIsRestarting = isRestartingRef.current;
-
       isRecognitionActiveRef.current = false;
 
-      if (currentIsListening && !currentIsPaused && !currentIsRestarting) {
+      if (isListeningRef.current && !isPausedRef.current && !isRestartingRef.current) {
         isRestartingRef.current = true;
         setTimeout(() => {
           if (isListeningRef.current && !isPausedRef.current && !isRecognitionActiveRef.current) {
@@ -173,7 +171,7 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
             }
           }
           isRestartingRef.current = false;
-        }, 100);
+        }, 250);
       }
     };
 
@@ -181,16 +179,44 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
 
     return () => {
       if (recognitionRef.current) {
-        recognitionRef.current.stop();
+        try { recognitionRef.current.stop(); } catch { /* ignore */ }
       }
     };
-  }, [onChange]);
+  }, []);
+
+  const deduplicateChunk = (newChunk: string, previousChunk: string): string => {
+    if (!previousChunk || !newChunk) return newChunk;
+    if (newChunk === previousChunk) return '';
+
+    const newWords = newChunk.split(/\s+/);
+    const prevWords = previousChunk.split(/\s+/);
+
+    const cleaned: string[] = [];
+    for (const word of newWords) {
+      if (word !== cleaned[cleaned.length - 1]) {
+        cleaned.push(word);
+      }
+    }
+
+    const overlap = Math.min(prevWords.length, cleaned.length);
+    for (let size = overlap; size >= 3; size--) {
+      const prevTail = prevWords.slice(-size).join(' ').toLowerCase();
+      const newHead = cleaned.slice(0, size).join(' ').toLowerCase();
+      if (prevTail === newHead) {
+        return cleaned.slice(size).join(' ');
+      }
+    }
+
+    return cleaned.join(' ');
+  };
 
   const startListening = () => {
     if (!recognitionRef.current || isListening || isRecognitionActiveRef.current) return;
 
-    baseTextRef.current = value.trim();
-    setInterimTranscript('');
+    finalTextRef.current = value.trim();
+    lastFinalChunkRef.current = '';
+    sessionFinalCountRef.current = 0;
+    setInterimText('');
     setIsValidated(false);
     setIsEditing(false);
     setErrorMessage('');
@@ -220,12 +246,14 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
       recognitionRef.current.stop();
       setIsPaused(true);
       isPausedRef.current = true;
+      setInterimText('');
     }
   };
 
   const resumeListening = () => {
     if (recognitionRef.current && isPaused && !isRecognitionActiveRef.current) {
       isRestartingRef.current = false;
+      sessionFinalCountRef.current = 0;
       try {
         recognitionRef.current.start();
         setIsPaused(false);
@@ -239,20 +267,20 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
   const stopListening = () => {
     if (recognitionRef.current) {
       isRestartingRef.current = false;
-      recognitionRef.current.stop();
+      try { recognitionRef.current.stop(); } catch { /* ignore */ }
       setIsListening(false);
       isListeningRef.current = false;
       setIsPaused(false);
       isPausedRef.current = false;
       isRecognitionActiveRef.current = false;
-      setInterimTranscript('');
+      setInterimText('');
     }
   };
 
   const handleValidate = () => {
     const finalText = transcript.trim();
     if (finalText) {
-      onChange(finalText);
+      onChangeRef.current(finalText);
       setIsValidated(true);
       setIsEditing(false);
       stopListening();
@@ -261,13 +289,15 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
 
   const handleReset = () => {
     setTranscript('');
-    setInterimTranscript('');
+    setInterimText('');
     setIsValidated(false);
     setIsEditing(false);
     setDuration(0);
-    baseTextRef.current = '';
+    finalTextRef.current = '';
+    lastFinalChunkRef.current = '';
+    sessionFinalCountRef.current = 0;
     if (isListening) stopListening();
-    onChange('');
+    onChangeRef.current('');
   };
 
   const handleEdit = () => {
@@ -278,7 +308,8 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
   const handleSaveEdit = () => {
     const finalText = transcript.trim();
     if (finalText) {
-      onChange(finalText);
+      finalTextRef.current = finalText;
+      onChangeRef.current(finalText);
       setIsValidated(true);
       setIsEditing(false);
     }
@@ -304,7 +335,7 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
     );
   }
 
-  const displayText = transcript + (interimTranscript ? ` ${interimTranscript}` : '');
+  const displayText = transcript + (interimText ? ` ${interimText}` : '');
   const wordCount = displayText.trim() ? displayText.trim().split(/\s+/).length : 0;
 
   return (
@@ -366,8 +397,8 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
                 <div>
                   <p className="text-gray-300 whitespace-pre-wrap leading-relaxed">
                     {transcript}
-                    {interimTranscript && (
-                      <span className="text-gray-500 italic">{interimTranscript}</span>
+                    {interimText && (
+                      <span className="text-gray-500 italic"> {interimText}</span>
                     )}
                   </p>
                   {isValidated && (
@@ -388,7 +419,7 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
                     <Mic className="h-12 w-12 mb-4" />
                   </div>
                   <p className="text-center text-gray-400">
-                    {placeholder || "Cliquez sur le micro pour commencer à dicter"}
+                    {placeholder || "Cliquez sur le micro pour commencer \u00e0 dicter"}
                   </p>
                   <p className="text-xs text-gray-600 mt-2">
                     Parlez clairement en direction de votre microphone

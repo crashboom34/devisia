@@ -9,7 +9,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileText, Plus, Loader2, TrendingUp, CheckCircle2, Clock, Euro, RefreshCw, Users, Receipt } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import type { Project } from '@/lib/supabase';
-import ModelSelector from '@/components/ModelSelector';
 import UserMenu from '@/components/UserMenu';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { ActivityTimeline } from '@/components/dashboard/ActivityTimeline';

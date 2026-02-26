@@ -18,6 +18,7 @@ import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { EstimateTemplate } from '@/lib/supabase';
 import { getUserSubscriptionInfo, canCreateProject, type SubscriptionInfo } from '@/lib/subscription-helper';
+import { getPlanLabel, getPlanValueProp } from '@/lib/plan-labels';
 
 export default function NewProjectPage() {
   const router = useRouter();
@@ -386,12 +387,12 @@ export default function NewProjectPage() {
               </div>
               <div className="flex-1">
                 <h3 className="text-sm font-semibold text-white">
-                  {subscriptionInfo ? subscriptionInfo.ai_capability_level : 'AI Intelligence'}
+                  {subscriptionInfo ? getPlanLabel(subscriptionInfo.tier_name) : 'Génération intelligente'}
                 </h3>
                 <p className="text-xs text-slate-400 mt-0.5">
                   {subscriptionInfo
-                    ? `Abonnement ${subscriptionInfo.tier_name} • Modèle IA automatique`
-                    : 'Vos devis seront générés avec l\'IA de votre abonnement'}
+                    ? getPlanValueProp(subscriptionInfo.tier_name)
+                    : 'Vos devis seront générés automatiquement selon votre abonnement'}
                 </p>
               </div>
               {subscriptionInfo && subscriptionInfo.tier_level > 1 && (
