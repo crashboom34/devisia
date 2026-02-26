@@ -1,13 +1,15 @@
+import dynamic from 'next/dynamic';
 import { HeroSection } from '@/components/marketing/HeroSection';
-import { FeatureCard } from '@/components/marketing/FeatureCard';
-import { CTASection } from '@/components/marketing/CTASection';
 import { SiteHeader } from '@/components/marketing/SiteHeader';
 import { SiteFooter } from '@/components/marketing/SiteFooter';
+import { FeatureCard } from '@/components/marketing/FeatureCard';
 import { Sparkles, Clock, FileText, Mic, Zap, BarChart3, CheckCircle, Download } from 'lucide-react';
 import { Card } from '@/components/ui/card';
-import { TestimonialsSection } from '@/components/marketing/TestimonialsSection';
-import { LogosSection } from '@/components/marketing/LogosSection';
-import { ForWhoSection } from '@/components/marketing/ForWhoSection';
+
+const TestimonialsSection = dynamic(() => import('@/components/marketing/TestimonialsSection').then(m => ({ default: m.TestimonialsSection })));
+const LogosSection = dynamic(() => import('@/components/marketing/LogosSection').then(m => ({ default: m.LogosSection })));
+const ForWhoSection = dynamic(() => import('@/components/marketing/ForWhoSection').then(m => ({ default: m.ForWhoSection })));
+const CTASection = dynamic(() => import('@/components/marketing/CTASection').then(m => ({ default: m.CTASection })));
 
 export default function Home() {
   return (
