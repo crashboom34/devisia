@@ -543,9 +543,6 @@ function buildPrompt(projectDescription: string, scenarioType: string, coefficie
 **PROJET:**
 ${projectDescription}
 ${templateContext}
-**SCENARIO:** ${scenarioType.toUpperCase()}
-${scenarioType === "eco" ? "- Coef 0.85: Materiaux standards, finitions base" : ""}${scenarioType === "standard" ? "- Coef 1.00: Materiaux qualite moyenne, finitions soignees" : ""}${scenarioType === "premium" ? "- Coef 1.25: Materiaux premium, finitions luxueuses" : ""}
-
 **RATIOS 2024-2025:**
 Construction: 1800-2600EUR/m2 | Ossature bois: 1500-2300EUR/m2 | Surelevation: 2200-2800EUR/m2
 Terrasse couverte: 600-1200EUR/m2 | Clim bi-split: 3000-5000EUR
@@ -563,7 +560,7 @@ Paris: +25-30% | IDF: +15-20% | Metropoles: +10-15% | Montpellier/Herault: +10-1
 
 **TVA:** 10% reno/extension >2ans, 20% neuf
 
-**IMPORTANT: Genere un devis pour le scenario STANDARD (coef 1.00). Le coefficient ${scenarioType} (${coefficient}) sera applique automatiquement cote serveur.**
+**IMPORTANT: Genere UNIQUEMENT un devis au tarif STANDARD (qualite moyenne, materiaux courants). NE PAS ajuster les prix selon un scenario particulier. Un coefficient de prix sera applique automatiquement apres generation.**
 
 Reponds UNIQUEMENT en JSON valide:
 {
