@@ -6,18 +6,18 @@ interface StatusBadgeProps {
 export function StatusBadge({ status, label }: StatusBadgeProps) {
   const variants = {
     draft: {
-      bg: 'bg-gray-100',
-      text: 'text-gray-700',
+      bg: 'bg-slate-500/15 border border-slate-500/30',
+      text: 'text-slate-300',
       label: label || 'Brouillon',
     },
     processing: {
-      bg: 'bg-amber-100',
-      text: 'text-amber-700',
+      bg: 'bg-amber-500/15 border border-amber-500/30',
+      text: 'text-amber-400',
       label: label || 'En cours',
     },
     completed: {
-      bg: 'bg-green-100',
-      text: 'text-status-success',
+      bg: 'bg-emerald-500/15 border border-emerald-500/30',
+      text: 'text-emerald-400',
       label: label || 'Terminé',
     },
   };
@@ -25,7 +25,7 @@ export function StatusBadge({ status, label }: StatusBadgeProps) {
   const variant = variants[status];
 
   return (
-    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${variant.bg} ${variant.text}`}>
+    <span className={`inline-flex items-center px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium whitespace-nowrap ${variant.bg} ${variant.text}`}>
       {variant.label}
     </span>
   );
