@@ -1,6 +1,6 @@
 'use client';
 
-import { LucideIcon } from 'lucide-react';
+import { Video as LucideIcon } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
 interface FeatureCardProps {

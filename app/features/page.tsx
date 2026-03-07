@@ -4,7 +4,7 @@ import { SiteHeader } from '@/components/marketing/SiteHeader';
 import { SiteFooter } from '@/components/marketing/SiteFooter';
 import { FeatureCard } from '@/components/marketing/FeatureCard';
 import { CTASection } from '@/components/marketing/CTASection';
-import { Sparkles, Clock, Mic, FileText, BarChart3, Download, Edit3, Users, Shield, Zap } from 'lucide-react';
+import { Sparkles, Clock, Mic, FileText, ChartBar as BarChart3, Download, CreditCard as Edit3, Users, Shield, Zap } from 'lucide-react';
 
 export default function FeaturesPage() {
   return (

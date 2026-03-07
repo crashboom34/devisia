@@ -5,7 +5,7 @@ import { HeroSection } from '@/components/marketing/HeroSection';
 import { SiteHeader } from '@/components/marketing/SiteHeader';
 import { SiteFooter } from '@/components/marketing/SiteFooter';
 import { FeatureCard } from '@/components/marketing/FeatureCard';
-import { Sparkles, Clock, FileText, Mic, Zap, BarChart3, CheckCircle, Download } from 'lucide-react';
+import { Sparkles, Clock, FileText, Mic, Zap, ChartBar as BarChart3, CircleCheck as CheckCircle, Download } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 
 const TestimonialsSection = dynamic(() => import('@/components/marketing/TestimonialsSection').then(m => ({ default: m.TestimonialsSection })));
