@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileText, Plus, Loader2, CheckCircle2, Clock, Euro, RefreshCw, Users, Receipt } from 'lucide-react';
+import { FileText, Plus, Loader as Loader2, CircleCheck as CheckCircle2, Clock, Euro, RefreshCw, Users, Receipt } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import type { Project } from '@/lib/supabase';
 import UserMenu from '@/components/UserMenu';
