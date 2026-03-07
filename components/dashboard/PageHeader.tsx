@@ -22,11 +22,11 @@ export function PageHeader({ title, subtitle, breadcrumbs, actions, showBackButt
   };
 
   return (
-    <div className="mb-8">
+    <div className="mb-5 lg:mb-8">
       {breadcrumbs && breadcrumbs.length > 0 && (
-        <nav className="flex items-center gap-2 text-sm mb-4">
+        <nav className="flex items-center gap-1.5 text-xs sm:text-sm mb-3 lg:mb-4 overflow-x-auto scrollbar-hide">
           {breadcrumbs.map((crumb, index) => (
-            <div key={index} className="flex items-center gap-2">
+            <div key={index} className="flex items-center gap-1.5 shrink-0">
               {crumb.href ? (
                 <Link
                   href={crumb.href}
@@ -38,31 +38,31 @@ export function PageHeader({ title, subtitle, breadcrumbs, actions, showBackButt
                 <span className="text-slate-500">{crumb.label}</span>
               )}
               {index < breadcrumbs.length - 1 && (
-                <ChevronRight className="h-4 w-4 text-slate-600" />
+                <ChevronRight className="h-3.5 w-3.5 text-slate-600" />
               )}
             </div>
           ))}
         </nav>
       )}
 
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-start gap-4 flex-1 min-w-0">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start gap-3 flex-1 min-w-0">
           {showBackButton && (
             <Button
-              variant="outline"
-              size="sm"
+              variant="ghost"
+              size="icon"
               onClick={handleBack}
-              className="mt-1 border-slate-700 hover:bg-slate-800 text-slate-300 hover:text-white transition-colors shrink-0"
+              className="mt-0.5 h-8 w-8 text-slate-400 hover:text-white shrink-0"
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
           )}
           <div className="flex-1 min-w-0">
-            <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white">
               {title}
             </h1>
             {subtitle && (
-              <p className="text-base text-slate-400">
+              <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
                 {subtitle}
               </p>
             )}
@@ -70,7 +70,7 @@ export function PageHeader({ title, subtitle, breadcrumbs, actions, showBackButt
         </div>
 
         {actions && (
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             {actions}
           </div>
         )}

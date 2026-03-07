@@ -3,10 +3,9 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Plus, Euro, CheckCircle2, Clock, AlertCircle, Eye, Download, Trash2, MoreVertical, Mail, FileCheck } from 'lucide-react';
+import { FileText, Euro, CheckCircle2, Clock, Eye, Download, Trash2, Mail, FileCheck } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { KpiCard } from '@/components/dashboard/KpiCard';
@@ -14,7 +13,6 @@ import { PageHeader } from '@/components/dashboard/PageHeader';
 import { FilterBar } from '@/components/dashboard/FilterBar';
 import { EmptyState } from '@/components/dashboard/EmptyState';
 
-// Mock invoice data structure
 interface Invoice {
   id: string;
   number: string;
@@ -48,14 +46,12 @@ export default function InvoicesPage() {
       router.push('/auth/login');
     } else {
       setUser(user);
-      // Load mock data for demonstration
       loadMockInvoices();
       setLoading(false);
     }
   };
 
   const loadMockInvoices = () => {
-    // Mock data - in production this would come from Supabase
     const mockData: Invoice[] = [];
     setInvoices(mockData);
   };
@@ -87,51 +83,34 @@ export default function InvoicesPage() {
     const pendingAmount = pending.reduce((sum, inv) => sum + inv.amount_ttc, 0);
     const paymentRate = total > 0 ? ((paid.length / total) * 100).toFixed(0) : 0;
 
-    return {
-      total,
-      paidCount: paid.length,
-      overdueCount: overdue.length,
-      revenue,
-      pendingAmount,
-      paymentRate,
-    };
+    return { total, paidCount: paid.length, overdueCount: overdue.length, revenue, pendingAmount, paymentRate };
   };
 
   const stats = calculateStats();
 
-  const handleRefresh = () => {
-    loadMockInvoices();
-  };
-
   const getStatusBadge = (status: string) => {
-    const styles = {
+    const styles: Record<string, string> = {
       paid: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
       pending: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
       overdue: 'bg-red-500/10 text-red-400 border-red-500/20',
       draft: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
     };
-
-    const labels = {
-      paid: 'Payée',
-      pending: 'En attente',
-      overdue: 'Échue',
-      draft: 'Brouillon',
+    const labels: Record<string, string> = {
+      paid: 'Payee', pending: 'En attente', overdue: 'Echue', draft: 'Brouillon',
     };
-
     return (
-      <Badge className={`${styles[status as keyof typeof styles]} border`}>
-        {labels[status as keyof typeof labels]}
+      <Badge className={`${styles[status] || styles.draft} border text-[10px] sm:text-xs`}>
+        {labels[status] || status}
       </Badge>
     );
   };
 
   return (
     <DashboardLayout showNewQuoteButton={false}>
-      <div className="max-w-7xl mx-auto space-y-8">
-        {/* Page Header */}
+      <div className="max-w-7xl mx-auto space-y-5 lg:space-y-8">
         <PageHeader
           title="Factures"
-          subtitle="Gérez vos factures et téléchargez les PDFs légaux."
+          subtitle="Gerez vos factures et telecharges les PDFs."
           breadcrumbs={[
             { label: 'dashboard', href: '/dashboard' },
             { label: 'Factures' },
@@ -139,187 +118,124 @@ export default function InvoicesPage() {
         />
 
         {/* KPI Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <KpiCard
-            title="Total Factures"
-            value={stats.total}
-            subtitle={`${stats.paidCount} payées, ${stats.overdueCount} échues`}
-            icon={FileText}
-            iconColor="text-cyan-400"
-          />
-          <KpiCard
-            title="Chiffre d'Affaires"
-            value={`${stats.revenue.toFixed(2)} €`}
-            valueColor="text-emerald-400"
-            subtitle="Factures payées"
-            icon={Euro}
-            iconColor="text-emerald-400"
-          />
-          <KpiCard
-            title="En Attente"
-            value={`${stats.pendingAmount.toFixed(2)} €`}
-            valueColor="text-orange-400"
-            subtitle="À encaisser"
-            icon={Clock}
-            iconColor="text-orange-400"
-          />
-          <KpiCard
-            title="Taux de Paiement"
-            value={`${stats.paymentRate}%`}
-            valueColor="text-emerald-400"
-            subtitle="Factures payées"
-            icon={CheckCircle2}
-            iconColor="text-emerald-400"
-          />
+        <div className="-mx-4 px-4 sm:mx-0 sm:px-0">
+          <div className="flex gap-3 overflow-x-auto pb-1 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:gap-4 lg:gap-6 sm:overflow-visible scrollbar-hide">
+            <KpiCard title="Total Factures" value={stats.total} subtitle={`${stats.paidCount} payees`} icon={FileText} iconColor="text-cyan-400" />
+            <KpiCard title="Chiffre d'Affaires" value={`${stats.revenue.toFixed(2)} EUR`} valueColor="text-emerald-400" subtitle="Payees" icon={Euro} iconColor="text-emerald-400" />
+            <KpiCard title="En Attente" value={`${stats.pendingAmount.toFixed(2)} EUR`} valueColor="text-orange-400" subtitle="A encaisser" icon={Clock} iconColor="text-orange-400" />
+            <KpiCard title="Taux Paiement" value={`${stats.paymentRate}%`} valueColor="text-emerald-400" subtitle="Payees" icon={CheckCircle2} iconColor="text-emerald-400" />
+          </div>
         </div>
 
-        {/* Filter Bar */}
         <FilterBar
           searchValue={searchValue}
           onSearchChange={setSearchValue}
-          searchPlaceholder="Rechercher par numéro ou client..."
+          searchPlaceholder="Rechercher..."
           statusFilter={statusFilter}
           onStatusChange={setStatusFilter}
-          onRefresh={handleRefresh}
-          additionalActions={
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
-            >
-              <FileCheck className="h-4 w-4 mr-2" />
-              Exporter
-            </Button>
-          }
+          onRefresh={loadMockInvoices}
         />
 
-        {/* Table or Empty State */}
         {loading ? (
-          <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-600"></div>
+          <div className="flex justify-center items-center py-16">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-600"></div>
           </div>
         ) : filteredInvoices.length === 0 && invoices.length === 0 ? (
           <EmptyState
             icon={FileText}
             title="Aucune facture"
-            description="Commencez par convertir un devis en facture pour voir vos données ici."
+            description="Convertissez un devis en facture pour voir vos donnees ici."
             action={{
-              label: 'Créer votre première facture',
+              label: 'Creer une facture',
               onClick: () => router.push('/project/new'),
             }}
           />
         ) : (
-          <div className="bg-gradient-to-br from-slate-800/90 to-slate-800/50 border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-slate-900/80 border-b border-slate-700/50">
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                      N° Facture
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                      Client
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                      Date émission
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                      Échéance
-                    </th>
-                    <th className="px-6 py-4 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">
-                      Montant TTC
-                    </th>
-                    <th className="px-6 py-4 text-center text-xs font-medium text-slate-400 uppercase tracking-wider">
-                      Statut
-                    </th>
-                    <th className="px-6 py-4 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-700/50">
-                  {filteredInvoices.length === 0 ? (
-                    <tr>
-                      <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
-                        Aucune facture trouvée avec ces filtres
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredInvoices.map((invoice) => (
-                      <tr key={invoice.id} className="hover:bg-slate-900/50 transition-all duration-200 group">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center gap-2">
-                            <div className="p-2 rounded-lg bg-cyan-500/10">
-                              <FileText className="h-4 w-4 text-cyan-400" />
-                            </div>
-                            <span className="text-sm font-semibold text-white">
-                              {invoice.number}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="text-sm text-slate-300 font-medium">
-                            {invoice.client_name}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-sm text-slate-400">
-                            {new Date(invoice.issue_date).toLocaleDateString('fr-FR')}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-sm text-slate-400">
-                            {new Date(invoice.due_date).toLocaleDateString('fr-FR')}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right">
-                          <span className="text-sm font-bold text-white">
-                            {invoice.amount_ttc.toFixed(2)} €
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-center">
-                          {getStatusBadge(invoice.status)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <Button size="sm" variant="ghost" className="text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10 transition-colors">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button size="sm" variant="ghost" className="text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10 transition-colors">
-                              <Download className="h-4 w-4" />
-                            </Button>
-                            <Button size="sm" variant="ghost" className="text-slate-400 hover:text-orange-400 hover:bg-orange-500/10 transition-colors">
-                              <Mail className="h-4 w-4" />
-                            </Button>
-                            <Button size="sm" variant="ghost" className="text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+          <>
+            {/* Mobile Card View */}
+            <div className="space-y-2.5 lg:hidden">
+              {filteredInvoices.length === 0 ? (
+                <p className="text-center text-sm text-slate-500 py-8">Aucune facture avec ces filtres</p>
+              ) : (
+                filteredInvoices.map((invoice) => (
+                  <div key={invoice.id} className="p-3.5 rounded-xl bg-slate-800/50 border border-slate-700/40 active:scale-[0.99] transition-all">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="min-w-0 flex-1 mr-3">
+                        <p className="font-medium text-sm text-white truncate">{invoice.client_name}</p>
+                        <p className="text-[10px] text-slate-500 mt-0.5">{invoice.number}</p>
+                      </div>
+                      {getStatusBadge(invoice.status)}
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-slate-500">
+                        {new Date(invoice.issue_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                      </span>
+                      <span className="text-sm font-bold text-white">
+                        {invoice.amount_ttc.toFixed(2)} EUR
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
 
-            {/* Footer with pagination info */}
-            {filteredInvoices.length > 0 && (
-              <div className="px-6 py-4 border-t border-slate-700/50 bg-slate-900/50 flex items-center justify-between">
-                <p className="text-sm text-slate-400">
-                  <span className="font-medium text-white">{filteredInvoices.length}</span> facture{filteredInvoices.length > 1 ? 's' : ''} au total
-                </p>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" className="border-slate-700 text-slate-400 hover:bg-slate-800">
-                    Précédent
-                  </Button>
-                  <Button variant="outline" size="sm" className="border-slate-700 text-slate-400 hover:bg-slate-800">
-                    Suivant
-                  </Button>
-                </div>
+            {/* Desktop Table View */}
+            <div className="hidden lg:block bg-slate-800/40 border border-slate-700/40 rounded-2xl overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-slate-900/60 border-b border-slate-700/40">
+                      <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">N. Facture</th>
+                      <th className="px-6 py-3.5 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Client</th>
+                      <th className="px-6 py-3.5 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Emission</th>
+                      <th className="px-6 py-3.5 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Echeance</th>
+                      <th className="px-6 py-3.5 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">Montant TTC</th>
+                      <th className="px-6 py-3.5 text-center text-xs font-medium text-slate-400 uppercase tracking-wider">Statut</th>
+                      <th className="px-6 py-3.5 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-700/40">
+                    {filteredInvoices.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="px-6 py-10 text-center text-slate-500 text-sm">Aucune facture avec ces filtres</td>
+                      </tr>
+                    ) : (
+                      filteredInvoices.map((invoice) => (
+                        <tr key={invoice.id} className="hover:bg-slate-900/40 transition-colors">
+                          <td className="px-6 py-3.5 whitespace-nowrap">
+                            <div className="flex items-center gap-2">
+                              <div className="p-1.5 rounded-lg bg-cyan-500/10">
+                                <FileText className="h-4 w-4 text-cyan-400" />
+                              </div>
+                              <span className="text-sm font-semibold text-white">{invoice.number}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-3.5"><span className="text-sm text-slate-300 font-medium">{invoice.client_name}</span></td>
+                          <td className="px-6 py-3.5 whitespace-nowrap"><span className="text-sm text-slate-400">{new Date(invoice.issue_date).toLocaleDateString('fr-FR')}</span></td>
+                          <td className="px-6 py-3.5 whitespace-nowrap"><span className="text-sm text-slate-400">{new Date(invoice.due_date).toLocaleDateString('fr-FR')}</span></td>
+                          <td className="px-6 py-3.5 whitespace-nowrap text-right"><span className="text-sm font-bold text-white">{invoice.amount_ttc.toFixed(2)} EUR</span></td>
+                          <td className="px-6 py-3.5 whitespace-nowrap text-center">{getStatusBadge(invoice.status)}</td>
+                          <td className="px-6 py-3.5 whitespace-nowrap text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <Button size="xs" variant="ghost" className="text-slate-400 hover:text-cyan-400"><Eye className="h-4 w-4" /></Button>
+                              <Button size="xs" variant="ghost" className="text-slate-400 hover:text-cyan-400"><Download className="h-4 w-4" /></Button>
+                              <Button size="xs" variant="ghost" className="text-slate-400 hover:text-orange-400"><Mail className="h-4 w-4" /></Button>
+                              <Button size="xs" variant="ghost" className="text-slate-400 hover:text-red-400"><Trash2 className="h-4 w-4" /></Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
               </div>
-            )}
-          </div>
+              {filteredInvoices.length > 0 && (
+                <div className="px-6 py-3.5 border-t border-slate-700/40 text-sm text-slate-400">
+                  {filteredInvoices.length} facture{filteredInvoices.length > 1 ? 's' : ''}
+                </div>
+              )}
+            </div>
+          </>
         )}
       </div>
     </DashboardLayout>

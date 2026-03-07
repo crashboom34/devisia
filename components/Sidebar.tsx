@@ -2,7 +2,6 @@
 
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
 import {
   FileText,
   Receipt,
@@ -10,8 +9,6 @@ import {
   Settings,
   CreditCard,
   FilePlus,
-  Menu,
-  X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -64,22 +61,6 @@ const navigationItems: NavigationItem[] = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const [mobileOpen, setMobileOpen] = useState(false);
-
-  useEffect(() => {
-    setMobileOpen(false);
-  }, [pathname]);
-
-  useEffect(() => {
-    if (mobileOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [mobileOpen]);
 
   const isActive = (href: string) => {
     if (href === '/dashboard') {
@@ -88,22 +69,15 @@ export function Sidebar() {
     return pathname.startsWith(href);
   };
 
-  const sidebarContent = (
-    <>
-      <div className="flex items-center justify-between px-6 py-5 border-b border-slate-800">
+  return (
+    <aside className="hidden lg:block fixed left-0 top-0 z-40 h-screen w-64 bg-slate-900 border-r border-slate-800">
+      <div className="flex items-center gap-3 px-6 py-5 border-b border-slate-800">
         <Link href="/dashboard" className="flex items-center gap-3">
           <div className="p-2 rounded-lg bg-gradient-to-br from-emerald-500 to-cyan-600 shadow-lg">
             <FileText className="h-5 w-5 text-white" />
           </div>
           <span className="text-xl font-bold text-white">Devisia</span>
         </Link>
-        <button
-          onClick={() => setMobileOpen(false)}
-          className="lg:hidden p-2 -mr-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-          aria-label="Fermer le menu"
-        >
-          <X className="h-5 w-5" />
-        </button>
       </div>
 
       <nav className="flex flex-col gap-1 p-4">
@@ -116,7 +90,7 @@ export function Sidebar() {
               key={item.id}
               href={item.href}
               className={cn(
-                'flex items-center gap-3 px-4 py-3.5 lg:py-3 rounded-lg transition-all duration-200',
+                'flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200',
                 'hover:bg-slate-800/50 active:scale-[0.98]',
                 active
                   ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-600/20'
@@ -140,42 +114,6 @@ export function Sidebar() {
           v2.0 - Devisia
         </div>
       </div>
-    </>
-  );
-
-  return (
-    <>
-      {/* Mobile toggle button */}
-      <button
-        onClick={() => setMobileOpen(true)}
-        className="fixed top-4 left-4 z-50 lg:hidden p-2.5 rounded-xl bg-slate-900 border border-slate-700/50 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors shadow-lg"
-        aria-label="Ouvrir le menu"
-      >
-        <Menu className="h-5 w-5" />
-      </button>
-
-      {/* Mobile overlay */}
-      {mobileOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
-          onClick={() => setMobileOpen(false)}
-        />
-      )}
-
-      {/* Mobile drawer */}
-      <aside
-        className={cn(
-          'fixed left-0 top-0 z-50 h-screen w-72 bg-slate-900 border-r border-slate-800 transition-transform duration-300 ease-in-out lg:hidden',
-          mobileOpen ? 'translate-x-0' : '-translate-x-full'
-        )}
-      >
-        {sidebarContent}
-      </aside>
-
-      {/* Desktop sidebar */}
-      <aside className="hidden lg:block fixed left-0 top-0 z-40 h-screen w-64 bg-slate-900 border-r border-slate-800">
-        {sidebarContent}
-      </aside>
-    </>
+    </aside>
   );
 }

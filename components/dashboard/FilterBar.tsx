@@ -29,40 +29,40 @@ export function FilterBar({
   additionalActions,
 }: FilterBarProps) {
   return (
-    <div className="flex flex-col sm:flex-row gap-3 mb-6 p-4 bg-slate-900/30 rounded-xl border border-slate-800/50">
+    <div className="space-y-2.5 sm:space-y-0 sm:flex sm:flex-row sm:gap-3 mb-4 lg:mb-6 p-3 lg:p-4 bg-slate-900/30 rounded-xl border border-slate-800/50">
       <div className="relative flex-1">
-        <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-500" />
+        <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-500" />
         <Input
           type="text"
           placeholder={searchPlaceholder}
           value={searchValue}
           onChange={(e) => onSearchChange?.(e.target.value)}
-          className="pl-11 h-11 bg-slate-800/50 border-slate-700/50 text-white placeholder:text-slate-500 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 rounded-lg"
+          className="pl-10 h-10 lg:h-11 bg-slate-800/50 border-slate-700/50 text-white text-sm placeholder:text-slate-500 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 rounded-lg"
         />
       </div>
 
       <div className="flex gap-2 flex-wrap">
         {onStatusChange && (
           <Select value={statusFilter} onValueChange={onStatusChange}>
-            <SelectTrigger className="min-w-[180px] h-11 bg-slate-800/50 border-slate-700/50 text-white hover:bg-slate-800 transition-colors">
-              <Filter className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Tous les statuts" />
+            <SelectTrigger className="min-w-[140px] sm:min-w-[160px] h-10 lg:h-11 bg-slate-800/50 border-slate-700/50 text-white text-sm hover:bg-slate-800 transition-colors">
+              <Filter className="h-3.5 w-3.5 mr-1.5" />
+              <SelectValue placeholder="Statut" />
             </SelectTrigger>
             <SelectContent className="bg-slate-900 border-slate-700">
               <SelectItem value="all" className="text-white hover:bg-slate-800 focus:bg-slate-800">
-                Tous les statuts
+                Tous
               </SelectItem>
               <SelectItem value="draft" className="text-white hover:bg-slate-800 focus:bg-slate-800">
                 Brouillon
               </SelectItem>
               <SelectItem value="sent" className="text-white hover:bg-slate-800 focus:bg-slate-800">
-                Envoyé
+                Envoye
               </SelectItem>
               <SelectItem value="approved" className="text-white hover:bg-slate-800 focus:bg-slate-800">
-                Approuvé
+                Approuve
               </SelectItem>
               <SelectItem value="rejected" className="text-white hover:bg-slate-800 focus:bg-slate-800">
-                Rejeté
+                Rejete
               </SelectItem>
             </SelectContent>
           </Select>
@@ -70,16 +70,18 @@ export function FilterBar({
 
         {onRefresh && (
           <Button
-            variant="outline"
+            variant="ghost"
             size="icon"
             onClick={onRefresh}
-            className="h-11 w-11 border-slate-700/50 hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+            className="h-10 w-10 lg:h-11 lg:w-11 text-slate-400 hover:text-white"
           >
             <RefreshCw className="h-4 w-4" />
           </Button>
         )}
 
-        {additionalActions}
+        {additionalActions && (
+          <div className="hidden sm:flex">{additionalActions}</div>
+        )}
       </div>
     </div>
   );

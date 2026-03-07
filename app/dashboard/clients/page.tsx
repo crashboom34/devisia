@@ -106,12 +106,7 @@ export default function ClientsPage() {
     const totalRevenue = clients.reduce((sum, client) => sum + (client.total_revenue || 0), 0);
     const avgRevenue = total > 0 ? totalRevenue / total : 0;
 
-    return {
-      total,
-      active,
-      totalRevenue,
-      avgRevenue,
-    };
+    return { total, active, totalRevenue, avgRevenue };
   };
 
   const stats = calculateStats();
@@ -122,20 +117,8 @@ export default function ClientsPage() {
     }
   };
 
-  const handleCreateClient = () => {
-    router.push('/dashboard/clients/new');
-  };
-
-  const handleViewClient = (clientId: string) => {
-    router.push(`/dashboard/clients/${clientId}`);
-  };
-
-  const handleEditClient = (clientId: string) => {
-    router.push(`/dashboard/clients/${clientId}/edit`);
-  };
-
   const handleDeleteClient = async (clientId: string) => {
-    const confirmed = window.confirm('Êtes-vous sûr de vouloir supprimer ce client ? Cette action est irréversible.');
+    const confirmed = window.confirm('Supprimer ce client ?');
     if (!confirmed) return;
 
     setDeletingId(clientId);
@@ -159,7 +142,7 @@ export default function ClientsPage() {
       await loadClients(user.id);
     } catch (err) {
       console.error('Delete client error', err);
-      setError('Impossible de supprimer ce client. Vérifiez qu’il n’est pas lié à des devis ou factures.');
+      setError('Impossible de supprimer ce client.');
     } finally {
       setDeletingId(null);
     }
@@ -167,33 +150,24 @@ export default function ClientsPage() {
 
   return (
     <DashboardLayout showNewQuoteButton={false}>
-      <div className="max-w-7xl mx-auto space-y-8">
-        {/* Page Header */}
+      <div className="max-w-7xl mx-auto space-y-5 lg:space-y-8">
         <PageHeader
           title="Clients"
-          subtitle={`${stats.total} client${stats.total > 1 ? 's' : ''} au total`}
+          subtitle={`${stats.total} client${stats.total > 1 ? 's' : ''}`}
           breadcrumbs={[
             { label: 'dashboard', href: '/dashboard' },
             { label: 'Clients' },
           ]}
           actions={
-            <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRefresh}
-                className="border-slate-700 hover:bg-slate-800 text-slate-300 hover:text-white transition-colors"
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Actualiser
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="icon" onClick={handleRefresh} className="h-8 w-8 text-slate-400">
+                <RefreshCw className="h-4 w-4" />
               </Button>
               <Link href="/dashboard/clients/new">
-                <Button
-                  size="sm"
-                  className="bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500 text-white shadow-lg hover:opacity-90"
-                >
-                  <Users className="h-4 w-4 mr-2" />
-                  Nouveau client
+                <Button size="xs" variant="primary">
+                  <Users className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Nouveau client</span>
+                  <span className="sm:hidden">Nouveau</span>
                 </Button>
               </Link>
             </div>
@@ -201,211 +175,174 @@ export default function ClientsPage() {
         />
 
         {/* KPI Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <KpiCard
-            title="Total Clients"
-            value={stats.total}
-            subtitle={`${stats.active} actifs`}
-            icon={Users}
-            iconColor="text-cyan-400"
-          />
-          <KpiCard
-            title="CA Total"
-            value={`${stats.totalRevenue.toFixed(2)} €`}
-            valueColor="text-emerald-400"
-            subtitle="Tous clients"
-            icon={Euro}
-            iconColor="text-emerald-400"
-          />
-          <KpiCard
-            title="CA Moyen"
-            value={`${stats.avgRevenue.toFixed(2)} €`}
-            valueColor="text-cyan-400"
-            subtitle="Par client"
-            icon={TrendingUp}
-            iconColor="text-cyan-400"
-          />
-          <KpiCard
-            title="Clients Actifs"
-            value={stats.active}
-            valueColor="text-emerald-400"
-            subtitle="Ce mois"
-            icon={FileCheck}
-            iconColor="text-emerald-400"
-          />
+        <div className="-mx-4 px-4 sm:mx-0 sm:px-0">
+          <div className="flex gap-3 overflow-x-auto pb-1 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:gap-4 lg:gap-6 sm:overflow-visible scrollbar-hide">
+            <KpiCard title="Total Clients" value={stats.total} subtitle={`${stats.active} actifs`} icon={Users} iconColor="text-cyan-400" />
+            <KpiCard title="CA Total" value={`${stats.totalRevenue.toFixed(2)} EUR`} valueColor="text-emerald-400" subtitle="Tous clients" icon={Euro} iconColor="text-emerald-400" />
+            <KpiCard title="CA Moyen" value={`${stats.avgRevenue.toFixed(2)} EUR`} valueColor="text-cyan-400" subtitle="Par client" icon={TrendingUp} iconColor="text-cyan-400" />
+            <KpiCard title="Clients Actifs" value={stats.active} valueColor="text-emerald-400" subtitle="Ce mois" icon={FileCheck} iconColor="text-emerald-400" />
+          </div>
         </div>
 
-        {/* Search Bar */}
-        <div className="p-4 bg-slate-900/30 rounded-xl border border-slate-800/50">
+        {/* Search */}
+        <div className="p-3 lg:p-4 bg-slate-900/30 rounded-xl border border-slate-800/50">
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-500" />
+            <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-500" />
             <Input
               type="text"
               placeholder="Rechercher par nom, email, entreprise..."
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
-              className="pl-12 bg-slate-800/50 border-slate-700/50 hover:border-slate-600/50 focus:border-cyan-500/50 text-white placeholder:text-slate-500 h-12 text-base rounded-xl transition-colors"
+              className="pl-10 bg-slate-800/50 border-slate-700/50 text-white text-sm placeholder:text-slate-500 h-10 lg:h-11 rounded-lg"
             />
           </div>
-          {error && (
-            <p className="mt-3 text-sm text-red-400">{error}</p>
-          )}
+          {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
         </div>
 
-        {/* Table or Empty State */}
         {loading ? (
-          <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-600"></div>
+          <div className="flex justify-center items-center py-16">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-600"></div>
           </div>
         ) : filteredClients.length === 0 && clients.length === 0 ? (
           <EmptyState
             icon={Users}
             title="Aucun client"
-            description="Commencez par ajouter votre premier client pour gérer vos relations et suivre vos projets."
+            description="Ajoutez votre premier client pour gerer vos relations."
             action={{
-              label: 'Créer votre premier client',
-              onClick: handleCreateClient,
+              label: 'Ajouter un client',
+              onClick: () => router.push('/dashboard/clients/new'),
             }}
           />
         ) : (
-          <div className="bg-gradient-to-br from-slate-800/90 to-slate-800/50 border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-slate-900/80 border-b border-slate-700/50">
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                      Client
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                      Entreprise
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                      Contact
-                    </th>
-                    <th className="px-6 py-4 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">
-                      Devis
-                    </th>
-                    <th className="px-6 py-4 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">
-                      CA Total
-                    </th>
-                    <th className="px-6 py-4 text-center text-xs font-medium text-slate-400 uppercase tracking-wider">
-                      Statut
-                    </th>
-                    <th className="px-6 py-4 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-700/50">
-                  {filteredClients.length === 0 ? (
-                    <tr>
-                      <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
-                        Aucun client trouvé avec ces filtres
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredClients.map((client) => (
-                      <tr key={client.id} className="hover:bg-slate-900/50 transition-all duration-200 group">
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-semibold shadow-lg">
-                              {client.name?.charAt(0)?.toUpperCase() || '?'}
-                            </div>
-                            <div>
-                              <div className="text-sm font-semibold text-white">
-                                {client.name}
-                              </div>
-                              <div className="text-xs text-slate-400 flex items-center gap-1">
-                                <Mail className="h-3 w-3" />
-                                {client.email || '—'}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2 text-sm text-slate-300">
-                            <Building2 className="h-4 w-4 text-slate-500" />
-                            {client.company || '—'}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2 text-sm text-slate-400">
-                            <Phone className="h-4 w-4 text-slate-500" />
-                            {client.phone || client.contact_name || '—'}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <span className="text-sm font-medium text-white">
-                            {client.total_quotes || 0}
+          <>
+            {/* Mobile Card View */}
+            <div className="space-y-2.5 lg:hidden">
+              {filteredClients.length === 0 ? (
+                <p className="text-center text-sm text-slate-500 py-8">Aucun client avec ces filtres</p>
+              ) : (
+                filteredClients.map((client) => (
+                  <div
+                    key={client.id}
+                    className="p-3.5 rounded-xl bg-slate-800/50 border border-slate-700/40 active:scale-[0.99] transition-all"
+                    onClick={() => router.push(`/dashboard/clients/${client.id}`)}
+                  >
+                    <div className="flex items-center gap-3 mb-2.5">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white text-sm font-semibold shrink-0">
+                        {client.name?.charAt(0)?.toUpperCase() || '?'}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-sm text-white truncate">{client.name}</p>
+                        {client.company && (
+                          <p className="text-[10px] text-slate-500 truncate">{client.company}</p>
+                        )}
+                      </div>
+                      <Badge className={`shrink-0 text-[10px] ${
+                        client.status !== 'inactive'
+                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                          : 'bg-slate-500/10 text-slate-400 border-slate-500/20'
+                      } border`}>
+                        {client.status !== 'inactive' ? 'Actif' : 'Inactif'}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-slate-500">
+                      <div className="flex items-center gap-3">
+                        {client.email && (
+                          <span className="flex items-center gap-1 truncate max-w-[140px]">
+                            <Mail className="h-3 w-3 shrink-0" />
+                            {client.email}
                           </span>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <span className="text-sm font-bold text-emerald-400">
-                            {(client.total_revenue || 0).toFixed(2)} €
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-center">
-                          <Badge className={`${
-                            client.status !== 'inactive'
-                              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                              : 'bg-slate-500/10 text-slate-400 border-slate-500/20'
-                          } border`}>
-                            {client.status !== 'inactive' ? 'Actif' : 'Inactif'}
-                          </Badge>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10 transition-colors"
-                              onClick={() => handleViewClient(client.id)}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="text-slate-400 hover:text-blue-400 hover:bg-blue-500/10 transition-colors"
-                              onClick={() => handleEditClient(client.id)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                              onClick={() => handleDeleteClient(client.id)}
-                              disabled={deletingId === client.id}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                        )}
+                      </div>
+                      <span className="text-sm font-bold text-emerald-400">
+                        {(client.total_revenue || 0).toFixed(0)} EUR
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
+              {filteredClients.length > 0 && (
+                <p className="text-center text-xs text-slate-500 pt-2">
+                  {filteredClients.length} client{filteredClients.length > 1 ? 's' : ''}
+                </p>
+              )}
             </div>
 
-            {/* Footer with pagination info */}
-            {filteredClients.length > 0 && (
-              <div className="px-6 py-4 border-t border-slate-700/50 bg-slate-900/50 flex items-center justify-between">
-                <p className="text-sm text-slate-400">
-                  <span className="font-medium text-white">{filteredClients.length}</span> client{filteredClients.length > 1 ? 's' : ''} au total
-                </p>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" className="border-slate-700 text-slate-400 hover:bg-slate-800">
-                    Précédent
-                  </Button>
-                  <Button variant="outline" size="sm" className="border-slate-700 text-slate-400 hover:bg-slate-800">
-                    Suivant
-                  </Button>
-                </div>
+            {/* Desktop Table View */}
+            <div className="hidden lg:block bg-slate-800/40 border border-slate-700/40 rounded-2xl overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-slate-900/60 border-b border-slate-700/40">
+                      <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Client</th>
+                      <th className="px-6 py-3.5 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Entreprise</th>
+                      <th className="px-6 py-3.5 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Contact</th>
+                      <th className="px-6 py-3.5 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">Devis</th>
+                      <th className="px-6 py-3.5 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">CA Total</th>
+                      <th className="px-6 py-3.5 text-center text-xs font-medium text-slate-400 uppercase tracking-wider">Statut</th>
+                      <th className="px-6 py-3.5 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-700/40">
+                    {filteredClients.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="px-6 py-10 text-center text-slate-500 text-sm">Aucun client avec ces filtres</td>
+                      </tr>
+                    ) : (
+                      filteredClients.map((client) => (
+                        <tr key={client.id} className="hover:bg-slate-900/40 transition-colors">
+                          <td className="px-6 py-3.5">
+                            <div className="flex items-center gap-3">
+                              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-semibold text-sm">
+                                {client.name?.charAt(0)?.toUpperCase() || '?'}
+                              </div>
+                              <div>
+                                <div className="text-sm font-semibold text-white">{client.name}</div>
+                                <div className="text-xs text-slate-400 flex items-center gap-1">
+                                  <Mail className="h-3 w-3" />
+                                  {client.email || '\u2014'}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-3.5">
+                            <div className="flex items-center gap-2 text-sm text-slate-300">
+                              <Building2 className="h-4 w-4 text-slate-500" />
+                              {client.company || '\u2014'}
+                            </div>
+                          </td>
+                          <td className="px-6 py-3.5">
+                            <div className="flex items-center gap-2 text-sm text-slate-400">
+                              <Phone className="h-4 w-4 text-slate-500" />
+                              {client.phone || client.contact_name || '\u2014'}
+                            </div>
+                          </td>
+                          <td className="px-6 py-3.5 text-right"><span className="text-sm font-medium text-white">{client.total_quotes || 0}</span></td>
+                          <td className="px-6 py-3.5 text-right"><span className="text-sm font-bold text-emerald-400">{(client.total_revenue || 0).toFixed(2)} EUR</span></td>
+                          <td className="px-6 py-3.5 text-center">
+                            <Badge className={`${client.status !== 'inactive' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-slate-500/10 text-slate-400 border-slate-500/20'} border`}>
+                              {client.status !== 'inactive' ? 'Actif' : 'Inactif'}
+                            </Badge>
+                          </td>
+                          <td className="px-6 py-3.5 text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <Button size="xs" variant="ghost" className="text-slate-400 hover:text-cyan-400" onClick={() => router.push(`/dashboard/clients/${client.id}`)}><Eye className="h-4 w-4" /></Button>
+                              <Button size="xs" variant="ghost" className="text-slate-400 hover:text-blue-400" onClick={() => router.push(`/dashboard/clients/${client.id}/edit`)}><Edit className="h-4 w-4" /></Button>
+                              <Button size="xs" variant="ghost" className="text-slate-400 hover:text-red-400" onClick={() => handleDeleteClient(client.id)} disabled={deletingId === client.id}><Trash2 className="h-4 w-4" /></Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
               </div>
-            )}
-          </div>
+              {filteredClients.length > 0 && (
+                <div className="px-6 py-3.5 border-t border-slate-700/40 text-sm text-slate-400">
+                  {filteredClients.length} client{filteredClients.length > 1 ? 's' : ''}
+                </div>
+              )}
+            </div>
+          </>
         )}
       </div>
     </DashboardLayout>
