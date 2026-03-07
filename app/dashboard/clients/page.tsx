@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Users, Search, RefreshCw, Mail, Phone, Building2, Eye, Edit, Trash2, TrendingUp, Euro, FileCheck } from 'lucide-react';
+import { Users, Search, RefreshCw, Mail, Phone, Building2, Eye, CreditCard as Edit, Trash2, TrendingUp, Euro, FileCheck } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { PageHeader } from '@/components/dashboard/PageHeader';

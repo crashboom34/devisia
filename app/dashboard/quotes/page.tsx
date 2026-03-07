@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { FileText, Plus, TrendingUp, Euro, CheckCircle2, Eye, Download, Trash2 } from 'lucide-react';
+import { FileText, Plus, TrendingUp, Euro, CircleCheck as CheckCircle2, Eye, Download, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { KpiCard } from '@/components/dashboard/KpiCard';
