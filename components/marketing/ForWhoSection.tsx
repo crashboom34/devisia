@@ -1,3 +1,5 @@
+'use client';
+
 import { Wrench, Users, Building2 } from 'lucide-react';
 
 const profiles = [

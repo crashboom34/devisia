@@ -1,3 +1,5 @@
+'use client';
+
 import dynamic from 'next/dynamic';
 import { HeroSection } from '@/components/marketing/HeroSection';
 import { SiteHeader } from '@/components/marketing/SiteHeader';
