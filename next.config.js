@@ -3,6 +3,10 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  experimental: {
+    workerThreads: false,
+    cpus: 1,
+  },
   compress: true,
   productionBrowserSourceMaps: false,
   images: {
