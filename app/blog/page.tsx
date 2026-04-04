@@ -2,7 +2,6 @@ import { SiteHeader } from '@/components/marketing/SiteHeader';
 import { SiteFooter } from '@/components/marketing/SiteFooter';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
 
 const blogPosts = [
   {
@@ -60,21 +59,15 @@ export default function BlogPage() {
                       </span>
                       <span className="text-xs text-gray-500">{post.date}</span>
                     </div>
-                    <h2 className="text-2xl font-bold text-white mb-3 hover:text-brand-green transition-colors">
-                      <Link href={`/blog/${post.id}`}>
+                    <h2 className="text-2xl font-bold text-white mb-3">
                         {post.title}
-                      </Link>
                     </h2>
                   </CardHeader>
                   <CardContent>
                     <p className="text-gray-400 mb-4">{post.excerpt}</p>
-                    <Link
-                      href={`/blog/${post.id}`}
-                      className="inline-flex items-center text-brand-green hover:text-green-400 font-medium transition-colors"
-                    >
-                      Lire la suite
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
+                    <span className="inline-flex items-center text-gray-500 font-medium">
+                      Bientôt disponible
+                    </span>
                   </CardContent>
                 </Card>
               ))}

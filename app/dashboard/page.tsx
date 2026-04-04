@@ -135,7 +135,7 @@ export default function DashboardPage() {
                   Bonjour, {getFirstName()}
                 </h1>
                 <p className="text-xs sm:text-sm lg:text-base text-slate-400 mt-0.5">
-                  Voici un apercu de votre activite
+                  Voici un aperçu de votre activité
                 </p>
               </div>
               <Button
@@ -154,9 +154,9 @@ export default function DashboardPage() {
             <div className="-mx-4 px-4 sm:mx-0 sm:px-0">
               <div className="flex gap-3 overflow-x-auto pb-1 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:gap-4 lg:gap-6 sm:overflow-visible scrollbar-hide">
                 {[
-                  { title: 'Total devis', value: estimatesCount.total, sub: `${estimatesCount.completed} approuves`, color: 'cyan', icon: FileText },
-                  { title: 'En attente', value: estimatesCount.pending, sub: 'A traiter', color: 'orange', icon: Clock },
-                  { title: 'Approuves', value: estimatesCount.completed, sub: 'Devis acceptes', color: 'emerald', icon: CheckCircle2 },
+                  { title: 'Total devis', value: estimatesCount.total, sub: `${estimatesCount.completed} approuvés`, color: 'cyan', icon: FileText },
+                  { title: 'En attente', value: estimatesCount.pending, sub: 'À traiter', color: 'orange', icon: Clock },
+                  { title: 'Approuvés', value: estimatesCount.completed, sub: 'Devis acceptés', color: 'emerald', icon: CheckCircle2 },
                   { title: "Chiffre d'affaires", value: '0 EUR', sub: '30 derniers jours', color: 'cyan', icon: Euro },
                 ].map((kpi) => {
                   const Icon = kpi.icon;
@@ -229,7 +229,7 @@ export default function DashboardPage() {
                 <div className="h-36 sm:h-48 lg:h-56 flex items-center justify-center text-slate-500 bg-slate-900/30 rounded-xl border border-dashed border-slate-700/40">
                   <div className="text-center">
                     <TrendingUp className="h-8 w-8 text-slate-600 mx-auto mb-2" />
-                    <p className="text-xs sm:text-sm text-slate-500">Aucune donnee pour le moment</p>
+                    <p className="text-xs sm:text-sm text-slate-500">Aucune donnée pour le moment</p>
                   </div>
                 </div>
               </CardContent>
@@ -241,7 +241,7 @@ export default function DashboardPage() {
               <Card className="bg-slate-800/40 border-slate-700/40">
                 <CardHeader className="p-4 lg:p-6 pb-3">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-white text-base sm:text-lg font-bold">Devis recents</CardTitle>
+                    <CardTitle className="text-white text-base sm:text-lg font-bold">Devis récents</CardTitle>
                     <Link href="/dashboard/quotes" className="flex items-center gap-1 text-xs text-cyan-400 hover:text-cyan-300 transition-colors">
                       Voir tout
                       <ChevronRight className="h-3 w-3" />
@@ -260,7 +260,7 @@ export default function DashboardPage() {
                       <Link href="/project/new">
                         <Button variant="primary" size="xs">
                           <Plus className="h-3.5 w-3.5" />
-                          Creer un devis
+                          Créer un devis
                         </Button>
                       </Link>
                     </div>
@@ -344,11 +344,11 @@ export default function DashboardPage() {
 
                     <p className="text-[10px] sm:text-xs text-slate-500 mt-2">
                       {isAdmin && projectLimits?.limit === -1
-                        ? 'Acces illimite (admin)'
+                        ? 'Accès illimité (admin)'
                         : projectLimits?.has_reached_limit
-                          ? 'Limite atteinte - passez a un plan superieur'
+                          ? 'Limite atteinte - passez à un plan supérieur'
                           : projectLimits?.remaining === -1
-                            ? 'Projets illimites'
+                            ? 'Projets illimités'
                             : `${projectLimits?.remaining || 0} projet${(projectLimits?.remaining || 0) > 1 ? 's' : ''} restant${(projectLimits?.remaining || 0) > 1 ? 's' : ''}`
                       }
                     </p>

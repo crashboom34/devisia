@@ -16,14 +16,14 @@ const footerLinks = {
     title: 'Ressources',
     links: [
       { name: 'Blog', href: '/blog' },
-      { name: 'Documentation', href: '/docs' },
-      { name: 'Support', href: '/support' },
+      { name: 'Documentation', href: '/faq' },
+      { name: 'Support', href: 'mailto:support@devisia.fr' },
     ],
   },
   legal: {
     title: 'Légal',
     links: [
-      { name: 'Mentions légales', href: '/legal' },
+      { name: 'Mentions légales', href: '/terms' },
       { name: 'CGU', href: '/terms' },
       { name: 'Politique de confidentialité', href: '/privacy' },
     ],

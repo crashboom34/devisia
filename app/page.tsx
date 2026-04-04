@@ -21,8 +21,8 @@ export default function Home() {
       <main>
         <HeroSection
           badge="Propulsé par l'IA - Créez vos devis en quelques minutes"
-          title="Chaque devis mal fait te coûte de l’argent. Devisia corrige ça."
-          subtitle="Dicte ton chantier, ajuste tes prix, Devisia génère un devis prêt à être envoyé, avec tes marges déjà intégrées. C’est ton nouveau copilote pour gagner plus en travaillant moins."
+          title="Chaque devis mal fait vous coûte de l'argent. Devisia corrige ça."
+          subtitle="Décrivez votre chantier, ajustez vos prix, Devisia génère un devis prêt à être envoyé, avec vos marges déjà intégrées. Votre nouveau copilote pour gagner plus en travaillant moins."
           primaryCTA={{
             label: 'Commencer gratuitement',
             href: '/auth/register',

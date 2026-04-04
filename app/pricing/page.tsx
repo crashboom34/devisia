@@ -37,7 +37,7 @@ const PLANS: Plan[] = [
   {
     key: 'business',
     name: 'Business',
-    description: "Choisi par la majorité des artisans Devisia",
+    description: "Le choix de la majorité des artisans Devisia",
     icon: Users,
     popular: true,
     stripePriceIds: {

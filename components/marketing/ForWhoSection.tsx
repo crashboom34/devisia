@@ -7,30 +7,30 @@ const profiles = [
     icon: Wrench,
     title: 'Artisans solo & auto-entrepreneurs',
     items: [
-      'Gagne du temps sur les devis (5 minutes au lieu d\'une heure)',
-      'Garde la main sur tes prix et marges',
-      'Envoie des devis propres depuis n\'importe où',
-      'Ne te bats plus avec Excel',
+      'Gagnez du temps sur les devis (5 minutes au lieu d\'une heure)',
+      'Gardez la main sur vos prix et marges',
+      'Envoyez des devis propres depuis n\'importe où',
+      'Ne vous battez plus avec Excel',
     ],
   },
   {
     icon: Users,
     title: 'Petites entreprises du BTP (3 à 10 personnes)',
     items: [
-      'Centralise ta base de prix et modèles',
-      'Garantis la cohérence des prix entre collaborateurs',
-      'Vois l\'état de tous les devis en un coup d\'oeil',
-      'Suis qui a envoyé quel devis à quel client',
+      'Centralisez votre base de prix et modèles',
+      'Garantissez la cohérence des prix entre collaborateurs',
+      'Visualisez l\'état de tous les devis en un coup d\'oeil',
+      'Suivez qui a envoyé quel devis à quel client',
     ],
   },
   {
     icon: Building2,
     title: 'Entreprises structurées et multi-sociétés',
     items: [
-      'Pilote plusieurs entités dans le même outil',
-      'Applique des règles de prix communes',
+      'Pilotez plusieurs entités dans le même outil',
+      'Appliquez des règles de prix communes',
       'Vue d\'ensemble sur volumes et taux de signature',
-      'Suis la rentabilité estimée à l\'échelle du groupe',
+      'Suivez la rentabilité estimée à l\'échelle du groupe',
     ],
   },
 ];
@@ -46,7 +46,7 @@ export function ForWhoSection() {
           <div className="space-y-3">
             <h2 className="text-3xl sm:text-4xl font-bold text-white">Pour qui est fait Devisia ?</h2>
             <p className="text-lg text-gray-400">
-              De l&apos;artisan solo à l&apos;entreprise de construction, Devisia s&apos;adapte à ton organisation et à ton volume de devis.
+              De l&apos;artisan solo à l&apos;entreprise de construction, Devisia s&apos;adapte à votre organisation et à votre volume de devis.
             </p>
           </div>
         </div>
@@ -74,7 +74,7 @@ export function ForWhoSection() {
         </div>
 
         <div className="mt-8 rounded-2xl border border-slate-700/60 bg-slate-900/40 px-4 py-3 text-center text-sm text-slate-300">
-          Tu te reconnais dans l&apos;un de ces profils ? Devisia parle ton langage : m², ml, fournitures, main-d&apos;oeuvre et marges, pas jargon informatique.
+          Vous vous reconnaissez dans l&apos;un de ces profils ? Devisia parle votre langage : m², ml, fournitures, main-d&apos;oeuvre et marges, pas jargon informatique.
         </div>
       </div>
     </section>
