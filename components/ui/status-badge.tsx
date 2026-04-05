@@ -6,19 +6,19 @@ interface StatusBadgeProps {
 export function StatusBadge({ status, label }: StatusBadgeProps) {
   const variants = {
     draft: {
-      bg: 'bg-slate-500/15 border border-slate-500/30',
-      text: 'text-slate-300',
+      bg: 'bg-gray-100 border border-gray-200',
+      text: 'text-gray-600',
       label: label || 'Brouillon',
     },
     processing: {
-      bg: 'bg-amber-500/15 border border-amber-500/30',
-      text: 'text-amber-400',
+      bg: 'bg-amber-50 border border-amber-200',
+      text: 'text-amber-700',
       label: label || 'En cours',
     },
     completed: {
-      bg: 'bg-emerald-500/15 border border-emerald-500/30',
-      text: 'text-emerald-400',
-      label: label || 'Terminé',
+      bg: 'bg-emerald-50 border border-emerald-200',
+      text: 'text-emerald-700',
+      label: label || 'Termine',
     },
   };
 

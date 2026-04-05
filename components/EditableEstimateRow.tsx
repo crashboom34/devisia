@@ -68,14 +68,14 @@ export default function EditableEstimateRow({
 
   return (
     <tr
-      className={`border-b border-gray-800 ${itemIndex % 2 === 0 ? 'bg-brand-darkCard' : 'bg-brand-darkLight'} hover:bg-brand-dark transition-colors`}
+      className={`border-b border-gray-200 ${itemIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-gray-100 transition-colors`}
     >
-      <td className="p-3 font-medium text-sm text-white">
+      <td className="p-3 font-medium text-sm text-gray-900">
         {isEditing ? (
           <Input
             value={item.poste}
             onChange={(e) => handleChange('poste', e.target.value)}
-            className="h-8 text-sm bg-brand-darkLight border-gray-700 text-white"
+            className="h-8 text-sm bg-gray-50 border-gray-200 text-gray-900"
           />
         ) : (
           item.poste
@@ -83,12 +83,12 @@ export default function EditableEstimateRow({
       </td>
       {viewMode !== 'client' && (
         <>
-          <td className="p-3 text-sm max-w-xs text-gray-300">
+          <td className="p-3 text-sm max-w-xs text-gray-600">
             {isEditing ? (
               <Input
                 value={item.description}
                 onChange={(e) => handleChange('description', e.target.value)}
-                className="h-8 text-sm bg-brand-darkLight border-gray-700 text-white"
+                className="h-8 text-sm bg-gray-50 border-gray-200 text-gray-900"
               />
             ) : (
               <>
@@ -96,23 +96,23 @@ export default function EditableEstimateRow({
                 {viewMode === 'detailed' && (item.materials_cost || item.labor_cost) && (
                   <div className="text-xs text-gray-500 mt-1 space-y-0.5">
                     {item.materials_cost && (
-                      <div className="text-gray-400">Matériaux: {formatCurrency(item.materials_cost)}</div>
+                      <div className="text-gray-500">Matériaux: {formatCurrency(item.materials_cost)}</div>
                     )}
                     {item.labor_cost && (
-                      <div className="text-gray-400">Main-d'œuvre: {formatCurrency(item.labor_cost)}</div>
+                      <div className="text-gray-500">Main-d'œuvre: {formatCurrency(item.labor_cost)}</div>
                     )}
                   </div>
                 )}
               </>
             )}
           </td>
-          <td className="p-3 text-center text-sm text-gray-300">
+          <td className="p-3 text-center text-sm text-gray-600">
             {isEditing ? (
               <Input
                 type="number"
                 value={item.quantity}
                 onChange={(e) => handleChange('quantity', e.target.value)}
-                className="h-8 text-sm w-20 bg-brand-darkLight border-gray-700 text-white"
+                className="h-8 text-sm w-20 bg-gray-50 border-gray-200 text-gray-900"
                 min="0"
                 step="0.01"
               />
@@ -120,24 +120,24 @@ export default function EditableEstimateRow({
               item.quantity
             )}
           </td>
-          <td className="p-3 text-center text-xs text-gray-300">
+          <td className="p-3 text-center text-xs text-gray-600">
             {isEditing ? (
               <Input
                 value={item.unit}
                 onChange={(e) => handleChange('unit', e.target.value)}
-                className="h-8 text-xs w-20 bg-brand-darkLight border-gray-700 text-white"
+                className="h-8 text-xs w-20 bg-gray-50 border-gray-200 text-gray-900"
               />
             ) : (
               item.unit
             )}
           </td>
-          <td className="p-3 text-right text-sm text-gray-300">
+          <td className="p-3 text-right text-sm text-gray-600">
             {isEditing ? (
               <Input
                 type="number"
                 value={item.unit_price_ht}
                 onChange={(e) => handleChange('unit_price_ht', e.target.value)}
-                className="h-8 text-sm w-28 bg-brand-darkLight border-gray-700 text-white"
+                className="h-8 text-sm w-28 bg-gray-50 border-gray-200 text-gray-900"
                 min="0"
                 step="0.01"
               />
@@ -145,14 +145,14 @@ export default function EditableEstimateRow({
               formatCurrency(item.unit_price_ht)
             )}
           </td>
-          <td className="p-3 text-right font-semibold text-sm text-white">{formatCurrency(item.amount_ht)}</td>
-          <td className="p-3 text-center text-xs text-gray-300">
+          <td className="p-3 text-right font-semibold text-sm text-gray-900">{formatCurrency(item.amount_ht)}</td>
+          <td className="p-3 text-center text-xs text-gray-600">
             {isEditing ? (
               <Input
                 type="number"
                 value={item.tva_percent}
                 onChange={(e) => handleChange('tva_percent', e.target.value)}
-                className="h-8 text-xs w-16 bg-brand-darkLight border-gray-700 text-white"
+                className="h-8 text-xs w-16 bg-gray-50 border-gray-200 text-gray-900"
                 min="0"
                 max="100"
                 step="0.1"
@@ -188,10 +188,10 @@ export default function EditableEstimateRow({
                 <Trash2 className="h-4 w-4" />
               </Button>
             </AlertDialogTrigger>
-            <AlertDialogContent className="bg-brand-darkCard border-gray-800">
+            <AlertDialogContent className="bg-white border-gray-200">
               <AlertDialogHeader>
-                <AlertDialogTitle className="text-white">Confirmer la suppression</AlertDialogTitle>
-                <AlertDialogDescription className="text-gray-400">
+                <AlertDialogTitle className="text-gray-900">Confirmer la suppression</AlertDialogTitle>
+                <AlertDialogDescription className="text-gray-500">
                   Êtes-vous sûr de vouloir supprimer cette ligne? Cette action est irréversible et
                   les totaux seront recalculés automatiquement.
                 </AlertDialogDescription>

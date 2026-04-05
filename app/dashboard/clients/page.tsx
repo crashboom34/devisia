@@ -160,7 +160,7 @@ export default function ClientsPage() {
           ]}
           actions={
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" onClick={handleRefresh} className="h-8 w-8 text-slate-400">
+              <Button variant="ghost" size="icon" onClick={handleRefresh} className="h-8 w-8 text-gray-400">
                 <RefreshCw className="h-4 w-4" />
               </Button>
               <Link href="/dashboard/clients/new">
@@ -177,23 +177,23 @@ export default function ClientsPage() {
         {/* KPI Cards */}
         <div className="-mx-4 px-4 sm:mx-0 sm:px-0">
           <div className="flex gap-3 overflow-x-auto pb-1 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:gap-4 lg:gap-6 sm:overflow-visible scrollbar-hide">
-            <KpiCard title="Total Clients" value={stats.total} subtitle={`${stats.active} actifs`} icon={Users} iconColor="text-cyan-400" />
-            <KpiCard title="CA Total" value={`${stats.totalRevenue.toFixed(2)} EUR`} valueColor="text-emerald-400" subtitle="Tous clients" icon={Euro} iconColor="text-emerald-400" />
-            <KpiCard title="CA Moyen" value={`${stats.avgRevenue.toFixed(2)} EUR`} valueColor="text-cyan-400" subtitle="Par client" icon={TrendingUp} iconColor="text-cyan-400" />
-            <KpiCard title="Clients Actifs" value={stats.active} valueColor="text-emerald-400" subtitle="Ce mois" icon={FileCheck} iconColor="text-emerald-400" />
+            <KpiCard title="Total Clients" value={stats.total} subtitle={`${stats.active} actifs`} icon={Users} iconColor="text-brand-green" />
+            <KpiCard title="CA Total" value={`${stats.totalRevenue.toFixed(2)} EUR`} valueColor="text-emerald-600" subtitle="Tous clients" icon={Euro} iconColor="text-emerald-600" />
+            <KpiCard title="CA Moyen" value={`${stats.avgRevenue.toFixed(2)} EUR`} valueColor="text-brand-green" subtitle="Par client" icon={TrendingUp} iconColor="text-brand-green" />
+            <KpiCard title="Clients Actifs" value={stats.active} valueColor="text-emerald-600" subtitle="Ce mois" icon={FileCheck} iconColor="text-emerald-600" />
           </div>
         </div>
 
         {/* Search */}
-        <div className="p-3 lg:p-4 bg-slate-900/30 rounded-xl border border-slate-800/50">
+        <div className="p-3 lg:p-4 bg-white rounded-xl border border-gray-200">
           <div className="relative">
-            <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-500" />
+            <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
             <Input
               type="text"
               placeholder="Rechercher par nom, email, entreprise..."
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
-              className="pl-10 bg-slate-800/50 border-slate-700/50 text-white text-sm placeholder:text-slate-500 h-10 lg:h-11 rounded-lg"
+              className="pl-10 bg-white border-gray-200 text-gray-900 text-sm placeholder:text-gray-500 h-10 lg:h-11 rounded-lg"
             />
           </div>
           {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
@@ -201,7 +201,7 @@ export default function ClientsPage() {
 
         {loading ? (
           <div className="flex justify-center items-center py-16">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-600"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-green"></div>
           </div>
         ) : filteredClients.length === 0 && clients.length === 0 ? (
           <EmptyState
@@ -218,33 +218,33 @@ export default function ClientsPage() {
             {/* Mobile Card View */}
             <div className="space-y-2.5 lg:hidden">
               {filteredClients.length === 0 ? (
-                <p className="text-center text-sm text-slate-500 py-8">Aucun client avec ces filtres</p>
+                <p className="text-center text-sm text-gray-500 py-8">Aucun client avec ces filtres</p>
               ) : (
                 filteredClients.map((client) => (
                   <div
                     key={client.id}
-                    className="p-3.5 rounded-xl bg-slate-800/50 border border-slate-700/40 active:scale-[0.99] transition-all"
+                    className="p-3.5 rounded-xl bg-white border border-gray-200 active:scale-[0.99] transition-all"
                     onClick={() => router.push(`/dashboard/clients/${client.id}`)}
                   >
                     <div className="flex items-center gap-3 mb-2.5">
-                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white text-sm font-semibold shrink-0">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-green to-emerald-500 flex items-center justify-center text-gray-900 text-sm font-semibold shrink-0">
                         {client.name?.charAt(0)?.toUpperCase() || '?'}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="font-medium text-sm text-white truncate">{client.name}</p>
+                        <p className="font-medium text-sm text-gray-900 truncate">{client.name}</p>
                         {client.company && (
-                          <p className="text-[10px] text-slate-500 truncate">{client.company}</p>
+                          <p className="text-[10px] text-gray-500 truncate">{client.company}</p>
                         )}
                       </div>
                       <Badge className={`shrink-0 text-[10px] ${
                         client.status !== 'inactive'
-                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                          : 'bg-slate-500/10 text-slate-400 border-slate-500/20'
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                          : 'bg-gray-100 text-gray-600 border-gray-200'
                       } border`}>
                         {client.status !== 'inactive' ? 'Actif' : 'Inactif'}
                       </Badge>
                     </div>
-                    <div className="flex items-center justify-between text-xs text-slate-500">
+                    <div className="flex items-center justify-between text-xs text-gray-500">
                       <div className="flex items-center gap-3">
                         {client.email && (
                           <span className="flex items-center gap-1 truncate max-w-[140px]">
@@ -253,7 +253,7 @@ export default function ClientsPage() {
                           </span>
                         )}
                       </div>
-                      <span className="text-sm font-bold text-emerald-400">
+                      <span className="text-sm font-bold text-emerald-600">
                         {(client.total_revenue || 0).toFixed(0)} EUR
                       </span>
                     </div>
@@ -261,43 +261,43 @@ export default function ClientsPage() {
                 ))
               )}
               {filteredClients.length > 0 && (
-                <p className="text-center text-xs text-slate-500 pt-2">
+                <p className="text-center text-xs text-gray-500 pt-2">
                   {filteredClients.length} client{filteredClients.length > 1 ? 's' : ''}
                 </p>
               )}
             </div>
 
             {/* Desktop Table View */}
-            <div className="hidden lg:block bg-slate-800/40 border border-slate-700/40 rounded-2xl overflow-hidden">
+            <div className="hidden lg:block bg-white border border-gray-200 rounded-2xl overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="bg-slate-900/60 border-b border-slate-700/40">
-                      <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Client</th>
-                      <th className="px-6 py-3.5 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Entreprise</th>
-                      <th className="px-6 py-3.5 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Contact</th>
-                      <th className="px-6 py-3.5 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">Devis</th>
-                      <th className="px-6 py-3.5 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">CA Total</th>
-                      <th className="px-6 py-3.5 text-center text-xs font-medium text-slate-400 uppercase tracking-wider">Statut</th>
-                      <th className="px-6 py-3.5 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">Actions</th>
+                    <tr className="bg-gray-50 border-b border-gray-200">
+                      <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Client</th>
+                      <th className="px-6 py-3.5 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Entreprise</th>
+                      <th className="px-6 py-3.5 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Contact</th>
+                      <th className="px-6 py-3.5 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">Devis</th>
+                      <th className="px-6 py-3.5 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">CA Total</th>
+                      <th className="px-6 py-3.5 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">Statut</th>
+                      <th className="px-6 py-3.5 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-700/40">
+                  <tbody className="divide-y divide-gray-100">
                     {filteredClients.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="px-6 py-10 text-center text-slate-500 text-sm">Aucun client avec ces filtres</td>
+                        <td colSpan={7} className="px-6 py-10 text-center text-gray-500 text-sm">Aucun client avec ces filtres</td>
                       </tr>
                     ) : (
                       filteredClients.map((client) => (
-                        <tr key={client.id} className="hover:bg-slate-900/40 transition-colors">
+                        <tr key={client.id} className="hover:bg-gray-50 transition-colors">
                           <td className="px-6 py-3.5">
                             <div className="flex items-center gap-3">
-                              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-semibold text-sm">
+                              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-green to-emerald-500 flex items-center justify-center text-gray-900 font-semibold text-sm">
                                 {client.name?.charAt(0)?.toUpperCase() || '?'}
                               </div>
                               <div>
-                                <div className="text-sm font-semibold text-white">{client.name}</div>
-                                <div className="text-xs text-slate-400 flex items-center gap-1">
+                                <div className="text-sm font-semibold text-gray-900">{client.name}</div>
+                                <div className="text-xs text-gray-400 flex items-center gap-1">
                                   <Mail className="h-3 w-3" />
                                   {client.email || '\u2014'}
                                 </div>
@@ -305,29 +305,29 @@ export default function ClientsPage() {
                             </div>
                           </td>
                           <td className="px-6 py-3.5">
-                            <div className="flex items-center gap-2 text-sm text-slate-300">
-                              <Building2 className="h-4 w-4 text-slate-500" />
+                            <div className="flex items-center gap-2 text-sm text-gray-700">
+                              <Building2 className="h-4 w-4 text-gray-500" />
                               {client.company || '\u2014'}
                             </div>
                           </td>
                           <td className="px-6 py-3.5">
-                            <div className="flex items-center gap-2 text-sm text-slate-400">
-                              <Phone className="h-4 w-4 text-slate-500" />
+                            <div className="flex items-center gap-2 text-sm text-gray-400">
+                              <Phone className="h-4 w-4 text-gray-500" />
                               {client.phone || client.contact_name || '\u2014'}
                             </div>
                           </td>
-                          <td className="px-6 py-3.5 text-right"><span className="text-sm font-medium text-white">{client.total_quotes || 0}</span></td>
-                          <td className="px-6 py-3.5 text-right"><span className="text-sm font-bold text-emerald-400">{(client.total_revenue || 0).toFixed(2)} EUR</span></td>
+                          <td className="px-6 py-3.5 text-right"><span className="text-sm font-medium text-gray-900">{client.total_quotes || 0}</span></td>
+                          <td className="px-6 py-3.5 text-right"><span className="text-sm font-bold text-emerald-600">{(client.total_revenue || 0).toFixed(2)} EUR</span></td>
                           <td className="px-6 py-3.5 text-center">
-                            <Badge className={`${client.status !== 'inactive' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-slate-500/10 text-slate-400 border-slate-500/20'} border`}>
+                            <Badge className={`${client.status !== 'inactive' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-600 border-gray-200'} border`}>
                               {client.status !== 'inactive' ? 'Actif' : 'Inactif'}
                             </Badge>
                           </td>
                           <td className="px-6 py-3.5 text-right">
                             <div className="flex items-center justify-end gap-1">
-                              <Button size="xs" variant="ghost" className="text-slate-400 hover:text-cyan-400" onClick={() => router.push(`/dashboard/clients/${client.id}`)}><Eye className="h-4 w-4" /></Button>
-                              <Button size="xs" variant="ghost" className="text-slate-400 hover:text-blue-400" onClick={() => router.push(`/dashboard/clients/${client.id}/edit`)}><Edit className="h-4 w-4" /></Button>
-                              <Button size="xs" variant="ghost" className="text-slate-400 hover:text-red-400" onClick={() => handleDeleteClient(client.id)} disabled={deletingId === client.id}><Trash2 className="h-4 w-4" /></Button>
+                              <Button size="xs" variant="ghost" className="text-gray-400 hover:text-brand-green" onClick={() => router.push(`/dashboard/clients/${client.id}`)}><Eye className="h-4 w-4" /></Button>
+                              <Button size="xs" variant="ghost" className="text-gray-400 hover:text-blue-500" onClick={() => router.push(`/dashboard/clients/${client.id}/edit`)}><Edit className="h-4 w-4" /></Button>
+                              <Button size="xs" variant="ghost" className="text-gray-400 hover:text-red-500" onClick={() => handleDeleteClient(client.id)} disabled={deletingId === client.id}><Trash2 className="h-4 w-4" /></Button>
                             </div>
                           </td>
                         </tr>
@@ -337,7 +337,7 @@ export default function ClientsPage() {
                 </table>
               </div>
               {filteredClients.length > 0 && (
-                <div className="px-6 py-3.5 border-t border-slate-700/40 text-sm text-slate-400">
+                <div className="px-6 py-3.5 border-t border-gray-200 text-sm text-gray-400">
                   {filteredClients.length} client{filteredClients.length > 1 ? 's' : ''}
                 </div>
               )}

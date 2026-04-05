@@ -164,8 +164,8 @@ export default function ParametresPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#1a1a1a] flex items-center justify-center">
-        <div className="text-white">Chargement...</div>
+      <div className="min-h-screen bg-brand-light flex items-center justify-center">
+        <div className="text-gray-900">Chargement...</div>
       </div>
     );
   }
@@ -175,15 +175,15 @@ export default function ParametresPage() {
       <div className="max-w-7xl mx-auto">
         {/* Page Title */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Paramètres</h1>
-          <p className="text-slate-400">Gérez les paramètres de votre compte et application</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Paramètres</h1>
+          <p className="text-gray-500">Gérez les paramètres de votre compte et application</p>
         </div>
 
         {/* Main Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left Navigation */}
             <div className="lg:col-span-1">
-              <Card className="bg-gradient-to-br from-slate-800/90 to-slate-800/50 border-slate-700/50 shadow-xl">
+              <Card className="bg-white border-gray-200 shadow-sm">
                 <CardContent className="p-4">
                   <nav className="space-y-1">
                     {sections.map((section) => {
@@ -196,14 +196,14 @@ export default function ParametresPage() {
                           onClick={() => setActiveSection(section.id)}
                           className={`w-full flex items-start gap-3 px-3 py-3 rounded-lg transition-all ${
                             isActive
-                              ? 'bg-slate-700 text-white'
-                              : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                              ? 'bg-brand-green/10 text-brand-green'
+                              : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                           }`}
                         >
-                          <Icon className={`h-5 w-5 mt-0.5 flex-shrink-0 ${isActive ? '' : 'text-slate-400'}`} />
+                          <Icon className={`h-5 w-5 mt-0.5 flex-shrink-0 ${isActive ? '' : 'text-gray-500'}`} />
                           <div className="text-left">
                             <div className="font-medium text-sm">{section.title}</div>
-                            <div className="text-xs text-slate-400 mt-0.5">{section.subtitle}</div>
+                            <div className="text-xs text-gray-500 mt-0.5">{section.subtitle}</div>
                           </div>
                         </button>
                       );
@@ -217,15 +217,15 @@ export default function ParametresPage() {
             <div className="lg:col-span-2">
               {/* Notifications Section */}
               {activeSection === 'notifications' && (
-                <Card className="bg-gradient-to-br from-slate-800/90 to-slate-800/50 border-slate-700/50 shadow-xl">
-                  <CardHeader className="border-b border-[#2a2a2a]">
+                <Card className="bg-white border-gray-200 shadow-sm">
+                  <CardHeader className="border-b border-gray-200">
                     <div className="flex items-center gap-3">
                       <div className="p-2.5 rounded-lg bg-gradient-to-br from-orange-500/20 to-orange-600/20">
                         <Bell className="h-5 w-5 text-orange-400" />
                       </div>
                       <div>
-                        <CardTitle className="text-white">Paramètres de notification</CardTitle>
-                        <CardDescription className="text-slate-400">
+                        <CardTitle className="text-gray-900">Paramètres de notification</CardTitle>
+                        <CardDescription className="text-gray-500">
                           Gérez les paramètres de notification
                         </CardDescription>
                       </div>
@@ -233,14 +233,14 @@ export default function ParametresPage() {
                   </CardHeader>
                   <CardContent className="p-6 space-y-4">
                     {/* Email Notifications */}
-                    <div className="flex items-start justify-between p-4 rounded-lg bg-slate-900 border border-slate-700">
+                    <div className="flex items-start justify-between p-4 rounded-lg bg-gray-50 border border-gray-200">
                       <div className="flex items-start gap-3">
                         <div className="p-2 rounded-lg bg-orange-500/10">
                           <Bell className="h-5 w-5 text-orange-400" />
                         </div>
                         <div>
-                          <h3 className="font-semibold text-white text-sm">Notifications par email</h3>
-                          <p className="text-xs text-slate-400 mt-1">
+                          <h3 className="font-semibold text-gray-900 text-sm">Notifications par email</h3>
+                          <p className="text-xs text-gray-500 mt-1">
                             Recevoir les notifications importantes par email
                           </p>
                         </div>
@@ -255,14 +255,14 @@ export default function ParametresPage() {
                     </div>
 
                     {/* Quote Reminders */}
-                    <div className="flex items-start justify-between p-4 rounded-lg bg-slate-900 border border-slate-700">
+                    <div className="flex items-start justify-between p-4 rounded-lg bg-gray-50 border border-gray-200">
                       <div className="flex items-start gap-3">
                         <div className="p-2 rounded-lg bg-orange-500/10">
                           <FileText className="h-5 w-5 text-orange-400" />
                         </div>
                         <div>
-                          <h3 className="font-semibold text-white text-sm">Rappels de devis</h3>
-                          <p className="text-xs text-slate-400 mt-1">
+                          <h3 className="font-semibold text-gray-900 text-sm">Rappels de devis</h3>
+                          <p className="text-xs text-gray-500 mt-1">
                             Recevoir des rappels pour les devis en attente
                           </p>
                         </div>
@@ -277,14 +277,14 @@ export default function ParametresPage() {
                     </div>
 
                     {/* Marketing Emails */}
-                    <div className="flex items-start justify-between p-4 rounded-lg bg-slate-900 border border-slate-700">
+                    <div className="flex items-start justify-between p-4 rounded-lg bg-gray-50 border border-gray-200">
                       <div className="flex items-start gap-3">
                         <div className="p-2 rounded-lg bg-orange-500/10">
                           <Mail className="h-5 w-5 text-orange-400" />
                         </div>
                         <div>
-                          <h3 className="font-semibold text-white text-sm">Emails marketing</h3>
-                          <p className="text-xs text-slate-400 mt-1">
+                          <h3 className="font-semibold text-gray-900 text-sm">Emails marketing</h3>
+                          <p className="text-xs text-gray-500 mt-1">
                             Recevoir des informations sur les nouveautés et conseils
                           </p>
                         </div>
@@ -294,7 +294,7 @@ export default function ParametresPage() {
                         onCheckedChange={(checked) =>
                           setSettings({ ...settings, marketing_emails: checked })
                         }
-                        className="data-[state=checked]:bg-slate-500"
+                        className="data-[state=checked]:bg-gray-400"
                       />
                     </div>
 
@@ -321,15 +321,15 @@ export default function ParametresPage() {
 
               {/* Devis Section */}
               {activeSection === 'devis' && (
-                <Card className="bg-gradient-to-br from-slate-800/90 to-slate-800/50 border-slate-700/50 shadow-xl">
-                  <CardHeader className="border-b border-[#2a2a2a]">
+                <Card className="bg-white border-gray-200 shadow-sm">
+                  <CardHeader className="border-b border-gray-200">
                     <div className="flex items-center gap-3">
                       <div className="p-2.5 rounded-lg bg-gradient-to-br from-orange-500/20 to-orange-600/20">
                         <FileText className="h-5 w-5 text-orange-400" />
                       </div>
                       <div>
-                        <CardTitle className="text-white">Paramètres des devis</CardTitle>
-                        <CardDescription className="text-slate-400">
+                        <CardTitle className="text-gray-900">Paramètres des devis</CardTitle>
+                        <CardDescription className="text-gray-500">
                           Gérez les paramètres des devis
                         </CardDescription>
                       </div>
@@ -338,7 +338,7 @@ export default function ParametresPage() {
                   <CardContent className="p-6 space-y-6">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="quote_prefix" className="text-slate-300 text-sm">
+                        <Label htmlFor="quote_prefix" className="text-gray-600 text-sm">
                           Préfixe des devis
                         </Label>
                         <Input
@@ -346,15 +346,15 @@ export default function ParametresPage() {
                           value={settings.quote_prefix}
                           onChange={(e) => setSettings({ ...settings, quote_prefix: e.target.value })}
                           placeholder="DEV"
-                          className="bg-[#1a1a1a] border-[#2a2a2a] text-white"
+                          className="bg-gray-50 border-gray-200 text-gray-900"
                         />
-                        <p className="text-xs text-slate-500">
+                        <p className="text-xs text-gray-500">
                           Exemple: "DEV" donnera des numéros comme DEV-0001
                         </p>
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="vat_rate" className="text-slate-300 text-sm">
+                        <Label htmlFor="vat_rate" className="text-gray-600 text-sm">
                           TVA par défaut (%)
                         </Label>
                         <Input
@@ -363,30 +363,30 @@ export default function ParametresPage() {
                           value={settings.default_vat_rate}
                           onChange={(e) => setSettings({ ...settings, default_vat_rate: parseFloat(e.target.value) })}
                           placeholder="20"
-                          className="bg-[#1a1a1a] border-[#2a2a2a] text-white"
+                          className="bg-gray-50 border-gray-200 text-gray-900"
                         />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="currency" className="text-slate-300 text-sm">
+                        <Label htmlFor="currency" className="text-gray-600 text-sm">
                           Devise par défaut
                         </Label>
                         <Select value={settings.default_currency} onValueChange={(value) => setSettings({ ...settings, default_currency: value })}>
-                          <SelectTrigger className="bg-[#1a1a1a] border-[#2a2a2a] text-white">
+                          <SelectTrigger className="bg-gray-50 border-gray-200 text-gray-900">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent className="bg-[#242424] border-[#2a2a2a]">
-                            <SelectItem value="EUR" className="text-white">EUR (€)</SelectItem>
-                            <SelectItem value="USD" className="text-white">USD ($)</SelectItem>
-                            <SelectItem value="GBP" className="text-white">GBP (£)</SelectItem>
+                          <SelectContent className="bg-white border-gray-200">
+                            <SelectItem value="EUR" className="text-gray-900">EUR (€)</SelectItem>
+                            <SelectItem value="USD" className="text-gray-900">USD ($)</SelectItem>
+                            <SelectItem value="GBP" className="text-gray-900">GBP (£)</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="payment_terms" className="text-slate-300 text-sm">
+                        <Label htmlFor="payment_terms" className="text-gray-600 text-sm">
                           Délai de paiement (jours)
                         </Label>
                         <Input
@@ -395,13 +395,13 @@ export default function ParametresPage() {
                           value={settings.payment_terms_days}
                           onChange={(e) => setSettings({ ...settings, payment_terms_days: parseInt(e.target.value) })}
                           placeholder="30"
-                          className="bg-[#1a1a1a] border-[#2a2a2a] text-white"
+                          className="bg-gray-50 border-gray-200 text-gray-900"
                         />
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="default_notes" className="text-slate-300 text-sm">
+                      <Label htmlFor="default_notes" className="text-gray-600 text-sm">
                         Notes par défaut
                       </Label>
                       <Textarea
@@ -409,7 +409,7 @@ export default function ParametresPage() {
                         value={settings.default_notes}
                         onChange={(e) => setSettings({ ...settings, default_notes: e.target.value })}
                         placeholder="Notes qui apparaîtront par défaut sur vos devis..."
-                        className="bg-[#1a1a1a] border-[#2a2a2a] text-white min-h-[120px]"
+                        className="bg-gray-50 border-gray-200 text-gray-900 min-h-[120px]"
                       />
                     </div>
 
@@ -435,15 +435,15 @@ export default function ParametresPage() {
 
               {/* General Section */}
               {activeSection === 'general' && (
-                <Card className="bg-gradient-to-br from-slate-800/90 to-slate-800/50 border-slate-700/50 shadow-xl">
-                  <CardHeader className="border-b border-[#2a2a2a]">
+                <Card className="bg-white border-gray-200 shadow-sm">
+                  <CardHeader className="border-b border-gray-200">
                     <div className="flex items-center gap-3">
                       <div className="p-2.5 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-600/20">
                         <SettingsIcon className="h-5 w-5 text-blue-400" />
                       </div>
                       <div>
-                        <CardTitle className="text-white">Paramètres généraux</CardTitle>
-                        <CardDescription className="text-slate-400">
+                        <CardTitle className="text-gray-900">Paramètres généraux</CardTitle>
+                        <CardDescription className="text-gray-500">
                           Gérez vos informations personnelles et d'entreprise
                         </CardDescription>
                       </div>
@@ -451,27 +451,27 @@ export default function ParametresPage() {
                   </CardHeader>
                   <CardContent className="p-6 space-y-8">
                     <div>
-                      <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
+                      <h3 className="text-gray-900 font-semibold mb-4 flex items-center gap-2">
                         <User className="h-4 w-4" />
                         Informations du compte
                       </h3>
                       <div className="space-y-4">
                         <div className="flex items-start gap-4">
                           <div className="space-y-2 flex-1">
-                            <Label className="text-slate-300 text-sm">Logo de l'entreprise</Label>
+                            <Label className="text-gray-600 text-sm">Logo de l'entreprise</Label>
                             <div className="flex items-center gap-4">
-                              <div className="w-20 h-20 rounded-lg bg-slate-900 border border-slate-700 flex items-center justify-center">
+                              <div className="w-20 h-20 rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center">
                                 <div className="text-center">
-                                  <Upload className="h-6 w-6 text-slate-500 mx-auto" />
+                                  <Upload className="h-6 w-6 text-gray-500 mx-auto" />
                                   <p className="text-xs text-orange-400 mt-1">Logo non configuré</p>
                                 </div>
                               </div>
-                              <Button variant="outline" size="sm" className="border-[#2a2a2a] text-slate-300 bg-transparent hover:bg-[#1a1a1a]">
+                              <Button variant="outline" size="sm" className="border-gray-200 text-gray-600 bg-transparent hover:bg-gray-50">
                                 <Upload className="h-4 w-4 mr-2" />
                                 Ajouter un logo
                               </Button>
                             </div>
-                            <p className="text-xs text-slate-500">
+                            <p className="text-xs text-gray-500">
                               Formats acceptés : JPG, PNG, WebP. Taille max : 5MB
                             </p>
                           </div>
@@ -482,31 +482,31 @@ export default function ParametresPage() {
                                 <Mail className="h-3 w-3" />
                                 EMAIL
                               </div>
-                              <p className="text-white text-sm">{user?.email}</p>
+                              <p className="text-gray-900 text-sm">{user?.email}</p>
                             </div>
                             <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/30">
                               <div className="flex items-center gap-2 text-purple-400 text-xs font-medium mb-1">
                                 <User className="h-3 w-3" />
                                 NOM COMPLET
                               </div>
-                              <p className="text-white text-sm">Alex Mira</p>
+                              <p className="text-gray-900 text-sm">Alex Mira</p>
                             </div>
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    <Separator className="bg-[#2a2a2a]" />
+                    <Separator className="bg-gray-200" />
 
                     <div>
-                      <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
+                      <h3 className="text-gray-900 font-semibold mb-4 flex items-center gap-2">
                         <Building2 className="h-4 w-4" />
                         Informations de l'entreprise
                       </h3>
                       <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <Label htmlFor="company_name" className="text-slate-300 text-sm flex items-center gap-2">
+                            <Label htmlFor="company_name" className="text-gray-600 text-sm flex items-center gap-2">
                               <Building2 className="h-3 w-3" />
                               Nom de l'entreprise
                             </Label>
@@ -515,11 +515,11 @@ export default function ParametresPage() {
                               value={settings.company_name}
                               onChange={(e) => setSettings({ ...settings, company_name: e.target.value })}
                               placeholder="Ex: Devisia Technologies"
-                              className="bg-[#1a1a1a] border-[#2a2a2a] text-white"
+                              className="bg-gray-50 border-gray-200 text-gray-900"
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="vat_number" className="text-slate-300 text-sm">
+                            <Label htmlFor="vat_number" className="text-gray-600 text-sm">
                               # Numéro de TVA
                             </Label>
                             <Input
@@ -527,16 +527,16 @@ export default function ParametresPage() {
                               value={settings.company_vat_number}
                               onChange={(e) => setSettings({ ...settings, company_vat_number: e.target.value })}
                               placeholder="FR12345678901"
-                              className="bg-[#1a1a1a] border-[#2a2a2a] text-white"
+                              className="bg-gray-50 border-gray-200 text-gray-900"
                             />
-                            <p className="text-xs text-slate-500">
+                            <p className="text-xs text-gray-500">
                               Format: Code pays + II chiffres (ex: FR12345678901)
                             </p>
                           </div>
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="company_address" className="text-slate-300 text-sm flex items-center gap-2">
+                          <Label htmlFor="company_address" className="text-gray-600 text-sm flex items-center gap-2">
                             <Globe className="h-3 w-3" />
                             Adresse de l'entreprise
                           </Label>
@@ -545,17 +545,17 @@ export default function ParametresPage() {
                             value={settings.company_address}
                             onChange={(e) => setSettings({ ...settings, company_address: e.target.value })}
                             placeholder="123 Rue de la Technologie 75001 Paris, France"
-                            className="bg-[#1a1a1a] border-[#2a2a2a] text-white"
+                            className="bg-gray-50 border-gray-200 text-gray-900"
                             rows={3}
                           />
-                          <p className="text-xs text-slate-500">
+                          <p className="text-xs text-gray-500">
                             Cette adresse apparaîtra sur vos documents officiels
                           </p>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <Label htmlFor="website" className="text-slate-300 text-sm flex items-center gap-2">
+                            <Label htmlFor="website" className="text-gray-600 text-sm flex items-center gap-2">
                               <Globe className="h-3 w-3" />
                               Site web
                             </Label>
@@ -564,11 +564,11 @@ export default function ParametresPage() {
                               value={settings.company_website}
                               onChange={(e) => setSettings({ ...settings, company_website: e.target.value })}
                               placeholder="https://votre-site.com"
-                              className="bg-[#1a1a1a] border-[#2a2a2a] text-white"
+                              className="bg-gray-50 border-gray-200 text-gray-900"
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="phone" className="text-slate-300 text-sm flex items-center gap-2">
+                            <Label htmlFor="phone" className="text-gray-600 text-sm flex items-center gap-2">
                               <Phone className="h-3 w-3" />
                               Téléphone
                             </Label>
@@ -577,19 +577,19 @@ export default function ParametresPage() {
                               value={settings.company_phone}
                               onChange={(e) => setSettings({ ...settings, company_phone: e.target.value })}
                               placeholder="+33 1 23 45 67 89"
-                              className="bg-[#1a1a1a] border-[#2a2a2a] text-white"
+                              className="bg-gray-50 border-gray-200 text-gray-900"
                             />
                           </div>
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="brand_color" className="text-slate-300 text-sm flex items-center gap-2">
+                          <Label htmlFor="brand_color" className="text-gray-600 text-sm flex items-center gap-2">
                             <Palette className="h-3 w-3" />
                             Couleur principale de l'entreprise
                           </Label>
                           <div className="flex items-center gap-3">
                             <div
-                              className="w-16 h-10 rounded-lg border border-[#2a2a2a]"
+                              className="w-16 h-10 rounded-lg border border-gray-200"
                               style={{ backgroundColor: settings.brand_color }}
                             />
                             <Input
@@ -597,7 +597,7 @@ export default function ParametresPage() {
                               value={settings.brand_color}
                               onChange={(e) => setSettings({ ...settings, brand_color: e.target.value })}
                               placeholder="#3b82f6"
-                              className="bg-[#1a1a1a] border-[#2a2a2a] text-white flex-1"
+                              className="bg-gray-50 border-gray-200 text-gray-900 flex-1"
                             />
                           </div>
                         </div>
@@ -626,15 +626,15 @@ export default function ParametresPage() {
 
               {/* Security Section */}
               {activeSection === 'security' && (
-                <Card className="bg-gradient-to-br from-slate-800/90 to-slate-800/50 border-slate-700/50 shadow-xl">
+                <Card className="bg-white border-gray-200 shadow-sm">
                   <CardContent className="p-12 text-center">
                     <div className="max-w-md mx-auto">
                       <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-red-500/10 border-2 border-red-500/30 flex items-center justify-center">
                         <Shield className="h-10 w-10 text-red-400" />
                       </div>
-                      <h2 className="text-2xl font-bold text-white mb-3">Paramètres de sécurité</h2>
-                      <p className="text-slate-400 mb-6">Cette section sera bientôt disponible</p>
-                      <p className="text-sm text-slate-500">
+                      <h2 className="text-2xl font-bold text-gray-900 mb-3">Paramètres de sécurité</h2>
+                      <p className="text-gray-500 mb-6">Cette section sera bientôt disponible</p>
+                      <p className="text-sm text-gray-500">
                         Futurs paramètres : Authentification à deux facteurs, Gestion des sessions, Historique de connexion
                       </p>
                     </div>
@@ -644,15 +644,15 @@ export default function ParametresPage() {
 
               {/* Appearance Section */}
               {activeSection === 'appearance' && (
-                <Card className="bg-gradient-to-br from-slate-800/90 to-slate-800/50 border-slate-700/50 shadow-xl">
+                <Card className="bg-white border-gray-200 shadow-sm">
                   <CardContent className="p-12 text-center">
                     <div className="max-w-md mx-auto">
                       <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-purple-500/10 border-2 border-purple-500/30 flex items-center justify-center">
                         <Palette className="h-10 w-10 text-purple-400" />
                       </div>
-                      <h2 className="text-2xl font-bold text-white mb-3">Paramètres d'apparence</h2>
-                      <p className="text-slate-400 mb-6">Cette section sera bientôt disponible</p>
-                      <p className="text-sm text-slate-500">
+                      <h2 className="text-2xl font-bold text-gray-900 mb-3">Paramètres d'apparence</h2>
+                      <p className="text-gray-500 mb-6">Cette section sera bientôt disponible</p>
+                      <p className="text-sm text-gray-500">
                         Futurs paramètres : Thème sombre/clair, Taille de police, Couleurs personnalisées
                       </p>
                     </div>

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Mic, MicOff, Pause, Play, Check, RotateCcw, Edit2, AlertCircle } from 'lucide-react';
+import { Mic, MicOff, Pause, Play, Check, RotateCcw, CreditCard as Edit2, CircleAlert as AlertCircle } from 'lucide-react';
 
 interface VoiceRecorderProps {
   value: string;
@@ -358,7 +358,7 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
         </Card>
       )}
 
-      <Card className={`transition-all bg-brand-darkCard border-gray-800 ${
+      <Card className={`transition-all bg-white border-gray-200 ${
         isListening ? 'ring-2 ring-red-500/70 shadow-lg shadow-red-500/10' :
         isValidated ? 'ring-2 ring-brand-green shadow-lg shadow-brand-green/10' : ''
       }`}>
@@ -369,7 +369,7 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
                 value={transcript}
                 onChange={(e) => setTranscript(e.target.value)}
                 rows={8}
-                className="w-full bg-brand-darkLight border-gray-700 text-white placeholder:text-gray-500"
+                className="w-full bg-gray-50 border-gray-200 text-gray-900 placeholder:text-gray-500"
                 placeholder="Modifiez votre texte..."
               />
               <div className="flex gap-2">
@@ -377,7 +377,7 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
                   onClick={() => { setIsEditing(false); setIsValidated(true); }}
                   variant="outline"
                   size="sm"
-                  className="border-gray-700 text-gray-300 hover:bg-brand-darkLight"
+                  className="border-gray-200 text-gray-600 hover:bg-gray-100"
                 >
                   Annuler
                 </Button>
@@ -395,7 +395,7 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
             <div className="min-h-[200px] max-h-[400px] overflow-y-auto">
               {displayText ? (
                 <div>
-                  <p className="text-gray-300 whitespace-pre-wrap leading-relaxed">
+                  <p className="text-gray-600 whitespace-pre-wrap leading-relaxed">
                     {transcript}
                     {interimText && (
                       <span className="text-gray-500 italic"> {interimText}</span>
@@ -406,7 +406,7 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
                       onClick={handleEdit}
                       variant="ghost"
                       size="sm"
-                      className="mt-3 text-gray-400 hover:text-white hover:bg-brand-darkLight"
+                      className="mt-3 text-gray-500 hover:text-gray-900 hover:bg-gray-100"
                     >
                       <Edit2 className="h-4 w-4 mr-2" />
                       Modifier le texte
@@ -418,7 +418,7 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
                   <div className="relative">
                     <Mic className="h-12 w-12 mb-4" />
                   </div>
-                  <p className="text-center text-gray-400">
+                  <p className="text-center text-gray-500">
                     {placeholder || "Cliquez sur le micro pour commencer \u00e0 dicter"}
                   </p>
                   <p className="text-xs text-gray-600 mt-2">
@@ -430,7 +430,7 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
           )}
 
           {(isListening || wordCount > 0) && (
-            <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-800">
+            <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-200">
               <div className="flex items-center gap-4 text-xs text-gray-500">
                 {isListening && (
                   <span className="font-mono">{formatDuration(duration)}</span>
@@ -467,7 +467,7 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
 
           {isListening && !isPaused && (
             <>
-              <Button onClick={pauseListening} size="lg" variant="outline" className="border-gray-700 text-gray-300 hover:bg-brand-darkLight">
+              <Button onClick={pauseListening} size="lg" variant="outline" className="border-gray-200 text-gray-600 hover:bg-gray-100">
                 <Pause className="h-5 w-5 mr-2" />
                 Pause
               </Button>
@@ -484,7 +484,7 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
                 <Play className="h-5 w-5 mr-2" />
                 Reprendre
               </Button>
-              <Button onClick={stopListening} size="lg" variant="outline" className="border-gray-700 text-gray-300 hover:bg-brand-darkLight">
+              <Button onClick={stopListening} size="lg" variant="outline" className="border-gray-200 text-gray-600 hover:bg-gray-100">
                 <MicOff className="h-5 w-5 mr-2" />
                 Terminer
               </Button>
@@ -493,7 +493,7 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
 
           {transcript && !isListening && !isValidated && (
             <>
-              <Button onClick={handleReset} size="lg" variant="outline" className="border-gray-700 text-gray-300 hover:bg-brand-darkLight">
+              <Button onClick={handleReset} size="lg" variant="outline" className="border-gray-200 text-gray-600 hover:bg-gray-100">
                 <RotateCcw className="h-5 w-5 mr-2" />
                 Recommencer
               </Button>

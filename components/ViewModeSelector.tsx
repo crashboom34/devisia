@@ -13,16 +13,7 @@ import {
   type ViewMode,
 } from '@/lib/view-restrictions';
 import { useViewRestriction } from './ViewRestrictionManager';
-import {
-  Eye,
-  EyeOff,
-  Settings,
-  Info,
-  FileText,
-  CheckCircle2,
-  AlertCircle,
-  RefreshCw,
-} from 'lucide-react';
+import { Eye, EyeOff, Settings, Info, FileText, CircleCheck as CheckCircle2, CircleAlert as AlertCircle, RefreshCw } from 'lucide-react';
 
 /**
  * ViewModeSelector Component
@@ -125,12 +116,12 @@ export function ViewModeSelector() {
       {/* Current Status */}
       <Alert className={isRestricted ? 'bg-orange-500/10 border-orange-500/50' : 'bg-blue-500/10 border-blue-500/50'}>
         <AlertCircle className={isRestricted ? 'text-orange-500' : 'text-blue-500'} />
-        <AlertDescription className="text-white">
+        <AlertDescription className="text-gray-900">
           {isRestricted ? (
             <>
               Mode restreint actif: <strong>{viewModes.find(m => m.id === restriction?.view_mode)?.title || 'Inconnu'}</strong>
               <br />
-              <span className="text-sm text-slate-400">
+              <span className="text-sm text-gray-500">
                 Vous êtes redirigé automatiquement vers: {restriction?.redirect_route}
               </span>
             </>
@@ -138,7 +129,7 @@ export function ViewModeSelector() {
             <>
               Accès complet activé
               <br />
-              <span className="text-sm text-slate-400">
+              <span className="text-sm text-gray-500">
                 Vous pouvez accéder à toutes les pages de l'application
               </span>
             </>
@@ -154,7 +145,7 @@ export function ViewModeSelector() {
           ) : (
             <AlertCircle className="text-red-500" />
           )}
-          <AlertDescription className="text-white">
+          <AlertDescription className="text-gray-900">
             {message.text}
           </AlertDescription>
         </Alert>
@@ -172,8 +163,8 @@ export function ViewModeSelector() {
               className={`
                 relative overflow-hidden
                 ${isActive
-                  ? 'bg-gradient-to-br from-blue-500/20 to-purple-500/20 border-blue-500'
-                  : 'bg-[#0f0f0f] border-[#2a2a2a]'
+                  ? 'bg-blue-50 border-blue-500'
+                  : 'bg-white border-gray-200'
                 }
               `}
             >
@@ -184,7 +175,7 @@ export function ViewModeSelector() {
                       <IconComponent className={`h-5 w-5 text-${mode.color}-400`} />
                     </div>
                     <div>
-                      <CardTitle className="text-white text-lg flex items-center gap-2">
+                      <CardTitle className="text-gray-900 text-lg flex items-center gap-2">
                         {mode.title}
                         {mode.recommended && (
                           <Badge variant="outline" className="border-orange-500 text-orange-400 text-xs">
@@ -201,16 +192,16 @@ export function ViewModeSelector() {
               </CardHeader>
 
               <CardContent className="space-y-4">
-                <p className="text-sm text-slate-400">{mode.description}</p>
+                <p className="text-sm text-gray-500">{mode.description}</p>
 
                 <div>
-                  <p className="text-xs text-slate-500 mb-2">Pages accessibles:</p>
+                  <p className="text-xs text-gray-500 mb-2">Pages accessibles:</p>
                   <div className="flex flex-wrap gap-1">
                     {mode.pages.map((page) => (
                       <Badge
                         key={page}
                         variant="secondary"
-                        className="bg-[#1a1a1a] text-slate-300 text-xs"
+                        className="bg-gray-100 text-gray-600 text-xs"
                       >
                         {page}
                       </Badge>
@@ -253,14 +244,14 @@ export function ViewModeSelector() {
       </div>
 
       {/* Instructions */}
-      <Card className="bg-[#0f0f0f] border-[#2a2a2a]">
+      <Card className="bg-white border-gray-200">
         <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
+          <CardTitle className="text-gray-900 flex items-center gap-2">
             <Info className="h-5 w-5 text-blue-400" />
             Comment ça fonctionne
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3 text-slate-300 text-sm">
+        <CardContent className="space-y-3 text-gray-600 text-sm">
           <div className="flex items-start gap-2">
             <span className="text-blue-400 font-semibold">1.</span>
             <p>Sélectionnez le mode de vue que vous souhaitez activer</p>
@@ -283,8 +274,8 @@ export function ViewModeSelector() {
           </div>
 
           <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/50 rounded-lg">
-            <p className="text-blue-300 font-semibold mb-2">Persistance de la configuration</p>
-            <p className="text-xs text-slate-400">
+            <p className="text-blue-600 font-semibold mb-2">Persistance de la configuration</p>
+            <p className="text-xs text-gray-500">
               Votre configuration est sauvegardée dans la base de données Supabase et persiste
               entre les sessions. Elle s'applique automatiquement à chaque connexion.
             </p>

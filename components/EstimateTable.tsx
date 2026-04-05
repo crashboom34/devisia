@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Eye, EyeOff, Download, ChevronDown, ChevronUp, Edit2, Save, X, Trash2, History } from 'lucide-react';
+import { Eye, EyeOff, Download, ChevronDown, ChevronUp, CreditCard as Edit2, Save, X, Trash2, History } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import EditableEstimateRow from './EditableEstimateRow';
 
@@ -261,12 +261,12 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
   const displayEstimate = isEditing ? editedEstimate : estimate;
 
   return (
-    <Card className="w-full bg-brand-darkCard border-gray-800">
+    <Card className="w-full bg-white border-gray-200">
       <CardHeader className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2">
-              <CardTitle className="text-lg sm:text-xl text-white">Scénario {getScenarioLabel(estimate.scenario_type)}</CardTitle>
+              <CardTitle className="text-lg sm:text-xl text-gray-900">Scénario {getScenarioLabel(estimate.scenario_type)}</CardTitle>
               <Badge className={`${getScenarioBadgeColor(estimate.scenario_type)} text-sm sm:text-base whitespace-nowrap`}>
                 {formatCurrency(displayEstimate.total_ttc)}
               </Badge>
@@ -277,20 +277,20 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
               )}
             </div>
             {projectTitle && (
-              <CardDescription className="text-sm sm:text-base text-gray-400">
-                <span className="font-semibold text-gray-300">Projet:</span> {projectTitle}
+              <CardDescription className="text-sm sm:text-base text-gray-500">
+                <span className="font-semibold text-gray-600">Projet:</span> {projectTitle}
               </CardDescription>
             )}
             {estimate.estimate_number && (
-              <CardDescription className="text-xs sm:text-sm flex flex-col sm:flex-row sm:gap-2 text-gray-400">
-                <span><span className="font-semibold text-gray-300">N° Devis:</span> {estimate.estimate_number}</span>
-                <span><span className="font-semibold text-gray-300">Date:</span> {formatDate(estimate.estimate_date)}</span>
-                <span><span className="font-semibold text-gray-300">Validité:</span> {estimate.validity_days || 30} jours</span>
+              <CardDescription className="text-xs sm:text-sm flex flex-col sm:flex-row sm:gap-2 text-gray-500">
+                <span><span className="font-semibold text-gray-600">N° Devis:</span> {estimate.estimate_number}</span>
+                <span><span className="font-semibold text-gray-600">Date:</span> {formatDate(estimate.estimate_date)}</span>
+                <span><span className="font-semibold text-gray-600">Validité:</span> {estimate.validity_days || 30} jours</span>
               </CardDescription>
             )}
             {estimate.model_used && (
-              <CardDescription className="text-xs sm:text-sm text-gray-400">
-                <span className="font-semibold text-gray-300">Généré par:</span> {estimate.model_used}
+              <CardDescription className="text-xs sm:text-sm text-gray-500">
+                <span className="font-semibold text-gray-600">Généré par:</span> {estimate.model_used}
               </CardDescription>
             )}
           </div>
@@ -346,7 +346,7 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
 
         {displayEstimate.scenario_justification && (
           <div className="bg-brand-green/10 border border-brand-green/30 rounded-lg p-3 sm:p-4">
-            <p className="text-xs sm:text-sm text-gray-300">
+            <p className="text-xs sm:text-sm text-gray-600">
               <span className="font-semibold text-brand-green">💡 Pourquoi ce scénario?</span> {estimate.scenario_justification}
             </p>
           </div>
@@ -354,12 +354,12 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
 
         <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)} className="w-full">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-            <TabsList className="grid w-full sm:w-auto grid-cols-3 sm:grid-cols-3 bg-brand-darkLight border-gray-800">
+            <TabsList className="grid w-full sm:w-auto grid-cols-3 sm:grid-cols-3 bg-gray-50 border-gray-200">
               <TabsTrigger value="client" className="text-xs sm:text-sm data-[state=active]:bg-brand-green data-[state=active]:text-white">Client</TabsTrigger>
               <TabsTrigger value="detailed" className="text-xs sm:text-sm data-[state=active]:bg-brand-green data-[state=active]:text-white">Détaillée</TabsTrigger>
               <TabsTrigger value="internal" className="text-xs sm:text-sm data-[state=active]:bg-brand-green data-[state=active]:text-white">Interne</TabsTrigger>
             </TabsList>
-            <Button variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm border-gray-700 text-gray-300 hover:bg-brand-darkLight">
+            <Button variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm border-gray-200 text-gray-600 hover:bg-gray-50">
               <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
               Exporter PDF
             </Button>
@@ -375,13 +375,13 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
             <div key={catIndex} className="space-y-2 sm:space-y-3">
               <button
                 onClick={() => toggleCategory(catIndex)}
-                className="w-full bg-brand-darkLight px-3 sm:px-4 py-2 sm:py-3 rounded-md hover:bg-brand-dark transition-colors border border-gray-800"
+                className="w-full bg-gray-50 px-3 sm:px-4 py-2 sm:py-3 rounded-md hover:bg-gray-100 transition-colors border border-gray-200"
               >
                 <div className="flex items-center justify-between">
                   <div className="text-left flex-1">
-                    <h3 className="font-bold text-sm sm:text-lg text-white">{category.name}</h3>
+                    <h3 className="font-bold text-sm sm:text-lg text-gray-900">{category.name}</h3>
                     {category.description && (
-                      <p className="text-xs sm:text-sm text-gray-400 mt-0.5 sm:mt-1">{category.description}</p>
+                      <p className="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1">{category.description}</p>
                     )}
                   </div>
                   <div className="flex items-center gap-2 sm:gap-3">
@@ -389,9 +389,9 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
                       {formatCurrency(category.subtotal_ttc)}
                     </span>
                     {isExpanded ? (
-                      <ChevronUp className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 text-gray-400" />
+                      <ChevronUp className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 text-gray-500" />
                     ) : (
-                      <ChevronDown className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 text-gray-400" />
+                      <ChevronDown className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 text-gray-500" />
                     )}
                   </div>
                 </div>
@@ -403,26 +403,26 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
                   <div className="hidden lg:block overflow-x-auto">
                     <table className="w-full border-collapse">
                       <thead>
-                        <tr className="bg-brand-darkLight border-b-2 border-gray-800">
-                          <th className="text-left p-3 font-semibold text-sm text-gray-300">Poste</th>
+                        <tr className="bg-gray-50 border-b-2 border-gray-200">
+                          <th className="text-left p-3 font-semibold text-sm text-gray-600">Poste</th>
                           {viewMode !== 'client' && (
                             <>
-                              <th className="text-left p-3 font-semibold text-sm text-gray-300">Description</th>
-                              <th className="text-center p-3 font-semibold text-sm text-gray-300">Qté</th>
-                              <th className="text-center p-3 font-semibold text-sm text-gray-300">Unité</th>
-                              <th className="text-right p-3 font-semibold text-sm text-gray-300">PU HT</th>
-                              <th className="text-right p-3 font-semibold text-sm text-gray-300">Montant HT</th>
-                              <th className="text-center p-3 font-semibold text-sm text-gray-300">TVA</th>
+                              <th className="text-left p-3 font-semibold text-sm text-gray-600">Description</th>
+                              <th className="text-center p-3 font-semibold text-sm text-gray-600">Qté</th>
+                              <th className="text-center p-3 font-semibold text-sm text-gray-600">Unité</th>
+                              <th className="text-right p-3 font-semibold text-sm text-gray-600">PU HT</th>
+                              <th className="text-right p-3 font-semibold text-sm text-gray-600">Montant HT</th>
+                              <th className="text-center p-3 font-semibold text-sm text-gray-600">TVA</th>
                             </>
                           )}
-                          <th className="text-right p-3 font-semibold text-sm text-gray-300">Montant TTC</th>
+                          <th className="text-right p-3 font-semibold text-sm text-gray-600">Montant TTC</th>
                           {viewMode === 'internal' && (
                             <>
-                              <th className="text-right p-3 font-semibold text-sm text-gray-300">Marge €</th>
-                              <th className="text-right p-3 font-semibold text-sm text-gray-300">Marge %</th>
+                              <th className="text-right p-3 font-semibold text-sm text-gray-600">Marge €</th>
+                              <th className="text-right p-3 font-semibold text-sm text-gray-600">Marge %</th>
                             </>
                           )}
-                          {isEditing && <th className="text-center p-3 font-semibold text-sm w-12 text-gray-300"></th>}
+                          {isEditing && <th className="text-center p-3 font-semibold text-sm w-12 text-gray-600"></th>}
                         </tr>
                       </thead>
                       <tbody>
@@ -451,13 +451,13 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
                       return (
                         <div
                           key={itemIndex}
-                          className="bg-brand-darkLight border border-gray-800 rounded-lg p-3 space-y-2"
+                          className="bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-2"
                         >
                           <div className="flex justify-between items-start gap-2">
                             <div className="flex-1 min-w-0">
-                              <h4 className="font-semibold text-sm truncate text-white">{item.poste}</h4>
+                              <h4 className="font-semibold text-sm truncate text-gray-900">{item.poste}</h4>
                               {viewMode !== 'client' && (
-                                <p className="text-xs text-gray-400 mt-1 line-clamp-2">{item.description}</p>
+                                <p className="text-xs text-gray-500 mt-1 line-clamp-2">{item.description}</p>
                               )}
                             </div>
                             <span className="font-bold text-brand-green text-sm whitespace-nowrap">
@@ -466,33 +466,33 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
                           </div>
 
                           {viewMode !== 'client' && (
-                            <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-gray-800">
+                            <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-gray-200">
                               <div>
                                 <span className="text-gray-500">Quantité:</span>
-                                <span className="ml-1 font-medium text-gray-300">{item.quantity} {item.unit}</span>
+                                <span className="ml-1 font-medium text-gray-600">{item.quantity} {item.unit}</span>
                               </div>
                               <div>
                                 <span className="text-gray-500">PU HT:</span>
-                                <span className="ml-1 font-medium text-gray-300">{formatCurrency(item.unit_price_ht)}</span>
+                                <span className="ml-1 font-medium text-gray-600">{formatCurrency(item.unit_price_ht)}</span>
                               </div>
                               <div>
                                 <span className="text-gray-500">Montant HT:</span>
-                                <span className="ml-1 font-medium text-gray-300">{formatCurrency(item.amount_ht)}</span>
+                                <span className="ml-1 font-medium text-gray-600">{formatCurrency(item.amount_ht)}</span>
                               </div>
                               <div>
                                 <span className="text-gray-500">TVA:</span>
-                                <span className="ml-1 font-medium text-gray-300">{item.tva_percent}%</span>
+                                <span className="ml-1 font-medium text-gray-600">{item.tva_percent}%</span>
                               </div>
                             </div>
                           )}
 
                           {viewMode === 'detailed' && (item.materials_cost || item.labor_cost) && (
-                            <div className="text-xs text-gray-500 pt-2 border-t border-gray-800 space-y-1">
+                            <div className="text-xs text-gray-500 pt-2 border-t border-gray-200 space-y-1">
                               {item.materials_cost && (
-                                <div className="text-gray-400">Matériaux: {formatCurrency(item.materials_cost)}</div>
+                                <div className="text-gray-500">Matériaux: {formatCurrency(item.materials_cost)}</div>
                               )}
                               {item.labor_cost && (
-                                <div className="text-gray-400">Main-d'œuvre: {formatCurrency(item.labor_cost)}</div>
+                                <div className="text-gray-500">Main-d'œuvre: {formatCurrency(item.labor_cost)}</div>
                               )}
                             </div>
                           )}
@@ -518,12 +518,12 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
                     })}
                   </div>
 
-                  <div className="bg-brand-darkLight px-3 sm:px-4 py-2 sm:py-3 rounded font-bold border-t-2 border-gray-800">
+                  <div className="bg-gray-50 px-3 sm:px-4 py-2 sm:py-3 rounded font-bold border-t-2 border-gray-200">
                     <div className="flex justify-between items-center text-sm sm:text-base">
-                      <span className="text-white">Sous-total {category.name}</span>
+                      <span className="text-gray-900">Sous-total {category.name}</span>
                       <div className="flex flex-col items-end gap-0.5 sm:gap-1">
                         {viewMode !== 'client' && (
-                          <div className="text-xs sm:text-sm text-gray-400">
+                          <div className="text-xs sm:text-sm text-gray-500">
                             HT: {formatCurrency(category.subtotal_ht)} + TVA: {formatCurrency(category.subtotal_tva)}
                           </div>
                         )}
@@ -537,17 +537,17 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
           );
         })}
 
-        <div className="bg-brand-darkCard p-4 sm:p-6 rounded-lg border-2 border-gray-800 space-y-2 sm:space-y-3">
-          <h3 className="font-bold text-lg sm:text-xl mb-3 sm:mb-4 text-white">Récapitulatif</h3>
+        <div className="bg-white p-4 sm:p-6 rounded-lg border-2 border-gray-200 space-y-2 sm:space-y-3">
+          <h3 className="font-bold text-lg sm:text-xl mb-3 sm:mb-4 text-gray-900">Récapitulatif</h3>
           {viewMode !== 'client' && (
             <>
-              <div className="flex justify-between text-sm sm:text-lg text-gray-300">
+              <div className="flex justify-between text-sm sm:text-lg text-gray-600">
                 <span>Total HT:</span>
-                <span className="font-semibold text-white">{formatCurrency(estimate.total_ht)}</span>
+                <span className="font-semibold text-gray-900">{formatCurrency(estimate.total_ht)}</span>
               </div>
-              <div className="flex justify-between text-sm sm:text-lg text-gray-300">
+              <div className="flex justify-between text-sm sm:text-lg text-gray-600">
                 <span>Total TVA:</span>
-                <span className="font-semibold text-white">{formatCurrency(estimate.total_tva)}</span>
+                <span className="font-semibold text-gray-900">{formatCurrency(estimate.total_tva)}</span>
               </div>
             </>
           )}
@@ -557,15 +557,15 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
                 <span>Remise ({estimate.discount_percent}%):</span>
                 <span className="font-semibold">- {formatCurrency(estimate.discount_amount)}</span>
               </div>
-              <div className="border-t border-gray-800 pt-2"></div>
+              <div className="border-t border-gray-200 pt-2"></div>
             </>
           )}
-          <div className="flex justify-between text-xl sm:text-2xl font-bold text-brand-green pt-2 border-t-2 border-gray-700">
+          <div className="flex justify-between text-xl sm:text-2xl font-bold text-brand-green pt-2 border-t-2 border-gray-200">
             <span>Total TTC:</span>
             <span>{formatCurrency(estimate.total_ttc - (estimate.discount_amount || 0))}</span>
           </div>
           {viewMode === 'internal' && totalMargin() && (
-            <div className="flex justify-between text-sm sm:text-lg text-brand-green pt-2 border-t border-gray-800">
+            <div className="flex justify-between text-sm sm:text-lg text-brand-green pt-2 border-t border-gray-200">
               <span>Marge totale:</span>
               <span className="font-semibold">
                 {formatCurrency(totalMargin()!.margin)} ({totalMargin()!.marginPercent.toFixed(1)}%)
@@ -575,30 +575,30 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
         </div>
 
         {(estimate.payment_terms || estimate.execution_delay || estimate.deposit_required || estimate.special_conditions) && (
-          <div className="bg-brand-darkCard p-4 sm:p-6 rounded-lg border border-gray-800 space-y-2 sm:space-y-3">
-            <h3 className="font-bold text-base sm:text-lg mb-2 sm:mb-3 text-white">Informations Devis</h3>
+          <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200 space-y-2 sm:space-y-3">
+            <h3 className="font-bold text-base sm:text-lg mb-2 sm:mb-3 text-gray-900">Informations Devis</h3>
             {estimate.payment_terms && (
               <div className="text-sm sm:text-base">
-                <span className="font-semibold text-gray-300">Conditions de paiement:</span>
-                <p className="text-gray-400 mt-1">{estimate.payment_terms}</p>
+                <span className="font-semibold text-gray-600">Conditions de paiement:</span>
+                <p className="text-gray-500 mt-1">{estimate.payment_terms}</p>
               </div>
             )}
             {estimate.execution_delay && (
               <div className="text-sm sm:text-base">
-                <span className="font-semibold text-gray-300">Délai d'exécution:</span>
-                <p className="text-gray-400 mt-1">{estimate.execution_delay}</p>
+                <span className="font-semibold text-gray-600">Délai d'exécution:</span>
+                <p className="text-gray-500 mt-1">{estimate.execution_delay}</p>
               </div>
             )}
             {estimate.deposit_required && estimate.deposit_required > 0 && (
               <div className="text-sm sm:text-base">
-                <span className="font-semibold text-gray-300">Acompte demandé:</span>
-                <p className="text-gray-400 mt-1">{estimate.deposit_required}% à la commande</p>
+                <span className="font-semibold text-gray-600">Acompte demandé:</span>
+                <p className="text-gray-500 mt-1">{estimate.deposit_required}% à la commande</p>
               </div>
             )}
             {estimate.special_conditions && (
               <div className="text-sm sm:text-base">
-                <span className="font-semibold text-gray-300">Conditions particulières:</span>
-                <p className="text-gray-400 mt-1">{estimate.special_conditions}</p>
+                <span className="font-semibold text-gray-600">Conditions particulières:</span>
+                <p className="text-gray-500 mt-1">{estimate.special_conditions}</p>
               </div>
             )}
           </div>

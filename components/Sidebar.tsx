@@ -70,13 +70,13 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="hidden lg:block fixed left-0 top-0 z-40 h-screen w-64 bg-slate-900 border-r border-slate-800">
-      <div className="flex items-center gap-3 px-6 py-5 border-b border-slate-800">
+    <aside className="hidden lg:block fixed left-0 top-0 z-40 h-screen w-64 bg-white border-r border-gray-200">
+      <div className="flex items-center gap-3 px-6 py-5 border-b border-gray-200">
         <Link href="/dashboard" className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-gradient-to-br from-emerald-500 to-cyan-600 shadow-lg">
+          <div className="p-2 rounded-lg bg-brand-green shadow-lg shadow-brand-green/20">
             <FileText className="h-5 w-5 text-white" />
           </div>
-          <span className="text-xl font-bold text-white">Devisia</span>
+          <span className="text-xl font-bold text-gray-900">Devisia</span>
         </Link>
       </div>
 
@@ -91,13 +91,13 @@ export function Sidebar() {
               href={item.href}
               className={cn(
                 'flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200',
-                'hover:bg-slate-800/50 active:scale-[0.98]',
+                'hover:bg-gray-50 active:scale-[0.98]',
                 active
-                  ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-600/20'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-brand-green/10 text-brand-green'
+                  : 'text-gray-500 hover:text-gray-900'
               )}
             >
-              <Icon className={cn('h-5 w-5 shrink-0', active ? 'text-white' : 'text-slate-400')} />
+              <Icon className={cn('h-5 w-5 shrink-0', active ? 'text-brand-green' : 'text-gray-400')} />
               <span className="font-medium text-sm">{item.label}</span>
               {item.badge && (
                 <span className="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
@@ -109,8 +109,8 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-800">
-        <div className="text-xs text-slate-500 text-center">
+      <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
+        <div className="text-xs text-gray-400 text-center">
           v2.0 - Devisia
         </div>
       </div>

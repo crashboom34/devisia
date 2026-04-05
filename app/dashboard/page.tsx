@@ -96,18 +96,18 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#020617] flex">
+    <div className="min-h-screen bg-brand-light flex">
       <Sidebar />
 
       <div className="flex-1 lg:ml-64 flex flex-col min-h-screen">
         {/* Mobile Header */}
-        <header className="bg-slate-900/98 backdrop-blur-xl border-b border-slate-800/50 sticky top-0 z-30">
+        <header className="bg-white/98 backdrop-blur-xl border-b border-gray-200 sticky top-0 z-30">
           <div className="px-4 sm:px-6 lg:px-8 h-14 lg:h-16 flex items-center justify-between">
             <Link href="/dashboard" className="flex items-center gap-2.5 lg:hidden">
-              <div className="p-1.5 rounded-lg bg-gradient-to-br from-emerald-500 to-cyan-600">
+              <div className="p-1.5 rounded-lg bg-brand-green">
                 <FileText className="h-4 w-4 text-white" />
               </div>
-              <span className="text-lg font-bold text-white">Devisia</span>
+              <span className="text-lg font-bold text-gray-900">Devisia</span>
             </Link>
 
             <div className="hidden lg:block flex-1" />
@@ -131,18 +131,18 @@ export default function DashboardPage() {
             {/* Greeting */}
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-xl sm:text-2xl lg:text-4xl font-bold text-white tracking-tight">
+                <h1 className="text-xl sm:text-2xl lg:text-4xl font-bold text-gray-900 tracking-tight">
                   Bonjour, {getFirstName()}
                 </h1>
-                <p className="text-xs sm:text-sm lg:text-base text-slate-400 mt-0.5">
-                  Voici un aperçu de votre activité
+                <p className="text-xs sm:text-sm lg:text-base text-gray-500 mt-0.5">
+                  Voici un apercu de votre activite
                 </p>
               </div>
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={handleRefreshData}
-                className="h-9 w-9 text-slate-400"
+                className="h-9 w-9 text-gray-400"
               >
                 <RefreshCw className="h-4 w-4" />
               </Button>
@@ -154,37 +154,37 @@ export default function DashboardPage() {
             <div className="-mx-4 px-4 sm:mx-0 sm:px-0">
               <div className="flex gap-3 overflow-x-auto pb-1 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:gap-4 lg:gap-6 sm:overflow-visible scrollbar-hide">
                 {[
-                  { title: 'Total devis', value: estimatesCount.total, sub: `${estimatesCount.completed} approuvés`, color: 'cyan', icon: FileText },
-                  { title: 'En attente', value: estimatesCount.pending, sub: 'À traiter', color: 'orange', icon: Clock },
-                  { title: 'Approuvés', value: estimatesCount.completed, sub: 'Devis acceptés', color: 'emerald', icon: CheckCircle2 },
-                  { title: "Chiffre d'affaires", value: '0 EUR', sub: '30 derniers jours', color: 'cyan', icon: Euro },
+                  { title: 'Total devis', value: estimatesCount.total, sub: `${estimatesCount.completed} approuves`, color: 'green', icon: FileText },
+                  { title: 'En attente', value: estimatesCount.pending, sub: 'A traiter', color: 'orange', icon: Clock },
+                  { title: 'Approuves', value: estimatesCount.completed, sub: 'Devis acceptes', color: 'emerald', icon: CheckCircle2 },
+                  { title: "Chiffre d'affaires", value: '0 EUR', sub: '30 derniers jours', color: 'green', icon: Euro },
                 ].map((kpi) => {
                   const Icon = kpi.icon;
                   const colorMap: Record<string, string> = {
-                    cyan: 'text-cyan-400 bg-cyan-500/10',
-                    orange: 'text-orange-400 bg-orange-500/10',
-                    emerald: 'text-emerald-400 bg-emerald-500/10',
+                    green: 'text-brand-green bg-brand-green/10',
+                    orange: 'text-orange-500 bg-orange-500/10',
+                    emerald: 'text-emerald-600 bg-emerald-500/10',
                   };
                   const textColor: Record<string, string> = {
-                    cyan: 'text-cyan-400',
-                    orange: 'text-orange-400',
-                    emerald: 'text-emerald-400',
+                    green: 'text-brand-green',
+                    orange: 'text-orange-500',
+                    emerald: 'text-emerald-600',
                   };
                   return (
                     <div
                       key={kpi.title}
-                      className="min-w-[140px] sm:min-w-0 bg-slate-800/60 border border-slate-700/40 rounded-2xl p-3.5 sm:p-4 lg:p-5 flex-shrink-0 sm:flex-shrink"
+                      className="min-w-[140px] sm:min-w-0 bg-white border border-gray-200 rounded-2xl p-3.5 sm:p-4 lg:p-5 flex-shrink-0 sm:flex-shrink hover:shadow-md transition-shadow"
                     >
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">{kpi.title}</span>
+                        <span className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">{kpi.title}</span>
                         <div className={cn('p-1.5 rounded-lg', colorMap[kpi.color])}>
                           <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                         </div>
                       </div>
-                      <p className={cn('text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight', textColor[kpi.color] || 'text-white')}>
+                      <p className={cn('text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight', textColor[kpi.color] || 'text-gray-900')}>
                         {kpi.value}
                       </p>
-                      <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5">{kpi.sub}</p>
+                      <p className="text-[10px] sm:text-xs text-gray-400 mt-0.5">{kpi.sub}</p>
                     </div>
                   );
                 })}
@@ -192,18 +192,18 @@ export default function DashboardPage() {
             </div>
 
             {/* Chart Section */}
-            <Card className="bg-slate-800/40 border-slate-700/40 overflow-hidden">
-              <CardHeader className="border-b border-slate-700/40 p-4 lg:p-6">
+            <Card className="bg-white border-gray-200 overflow-hidden">
+              <CardHeader className="border-b border-gray-100 p-4 lg:p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="text-white text-base sm:text-lg lg:text-xl font-bold">
+                    <CardTitle className="text-gray-900 text-base sm:text-lg lg:text-xl font-bold">
                       Chiffre d&apos;affaires
                     </CardTitle>
-                    <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5">
+                    <p className="text-[10px] sm:text-xs text-gray-400 mt-0.5">
                       {chartPeriod === '7days' ? '7' : chartPeriod === '30days' ? '30' : '90'} derniers jours
                     </p>
                   </div>
-                  <div className="flex bg-slate-900/60 p-0.5 rounded-lg border border-slate-700/40">
+                  <div className="flex bg-gray-100 p-0.5 rounded-lg border border-gray-200">
                     {[
                       { key: '7days' as const, label: '7J' },
                       { key: '30days' as const, label: '30J' },
@@ -215,8 +215,8 @@ export default function DashboardPage() {
                         className={cn(
                           'px-2.5 sm:px-3 py-1.5 text-xs font-medium rounded-md transition-all',
                           chartPeriod === p.key
-                            ? 'bg-cyan-600 text-white shadow'
-                            : 'text-slate-500 hover:text-slate-300'
+                            ? 'bg-brand-green text-white shadow'
+                            : 'text-gray-500 hover:text-gray-700'
                         )}
                       >
                         {p.label}
@@ -226,10 +226,10 @@ export default function DashboardPage() {
                 </div>
               </CardHeader>
               <CardContent className="p-4 lg:p-6">
-                <div className="h-36 sm:h-48 lg:h-56 flex items-center justify-center text-slate-500 bg-slate-900/30 rounded-xl border border-dashed border-slate-700/40">
+                <div className="h-36 sm:h-48 lg:h-56 flex items-center justify-center text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200">
                   <div className="text-center">
-                    <TrendingUp className="h-8 w-8 text-slate-600 mx-auto mb-2" />
-                    <p className="text-xs sm:text-sm text-slate-500">Aucune donnée pour le moment</p>
+                    <TrendingUp className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+                    <p className="text-xs sm:text-sm text-gray-400">Aucune donnee pour le moment</p>
                   </div>
                 </div>
               </CardContent>
@@ -238,11 +238,11 @@ export default function DashboardPage() {
             {/* Recent Quotes + Plan -- stack on mobile, side by side on desktop */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-6">
               {/* Recent Quotes */}
-              <Card className="bg-slate-800/40 border-slate-700/40">
+              <Card className="bg-white border-gray-200">
                 <CardHeader className="p-4 lg:p-6 pb-3">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-white text-base sm:text-lg font-bold">Devis récents</CardTitle>
-                    <Link href="/dashboard/quotes" className="flex items-center gap-1 text-xs text-cyan-400 hover:text-cyan-300 transition-colors">
+                    <CardTitle className="text-gray-900 text-base sm:text-lg font-bold">Devis recents</CardTitle>
+                    <Link href="/dashboard/quotes" className="flex items-center gap-1 text-xs text-brand-green hover:text-brand-greenDark transition-colors">
                       Voir tout
                       <ChevronRight className="h-3 w-3" />
                     </Link>
@@ -251,16 +251,16 @@ export default function DashboardPage() {
                 <CardContent className="p-4 lg:p-6 pt-0 lg:pt-0">
                   {loading ? (
                     <div className="flex justify-center py-10">
-                      <Loader2 className="h-6 w-6 animate-spin text-cyan-600" />
+                      <Loader2 className="h-6 w-6 animate-spin text-brand-green" />
                     </div>
                   ) : projects.length === 0 ? (
-                    <div className="text-center py-8 bg-slate-900/30 rounded-xl border border-dashed border-slate-700/40">
-                      <FileText className="h-8 w-8 text-slate-600 mx-auto mb-2" />
-                      <p className="text-sm text-slate-500 mb-3">Aucun devis</p>
+                    <div className="text-center py-8 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                      <FileText className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+                      <p className="text-sm text-gray-500 mb-3">Aucun devis</p>
                       <Link href="/project/new">
                         <Button variant="primary" size="xs">
                           <Plus className="h-3.5 w-3.5" />
-                          Créer un devis
+                          Creer un devis
                         </Button>
                       </Link>
                     </div>
@@ -268,12 +268,12 @@ export default function DashboardPage() {
                     <div className="space-y-2">
                       {projects.slice(0, 5).map((project) => (
                         <Link key={project.id} href={`/project/${project.id}`}>
-                          <div className="flex items-center justify-between p-3 rounded-xl bg-slate-900/40 hover:bg-slate-900/70 active:scale-[0.99] transition-all border border-slate-800/40 group">
+                          <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50 hover:bg-gray-100 active:scale-[0.99] transition-all border border-gray-100 group">
                             <div className="flex-1 min-w-0 mr-3">
-                              <p className="font-medium text-sm text-white truncate group-hover:text-cyan-400 transition-colors">
+                              <p className="font-medium text-sm text-gray-900 truncate group-hover:text-brand-green transition-colors">
                                 {project.title}
                               </p>
-                              <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5">
+                              <p className="text-[10px] sm:text-xs text-gray-400 mt-0.5">
                                 {new Date(project.created_at).toLocaleDateString('fr-FR', {
                                   day: 'numeric',
                                   month: 'short',
@@ -291,15 +291,15 @@ export default function DashboardPage() {
 
               {/* Subscription */}
               <div className="space-y-5">
-                <Card className="bg-slate-800/40 border-slate-700/40">
+                <Card className="bg-white border-gray-200">
                   <CardContent className="p-4 lg:p-6">
                     <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-sm font-semibold text-white">Plan d&apos;abonnement</h3>
+                      <h3 className="text-sm font-semibold text-gray-900">Plan d&apos;abonnement</h3>
                     </div>
-                    <div className="flex items-center justify-between p-3 bg-slate-900/40 rounded-xl border border-slate-800/40">
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
                       <div>
-                        <p className="text-sm font-semibold text-white">Plan Gratuit</p>
-                        <p className="text-[10px] sm:text-xs text-slate-500">Essai gratuit actif</p>
+                        <p className="text-sm font-semibold text-gray-900">Plan Gratuit</p>
+                        <p className="text-[10px] sm:text-xs text-gray-500">Essai gratuit actif</p>
                       </div>
                       <Link href="/pricing">
                         <Button variant="outline" size="xs">
@@ -310,17 +310,17 @@ export default function DashboardPage() {
                   </CardContent>
                 </Card>
 
-                <Card className="bg-slate-800/40 border-slate-700/40">
+                <Card className="bg-white border-gray-200">
                   <CardContent className="p-4 lg:p-6">
                     <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-sm font-semibold text-white">Consommation</h3>
-                      <span className="text-xs font-bold text-slate-400">
+                      <h3 className="text-sm font-semibold text-gray-900">Consommation</h3>
+                      <span className="text-xs font-bold text-gray-500">
                         {projectLimits?.used || 0}
                         {projectLimits?.limit === -1 ? '' : ` / ${projectLimits?.limit || 0}`}
                       </span>
                     </div>
 
-                    <div className="w-full bg-slate-900/60 rounded-full h-2 overflow-hidden">
+                    <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
                       {(() => {
                         const used = projectLimits?.used || 0;
                         const limit = projectLimits?.limit || 1;
@@ -328,10 +328,10 @@ export default function DashboardPage() {
                         const pct = isUnlimited ? 100 : Math.min((used / limit) * 100, 100);
                         const atLimit = projectLimits?.has_reached_limit;
                         const barColor = isUnlimited || isAdmin
-                          ? 'from-cyan-500 to-cyan-600'
+                          ? 'from-brand-green to-emerald-500'
                           : atLimit
                             ? 'from-red-500 to-red-600'
-                            : 'from-emerald-500 to-emerald-600';
+                            : 'from-brand-green to-emerald-500';
 
                         return (
                           <div
@@ -342,13 +342,13 @@ export default function DashboardPage() {
                       })()}
                     </div>
 
-                    <p className="text-[10px] sm:text-xs text-slate-500 mt-2">
+                    <p className="text-[10px] sm:text-xs text-gray-500 mt-2">
                       {isAdmin && projectLimits?.limit === -1
-                        ? 'Accès illimité (admin)'
+                        ? 'Acces illimite (admin)'
                         : projectLimits?.has_reached_limit
-                          ? 'Limite atteinte - passez à un plan supérieur'
+                          ? 'Limite atteinte - passez a un plan superieur'
                           : projectLimits?.remaining === -1
-                            ? 'Projets illimités'
+                            ? 'Projets illimites'
                             : `${projectLimits?.remaining || 0} projet${(projectLimits?.remaining || 0) > 1 ? 's' : ''} restant${(projectLimits?.remaining || 0) > 1 ? 's' : ''}`
                       }
                     </p>

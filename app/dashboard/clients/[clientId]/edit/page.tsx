@@ -141,22 +141,22 @@ export default function EditClientPage({ params }: { params: { clientId: string 
 
         {loading ? (
           <div className="flex justify-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-600" />
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-green" />
           </div>
         ) : error ? (
-          <Card className="bg-slate-900/70 border-slate-800 text-white">
+          <Card className="bg-white border-gray-200 text-gray-900">
             <CardContent className="py-10 text-center space-y-4">
               <p className="text-lg font-semibold">{error}</p>
               <Link href="/dashboard/clients">
-                <Button variant="outline" className="border-slate-800">Retour aux clients</Button>
+                <Button variant="outline" className="border-gray-200">Retour aux clients</Button>
               </Link>
             </CardContent>
           </Card>
         ) : (
-          <Card className="bg-gradient-to-br from-slate-900/70 via-slate-900/60 to-slate-900/40 border-slate-800 text-white shadow-2xl">
-            <CardHeader className="border-b border-slate-800 pb-6">
+          <Card className="bg-white border-gray-200 text-gray-900 shadow-sm">
+            <CardHeader className="border-b border-gray-200 pb-6">
               <CardTitle className="text-xl">Informations du client</CardTitle>
-              <p className="text-sm text-slate-400">Modifiez les informations clés pour ce contact.</p>
+              <p className="text-sm text-gray-500">Modifiez les informations clés pour ce contact.</p>
             </CardHeader>
             <CardContent className="pt-6">
               <form className="space-y-6" onSubmit={handleSubmit}>
@@ -169,7 +169,7 @@ export default function EditClientPage({ params }: { params: { clientId: string 
                       value={formData.name}
                       onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                       required
-                      className="bg-slate-900/60 border-slate-800 focus:border-cyan-500/70 text-white"
+                      className="bg-gray-50 border-gray-200 focus:border-brand-green text-gray-900"
                     />
                   </div>
                   <div className="space-y-2">
@@ -179,7 +179,7 @@ export default function EditClientPage({ params }: { params: { clientId: string 
                       placeholder="Nom commercial"
                       value={formData.company}
                       onChange={(e) => setFormData(prev => ({ ...prev, company: e.target.value }))}
-                      className="bg-slate-900/60 border-slate-800 focus:border-cyan-500/70 text-white"
+                      className="bg-gray-50 border-gray-200 focus:border-brand-green text-gray-900"
                     />
                   </div>
                 </div>
@@ -192,7 +192,7 @@ export default function EditClientPage({ params }: { params: { clientId: string 
                       placeholder="Nom du contact"
                       value={formData.contactName}
                       onChange={(e) => setFormData(prev => ({ ...prev, contactName: e.target.value }))}
-                      className="bg-slate-900/60 border-slate-800 focus:border-cyan-500/70 text-white"
+                      className="bg-gray-50 border-gray-200 focus:border-brand-green text-gray-900"
                     />
                   </div>
                   <div className="space-y-2">
@@ -203,7 +203,7 @@ export default function EditClientPage({ params }: { params: { clientId: string 
                       placeholder="contact@email.fr"
                       value={formData.email}
                       onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                      className="bg-slate-900/60 border-slate-800 focus:border-cyan-500/70 text-white"
+                      className="bg-gray-50 border-gray-200 focus:border-brand-green text-gray-900"
                     />
                   </div>
                 </div>
@@ -217,7 +217,7 @@ export default function EditClientPage({ params }: { params: { clientId: string 
                       placeholder="06 12 34 56 78"
                       value={formData.phone}
                       onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                      className="bg-slate-900/60 border-slate-800 focus:border-cyan-500/70 text-white"
+                      className="bg-gray-50 border-gray-200 focus:border-brand-green text-gray-900"
                     />
                   </div>
                   <div className="space-y-2">
@@ -227,7 +227,7 @@ export default function EditClientPage({ params }: { params: { clientId: string 
                       placeholder="Numéro et rue"
                       value={formData.address}
                       onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                      className="bg-slate-900/60 border-slate-800 focus:border-cyan-500/70 text-white"
+                      className="bg-gray-50 border-gray-200 focus:border-brand-green text-gray-900"
                     />
                   </div>
                 </div>
@@ -240,7 +240,7 @@ export default function EditClientPage({ params }: { params: { clientId: string 
                       placeholder="75000"
                       value={formData.postalCode}
                       onChange={(e) => setFormData(prev => ({ ...prev, postalCode: e.target.value }))}
-                      className="bg-slate-900/60 border-slate-800 focus:border-cyan-500/70 text-white"
+                      className="bg-gray-50 border-gray-200 focus:border-brand-green text-gray-900"
                     />
                   </div>
                   <div className="space-y-2">
@@ -250,7 +250,7 @@ export default function EditClientPage({ params }: { params: { clientId: string 
                       placeholder="Paris"
                       value={formData.city}
                       onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
-                      className="bg-slate-900/60 border-slate-800 focus:border-cyan-500/70 text-white"
+                      className="bg-gray-50 border-gray-200 focus:border-brand-green text-gray-900"
                     />
                   </div>
                 </div>
@@ -262,7 +262,7 @@ export default function EditClientPage({ params }: { params: { clientId: string 
                     placeholder="Précisions ou besoins spécifiques du client"
                     value={formData.notes}
                     onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                    className="bg-slate-900/60 border-slate-800 focus:border-cyan-500/70 text-white"
+                    className="bg-gray-50 border-gray-200 focus:border-brand-green text-gray-900"
                     rows={4}
                   />
                 </div>
@@ -271,11 +271,11 @@ export default function EditClientPage({ params }: { params: { clientId: string 
 
                 <div className="flex flex-col sm:flex-row gap-4 pt-2">
                   <Link href={`/dashboard/clients/${params.clientId}`} className="w-full sm:w-auto">
-                    <Button type="button" variant="outline" className="w-full sm:w-auto border-slate-800" disabled={saving}>
+                    <Button type="button" variant="outline" className="w-full sm:w-auto border-gray-200" disabled={saving}>
                       Annuler
                     </Button>
                   </Link>
-                  <Button type="submit" className="w-full sm:w-auto bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500 text-white shadow-lg" disabled={saving}>
+                  <Button type="submit" className="w-full sm:w-auto bg-brand-green text-white shadow-lg" disabled={saving}>
                     {saving ? 'Enregistrement...' : 'Enregistrer les modifications'}
                   </Button>
                 </div>

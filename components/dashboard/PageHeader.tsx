@@ -30,15 +30,15 @@ export function PageHeader({ title, subtitle, breadcrumbs, actions, showBackButt
               {crumb.href ? (
                 <Link
                   href={crumb.href}
-                  className="text-slate-400 hover:text-white transition-colors"
+                  className="text-gray-400 hover:text-gray-900 transition-colors"
                 >
                   {crumb.label}
                 </Link>
               ) : (
-                <span className="text-slate-500">{crumb.label}</span>
+                <span className="text-gray-500">{crumb.label}</span>
               )}
               {index < breadcrumbs.length - 1 && (
-                <ChevronRight className="h-3.5 w-3.5 text-slate-600" />
+                <ChevronRight className="h-3.5 w-3.5 text-gray-300" />
               )}
             </div>
           ))}
@@ -52,17 +52,17 @@ export function PageHeader({ title, subtitle, breadcrumbs, actions, showBackButt
               variant="ghost"
               size="icon"
               onClick={handleBack}
-              className="mt-0.5 h-8 w-8 text-slate-400 hover:text-white shrink-0"
+              className="mt-0.5 h-8 w-8 text-gray-400 hover:text-gray-900 shrink-0"
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
           )}
           <div className="flex-1 min-w-0">
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">
               {title}
             </h1>
             {subtitle && (
-              <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
+              <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
                 {subtitle}
               </p>
             )}

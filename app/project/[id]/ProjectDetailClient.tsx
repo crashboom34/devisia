@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, FileText, Loader2, Pencil, Trash2, ChevronDown, ChevronUp, Sparkles, Camera } from 'lucide-react';
+import { ArrowLeft, FileText, Loader as Loader2, Pencil, Trash2, ChevronDown, ChevronUp, Sparkles, Camera } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,11 +34,11 @@ import UserMenu from '@/components/UserMenu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const EstimateTable = dynamic(() => import('@/components/EstimateTable'), {
-  loading: () => <div className="animate-pulse h-64 bg-gray-800 rounded-lg" />,
+  loading: () => <div className="animate-pulse h-64 bg-gray-200 rounded-lg" />,
 });
 
 const ProjectRoomsPhotos = dynamic(() => import('@/components/ProjectRoomsPhotos'), {
-  loading: () => <div className="animate-pulse h-64 bg-gray-800 rounded-lg" />,
+  loading: () => <div className="animate-pulse h-64 bg-gray-200 rounded-lg" />,
 });
 import type { Project } from '@/lib/supabase';
 
@@ -248,7 +248,7 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-brand-dark flex items-center justify-center">
+      <div className="min-h-screen bg-brand-light flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-brand-green" />
       </div>
     );
@@ -259,12 +259,12 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
   }
 
   return (
-    <div className="min-h-screen bg-brand-dark">
-      <header className="bg-brand-darkCard border-b border-gray-800 sticky top-0 z-10 shadow-lg">
+    <div className="min-h-screen bg-brand-light">
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
         <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 sm:gap-4 min-w-0">
             <Link href="/dashboard">
-              <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0 text-gray-300 hover:text-white hover:bg-brand-darkLight">
+              <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0 text-gray-600 hover:text-gray-900 hover:bg-gray-100">
                 <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
               </Button>
             </Link>
@@ -272,7 +272,7 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
               <div className="p-1.5 rounded-lg bg-brand-green">
                 <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-white flex-shrink-0" />
               </div>
-              <span className="text-lg sm:text-2xl font-bold text-white truncate">Devisia</span>
+              <span className="text-lg sm:text-2xl font-bold text-gray-900 truncate">Devisia</span>
             </div>
           </div>
           <UserMenu />
@@ -282,10 +282,10 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-6xl">
         <div className="mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 sm:mb-4 gap-2">
-            <h1 className="text-xl sm:text-3xl font-bold text-white break-words">{project.title}</h1>
+            <h1 className="text-xl sm:text-3xl font-bold text-gray-900 break-words">{project.title}</h1>
             {getStatusBadge(project.status)}
           </div>
-          <p className="text-sm sm:text-base text-gray-400">
+          <p className="text-sm sm:text-base text-gray-500">
             Créé le {new Date(project.created_at).toLocaleDateString('fr-FR', {
               day: 'numeric',
               month: 'long',
@@ -297,7 +297,7 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           <div className="lg:col-span-2 space-y-4 sm:space-y-6">
             <Tabs defaultValue="infos" className="w-full">
-              <TabsList className="grid w-full grid-cols-3 bg-brand-darkCard border-gray-800">
+              <TabsList className="grid w-full grid-cols-3 bg-white border-gray-200">
                 <TabsTrigger value="infos" className="data-[state=active]:bg-brand-green data-[state=active]:text-white">
                   <FileText className="h-4 w-4 mr-2" />
                   Infos
@@ -313,43 +313,43 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
               </TabsList>
 
               <TabsContent value="infos" className="space-y-4">
-                <Card className="bg-brand-darkCard border-gray-800">
+                <Card className="bg-white border-gray-200">
                   <CardHeader>
-                    <CardTitle className="text-white">Description du Projet</CardTitle>
+                    <CardTitle className="text-gray-900">Description du Projet</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-gray-300 whitespace-pre-wrap">{project.description}</p>
+                    <p className="text-gray-600 whitespace-pre-wrap">{project.description}</p>
                   </CardContent>
                 </Card>
 
                 {project.client_name && (
-                  <Card className="bg-brand-darkCard border-gray-800">
+                  <Card className="bg-white border-gray-200">
                     <CardHeader>
-                      <CardTitle className="text-white">Informations Client</CardTitle>
+                      <CardTitle className="text-gray-900">Informations Client</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2">
                       {project.client_name && (
                         <div>
-                          <span className="font-medium text-gray-300">Client :</span>{' '}
-                          <span className="text-gray-400">{project.client_name}</span>
+                          <span className="font-medium text-gray-600">Client :</span>{' '}
+                          <span className="text-gray-500">{project.client_name}</span>
                         </div>
                       )}
                       {project.client_address && (
                         <div>
-                          <span className="font-medium text-gray-300">Adresse :</span>{' '}
-                          <span className="text-gray-400 whitespace-pre-wrap">{project.client_address}</span>
+                          <span className="font-medium text-gray-600">Adresse :</span>{' '}
+                          <span className="text-gray-500 whitespace-pre-wrap">{project.client_address}</span>
                         </div>
                       )}
                       {project.work_type && (
                         <div>
-                          <span className="font-medium text-gray-300">Type de travaux :</span>{' '}
-                          <span className="text-gray-400">{project.work_type}</span>
+                          <span className="font-medium text-gray-600">Type de travaux :</span>{' '}
+                          <span className="text-gray-500">{project.work_type}</span>
                         </div>
                       )}
                       {project.notes && (
                         <div>
-                          <span className="font-medium text-gray-300">Notes :</span>{' '}
-                          <span className="text-gray-400 whitespace-pre-wrap">{project.notes}</span>
+                          <span className="font-medium text-gray-600">Notes :</span>{' '}
+                          <span className="text-gray-500 whitespace-pre-wrap">{project.notes}</span>
                         </div>
                       )}
                     </CardContent>
@@ -360,8 +360,8 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
                   <Card className="bg-brand-green/10 border-brand-green/30">
                     <CardContent className="py-8 text-center">
                       <Sparkles className="h-12 w-12 mx-auto mb-4 text-brand-green" />
-                      <h3 className="font-semibold mb-2 text-white">Aucun devis généré</h3>
-                      <p className="text-sm text-gray-300 mb-4">
+                      <h3 className="font-semibold mb-2 text-gray-900">Aucun devis généré</h3>
+                      <p className="text-sm text-gray-600 mb-4">
                         Générez vos premiers devis avec l'IA pour ce projet
                       </p>
                       <Link href="/project/new">
@@ -378,21 +378,21 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
               <TabsContent value="devis" className="space-y-4">
 
             {estimates.length === 0 ? (
-              <Card className="bg-brand-darkCard border-gray-800">
+              <Card className="bg-white border-gray-200">
                 <CardHeader>
-                  <CardTitle className="text-white">Devis Générés</CardTitle>
-                  <CardDescription className="text-gray-400">Aucun devis disponible</CardDescription>
+                  <CardTitle className="text-gray-900">Devis Générés</CardTitle>
+                  <CardDescription className="text-gray-500">Aucun devis disponible</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="text-center py-8">
-                    <p className="text-gray-400 mb-4">Aucun devis généré pour l'instant</p>
+                    <p className="text-gray-500 mb-4">Aucun devis généré pour l'instant</p>
                   </div>
                 </CardContent>
               </Card>
             ) : (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold text-white">Devis Générés</h2>
+                  <h2 className="text-xl font-semibold text-gray-900">Devis Générés</h2>
                   <Button
                     variant="outline"
                     size="sm"
@@ -404,7 +404,7 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
                         setExpandedScenarios(uniqueScenarios);
                       }
                     }}
-                    className="text-xs border-gray-700 text-gray-300 hover:bg-brand-darkCard"
+                    className="text-xs border-gray-200 text-gray-600 hover:bg-gray-50"
                   >
                     {expandedScenarios.size === new Set(estimates.map(e => e.scenario_type)).size ? 'Tout replier' : 'Tout déplier'}
                   </Button>
@@ -412,16 +412,16 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
                 {estimates.map((estimate) => {
                   const isExpanded = expandedScenarios.has(estimate.scenario_type);
                   return (
-                    <div key={estimate.id} className="border border-gray-800 bg-brand-darkCard rounded-lg overflow-hidden">
+                    <div key={estimate.id} className="border border-gray-200 bg-white rounded-lg overflow-hidden">
                       <button
                         onClick={() => toggleScenario(estimate.scenario_type)}
-                        className="w-full px-4 py-3 flex items-center justify-between hover:bg-brand-darkLight transition-colors"
+                        className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
                       >
                         <div className="flex items-center gap-3">
                           <div className={`px-3 py-1 rounded-full border ${getScenarioColor(estimate.scenario_type)}`}>
                             {getScenarioLabel(estimate.scenario_type)}
                           </div>
-                          <span className="font-bold text-lg text-white">
+                          <span className="font-bold text-lg text-gray-900">
                             {(estimate.total_ttc || estimate.total_amount || 0).toLocaleString('fr-FR', {
                               style: 'currency',
                               currency: 'EUR'
@@ -446,15 +446,15 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
                             <Trash2 className="h-4 w-4" />
                           </Button>
                           {isExpanded ? (
-                            <ChevronUp className="h-5 w-5 text-gray-400" />
+                            <ChevronUp className="h-5 w-5 text-gray-500" />
                           ) : (
-                            <ChevronDown className="h-5 w-5 text-gray-400" />
+                            <ChevronDown className="h-5 w-5 text-gray-500" />
                           )}
                         </div>
                       </button>
 
                       {isExpanded && (
-                        <div className="border-t border-gray-800">
+                        <div className="border-t border-gray-200">
                           <EstimateTable
                             estimate={{
                               id: estimate.id,
@@ -496,14 +496,14 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
           </div>
 
           <div className="space-y-4 sm:space-y-6">
-            <Card className="bg-brand-darkCard border-gray-800">
+            <Card className="bg-white border-gray-200">
               <CardHeader>
-                <CardTitle className="text-lg sm:text-xl text-white">Actions</CardTitle>
+                <CardTitle className="text-lg sm:text-xl text-gray-900">Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 sm:space-y-3">
                 <Button
                   variant="outline"
-                  className="w-full text-sm sm:text-base border-gray-700 text-gray-300 hover:bg-brand-darkLight"
+                  className="w-full text-sm sm:text-base border-gray-200 text-gray-600 hover:bg-gray-100"
                   onClick={handleEditProject}
                 >
                   <Pencil className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
@@ -523,7 +523,7 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
             <Card className="bg-brand-green/10 border-brand-green/30">
               <CardContent className="pt-4 sm:pt-6">
                 <h3 className="font-semibold mb-2 text-brand-green text-sm sm:text-base">Prochaines Étapes</h3>
-                <ol className="text-xs sm:text-sm text-gray-300 space-y-1 sm:space-y-2">
+                <ol className="text-xs sm:text-sm text-gray-600 space-y-1 sm:space-y-2">
                   <li>1. Sélectionnez votre modèle IA préféré</li>
                   <li>2. Générez des devis selon vos besoins</li>
                   <li>3. Comparez les différents scénarios</li>
@@ -536,33 +536,33 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
       </main>
 
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="sm:max-w-[600px] bg-brand-darkCard border-gray-800">
+        <DialogContent className="sm:max-w-[600px] bg-white border-gray-200">
           <DialogHeader>
-            <DialogTitle className="text-white">Modifier le Projet</DialogTitle>
-            <DialogDescription className="text-gray-400">
+            <DialogTitle className="text-gray-900">Modifier le Projet</DialogTitle>
+            <DialogDescription className="text-gray-500">
               Mettez à jour les informations de votre projet
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="title" className="text-gray-300">Titre du projet</Label>
+              <Label htmlFor="title" className="text-gray-600">Titre du projet</Label>
               <Input
                 id="title"
                 value={editTitle}
                 onChange={(e) => setEditTitle(e.target.value)}
                 placeholder="Ex: Rénovation salle de bain"
-                className="bg-brand-darkLight border-gray-700 text-white placeholder:text-gray-500"
+                className="bg-gray-50 border-gray-200 text-gray-900 placeholder:text-gray-500"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="description" className="text-gray-300">Description</Label>
+              <Label htmlFor="description" className="text-gray-600">Description</Label>
               <Textarea
                 id="description"
                 value={editDescription}
                 onChange={(e) => setEditDescription(e.target.value)}
                 placeholder="Décrivez votre projet en détail..."
                 rows={8}
-                className="bg-brand-darkLight border-gray-700 text-white placeholder:text-gray-500"
+                className="bg-gray-50 border-gray-200 text-gray-900 placeholder:text-gray-500"
               />
             </div>
           </div>
@@ -571,7 +571,7 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
               variant="outline"
               onClick={() => setShowEditDialog(false)}
               disabled={isSaving}
-              className="border-gray-700 text-gray-300 hover:bg-brand-darkLight"
+              className="border-gray-200 text-gray-600 hover:bg-gray-100"
             >
               Annuler
             </Button>
@@ -594,15 +594,15 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
       </Dialog>
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent className="bg-brand-darkCard border-gray-800">
+        <AlertDialogContent className="bg-white border-gray-200">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">Êtes-vous sûr?</AlertDialogTitle>
-            <AlertDialogDescription className="text-gray-400">
+            <AlertDialogTitle className="text-gray-900">Êtes-vous sûr?</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-500">
               Cette action est irréversible. Le projet et tous ses devis seront définitivement supprimés.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting} className="border-gray-700 text-gray-300 hover:bg-brand-darkLight">Annuler</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting} className="border-gray-200 text-gray-600 hover:bg-gray-100">Annuler</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteProject}
               disabled={isDeleting}
@@ -622,15 +622,15 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
       </AlertDialog>
 
       <AlertDialog open={showDeleteEstimateDialog} onOpenChange={setShowDeleteEstimateDialog}>
-        <AlertDialogContent className="bg-brand-darkCard border-gray-800">
+        <AlertDialogContent className="bg-white border-gray-200">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">Supprimer ce scénario?</AlertDialogTitle>
-            <AlertDialogDescription className="text-gray-400">
+            <AlertDialogTitle className="text-gray-900">Supprimer ce scénario?</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-500">
               Cette action est irréversible. Ce devis sera définitivement supprimé.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeletingEstimate} className="border-gray-700 text-gray-300 hover:bg-brand-darkLight">Annuler</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeletingEstimate} className="border-gray-200 text-gray-600 hover:bg-gray-100">Annuler</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteEstimate}
               disabled={isDeletingEstimate}

@@ -51,7 +51,7 @@ export function SettingsNavigation() {
                   cursor-pointer transition-all duration-300
                   ${card.active
                     ? `bg-${card.color}-600/20 border-${card.color}-500 border-2`
-                    : 'bg-[#0f0f0f] border-[#2a2a2a] hover:border-[#3a3a3a]'
+                    : 'bg-white border-gray-200 hover:border-gray-300'
                   }
                   ${isHovered ? 'transform scale-105 shadow-lg' : ''}
                 `}
@@ -65,7 +65,7 @@ export function SettingsNavigation() {
                         p-3 rounded-lg
                         ${card.active
                           ? `bg-${card.color}-500/20`
-                          : 'bg-[#1a1a1a]'
+                          : 'bg-gray-50'
                         }
                       `}
                     >
@@ -74,7 +74,7 @@ export function SettingsNavigation() {
                           h-6 w-6
                           ${card.active
                             ? `text-${card.color}-400`
-                            : 'text-slate-400'
+                            : 'text-gray-500'
                           }
                         `}
                       />
@@ -86,10 +86,10 @@ export function SettingsNavigation() {
                     )}
                   </div>
 
-                  <h3 className="text-lg font-bold text-white mb-2">
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">
                     {card.title}
                   </h3>
-                  <p className="text-sm text-slate-400 mb-4">
+                  <p className="text-sm text-gray-500 mb-4">
                     {card.description}
                   </p>
 
@@ -154,7 +154,7 @@ export function PageSwitcher({ currentPage, onPageChange }: PageSwitcherProps) {
   ];
 
   return (
-    <div className="flex items-center gap-2 p-1 bg-[#0f0f0f] rounded-lg border border-[#2a2a2a]">
+    <div className="flex items-center gap-2 p-1 bg-white rounded-lg border border-gray-200">
       {pages.map((page) => (
         <Link key={page.id} href={page.path}>
           <Button

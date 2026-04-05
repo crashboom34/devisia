@@ -115,11 +115,11 @@ export default function QuotesPage() {
 
   const getStatusStyle = (status: string) => {
     const styles: Record<string, string> = {
-      approved: 'bg-emerald-500/10 text-emerald-400',
-      rejected: 'bg-red-500/10 text-red-400',
-      sent: 'bg-cyan-500/10 text-cyan-400',
+      approved: 'bg-emerald-50 text-emerald-700',
+      rejected: 'bg-red-50 text-red-700',
+      sent: 'bg-blue-50 text-blue-700',
     };
-    return styles[status] || 'bg-slate-500/10 text-slate-400';
+    return styles[status] || 'bg-gray-100 text-gray-600';
   };
 
   return (
@@ -137,10 +137,10 @@ export default function QuotesPage() {
         {/* KPI Cards - horizontal scroll on mobile */}
         <div className="-mx-4 px-4 sm:mx-0 sm:px-0">
           <div className="flex gap-3 overflow-x-auto pb-1 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:gap-4 lg:gap-6 sm:overflow-visible scrollbar-hide">
-            <KpiCard title="Total Devis" value={stats.total} subtitle={`${stats.approvedCount} approuves`} icon={FileText} iconColor="text-cyan-400" />
-            <KpiCard title="Valeur Totale" value={`${stats.totalValue.toFixed(2)} EUR`} valueColor="text-cyan-400" subtitle="Tous devis" icon={Euro} iconColor="text-cyan-400" />
-            <KpiCard title="Valeur Approuvee" value={`${stats.approvedValue.toFixed(2)} EUR`} valueColor="text-emerald-400" subtitle="Acceptes" icon={CheckCircle2} iconColor="text-emerald-400" />
-            <KpiCard title="Conversion" value={`${stats.conversionRate}%`} valueColor="text-emerald-400" subtitle="Taux" icon={TrendingUp} iconColor="text-emerald-400" />
+            <KpiCard title="Total Devis" value={stats.total} subtitle={`${stats.approvedCount} approuves`} icon={FileText} iconColor="text-brand-green" />
+            <KpiCard title="Valeur Totale" value={`${stats.totalValue.toFixed(2)} EUR`} valueColor="text-brand-green" subtitle="Tous devis" icon={Euro} iconColor="text-brand-green" />
+            <KpiCard title="Valeur Approuvee" value={`${stats.approvedValue.toFixed(2)} EUR`} valueColor="text-emerald-600" subtitle="Acceptes" icon={CheckCircle2} iconColor="text-emerald-600" />
+            <KpiCard title="Conversion" value={`${stats.conversionRate}%`} valueColor="text-emerald-600" subtitle="Taux" icon={TrendingUp} iconColor="text-emerald-600" />
           </div>
         </div>
 
@@ -155,7 +155,7 @@ export default function QuotesPage() {
 
         {loading ? (
           <div className="flex justify-center items-center py-16">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-600"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-green"></div>
           </div>
         ) : filteredEstimates.length === 0 && estimates.length === 0 ? (
           <EmptyState
@@ -172,25 +172,25 @@ export default function QuotesPage() {
             {/* Mobile Card View */}
             <div className="space-y-2.5 lg:hidden">
               {filteredEstimates.length === 0 ? (
-                <p className="text-center text-sm text-slate-500 py-8">Aucun devis avec ces filtres</p>
+                <p className="text-center text-sm text-gray-500 py-8">Aucun devis avec ces filtres</p>
               ) : (
                 filteredEstimates.map((estimate) => (
                   <Link key={estimate.id} href={`/project/${estimate.project_id}`}>
-                    <div className="p-3.5 rounded-xl bg-slate-800/50 border border-slate-700/40 active:scale-[0.99] transition-all">
+                    <div className="p-3.5 rounded-xl bg-white border border-gray-200 active:scale-[0.99] transition-all hover:shadow-md">
                       <div className="flex items-start justify-between mb-2">
                         <div className="min-w-0 flex-1 mr-3">
-                          <p className="font-medium text-sm text-white truncate">{estimate.projects?.title || 'N/A'}</p>
-                          <p className="text-[10px] text-slate-500 mt-0.5">#{estimate.id.slice(0, 8)}</p>
+                          <p className="font-medium text-sm text-gray-900 truncate">{estimate.projects?.title || 'N/A'}</p>
+                          <p className="text-[10px] text-gray-400 mt-0.5">#{estimate.id.slice(0, 8)}</p>
                         </div>
                         <span className={`inline-flex px-2 py-0.5 text-[10px] font-medium rounded-full ${getStatusStyle(estimate.status)}`}>
                           {estimate.status || 'draft'}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-slate-500">
+                        <span className="text-xs text-gray-400">
                           {new Date(estimate.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
                         </span>
-                        <span className="text-sm font-bold text-white">
+                        <span className="text-sm font-bold text-gray-900">
                           {estimate.total_ttc?.toFixed(2) || '0.00'} EUR
                         </span>
                       </div>
@@ -199,52 +199,52 @@ export default function QuotesPage() {
                 ))
               )}
               {filteredEstimates.length > 0 && (
-                <p className="text-center text-xs text-slate-500 pt-2">
+                <p className="text-center text-xs text-gray-400 pt-2">
                   {filteredEstimates.length} devis
                 </p>
               )}
             </div>
 
             {/* Desktop Table View */}
-            <div className="hidden lg:block bg-slate-800/40 border border-slate-700/40 rounded-2xl overflow-hidden">
+            <div className="hidden lg:block bg-white border border-gray-200 rounded-2xl overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="bg-slate-900/60 border-b border-slate-700/40">
-                      <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">N. Devis</th>
-                      <th className="px-6 py-3.5 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Client</th>
-                      <th className="px-6 py-3.5 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Date</th>
-                      <th className="px-6 py-3.5 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Echeance</th>
-                      <th className="px-6 py-3.5 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">Montant TTC</th>
-                      <th className="px-6 py-3.5 text-center text-xs font-medium text-slate-400 uppercase tracking-wider">Statut</th>
-                      <th className="px-6 py-3.5 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">Actions</th>
+                    <tr className="bg-gray-50 border-b border-gray-200">
+                      <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">N. Devis</th>
+                      <th className="px-6 py-3.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
+                      <th className="px-6 py-3.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                      <th className="px-6 py-3.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Echeance</th>
+                      <th className="px-6 py-3.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Montant TTC</th>
+                      <th className="px-6 py-3.5 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
+                      <th className="px-6 py-3.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-700/40">
+                  <tbody className="divide-y divide-gray-100">
                     {filteredEstimates.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="px-6 py-10 text-center text-slate-500 text-sm">Aucun devis avec ces filtres</td>
+                        <td colSpan={7} className="px-6 py-10 text-center text-gray-500 text-sm">Aucun devis avec ces filtres</td>
                       </tr>
                     ) : (
                       filteredEstimates.map((estimate) => (
-                        <tr key={estimate.id} className="hover:bg-slate-900/40 transition-colors">
+                        <tr key={estimate.id} className="hover:bg-gray-50 transition-colors">
                           <td className="px-6 py-3.5 whitespace-nowrap">
-                            <span className="text-sm font-medium text-white">#{estimate.id.slice(0, 8)}</span>
+                            <span className="text-sm font-medium text-gray-900">#{estimate.id.slice(0, 8)}</span>
                           </td>
-                          <td className="px-6 py-3.5"><span className="text-sm text-slate-300">{estimate.projects?.title || 'N/A'}</span></td>
-                          <td className="px-6 py-3.5 whitespace-nowrap"><span className="text-sm text-slate-400">{new Date(estimate.created_at).toLocaleDateString('fr-FR')}</span></td>
-                          <td className="px-6 py-3.5 whitespace-nowrap"><span className="text-sm text-slate-400">{new Date(new Date(estimate.created_at).getTime() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')}</span></td>
-                          <td className="px-6 py-3.5 whitespace-nowrap text-right"><span className="text-sm font-semibold text-white">{estimate.total_ttc?.toFixed(2) || '0.00'} EUR</span></td>
+                          <td className="px-6 py-3.5"><span className="text-sm text-gray-700">{estimate.projects?.title || 'N/A'}</span></td>
+                          <td className="px-6 py-3.5 whitespace-nowrap"><span className="text-sm text-gray-500">{new Date(estimate.created_at).toLocaleDateString('fr-FR')}</span></td>
+                          <td className="px-6 py-3.5 whitespace-nowrap"><span className="text-sm text-gray-500">{new Date(new Date(estimate.created_at).getTime() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')}</span></td>
+                          <td className="px-6 py-3.5 whitespace-nowrap text-right"><span className="text-sm font-semibold text-gray-900">{estimate.total_ttc?.toFixed(2) || '0.00'} EUR</span></td>
                           <td className="px-6 py-3.5 whitespace-nowrap text-center">
                             <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusStyle(estimate.status)}`}>{estimate.status || 'draft'}</span>
                           </td>
                           <td className="px-6 py-3.5 whitespace-nowrap text-right">
                             <div className="flex items-center justify-end gap-1">
                               <Link href={`/project/${estimate.project_id}`}>
-                                <Button size="xs" variant="ghost" className="text-slate-400 hover:text-white"><Eye className="h-4 w-4" /></Button>
+                                <Button size="xs" variant="ghost" className="text-gray-400 hover:text-gray-900"><Eye className="h-4 w-4" /></Button>
                               </Link>
-                              <Button size="xs" variant="ghost" className="text-slate-400 hover:text-white"><Download className="h-4 w-4" /></Button>
-                              <Button size="xs" variant="ghost" className="text-slate-400 hover:text-red-400"><Trash2 className="h-4 w-4" /></Button>
+                              <Button size="xs" variant="ghost" className="text-gray-400 hover:text-gray-900"><Download className="h-4 w-4" /></Button>
+                              <Button size="xs" variant="ghost" className="text-gray-400 hover:text-red-500"><Trash2 className="h-4 w-4" /></Button>
                             </div>
                           </td>
                         </tr>
@@ -254,7 +254,7 @@ export default function QuotesPage() {
                 </table>
               </div>
               {filteredEstimates.length > 0 && (
-                <div className="px-6 py-3.5 border-t border-slate-700/40 text-sm text-slate-400">
+                <div className="px-6 py-3.5 border-t border-gray-100 text-sm text-gray-500">
                   {filteredEstimates.length} devis au total
                 </div>
               )}

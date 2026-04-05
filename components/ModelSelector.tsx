@@ -91,34 +91,34 @@ export default function ModelSelector() {
 
   if (loading) {
     return (
-      <Card className="bg-brand-darkCard border-gray-800">
+      <Card className="bg-white border-gray-200">
         <CardContent className="pt-6">
-          <p className="text-gray-400">Chargement...</p>
+          <p className="text-gray-500">Chargement...</p>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card className="bg-brand-darkCard border-gray-800">
+    <Card className="bg-white border-gray-200">
       <CardHeader>
         <div className="flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-brand-green" />
-          <CardTitle className="text-white">Modèle IA</CardTitle>
+          <CardTitle className="text-gray-900">Modèle IA</CardTitle>
         </div>
-        <CardDescription className="text-gray-400">
+        <CardDescription className="text-gray-500">
           Choisissez le modèle d'intelligence artificielle pour générer vos devis
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
           <Select value={selectedModelId} onValueChange={handleModelChange}>
-            <SelectTrigger className="bg-brand-darkLight border-gray-700 text-white">
+            <SelectTrigger className="bg-gray-50 border-gray-200 text-gray-900">
               <SelectValue placeholder="Sélectionner un modèle" />
             </SelectTrigger>
-            <SelectContent className="bg-brand-darkCard border-gray-800">
+            <SelectContent className="bg-white border-gray-200">
               {models.map((model) => (
-                <SelectItem key={model.id} value={model.id} className="text-white hover:bg-brand-darkLight">
+                <SelectItem key={model.id} value={model.id} className="text-gray-900 hover:bg-gray-50">
                   {model.display_name}
                 </SelectItem>
               ))}
@@ -127,29 +127,29 @@ export default function ModelSelector() {
         </div>
 
         {selectedModel && (
-          <div className="p-4 bg-brand-darkLight rounded-lg border border-gray-800 space-y-3">
+          <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-3">
             <div className="flex items-start gap-2">
               <Sparkles className="h-4 w-4 text-brand-green mt-0.5 flex-shrink-0" />
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium text-white">{selectedModel.display_name}</p>
+                  <p className="text-sm font-medium text-gray-900">{selectedModel.display_name}</p>
                   {selectedModel.cost_per_1k_tokens_input === 0 ? (
                     <Badge variant="default" className="bg-brand-green text-white">GRATUIT</Badge>
                   ) : (
-                    <Badge variant="outline" className="text-xs border-gray-700 text-gray-400">
+                    <Badge variant="outline" className="text-xs border-gray-200 text-gray-500">
                       {((selectedModel.cost_per_1k_tokens_input + selectedModel.cost_per_1k_tokens_output) / 2).toFixed(5)}$/1K tokens
                     </Badge>
                   )}
                 </div>
-                <p className="text-xs text-gray-400 mt-1">{selectedModel.description}</p>
+                <p className="text-xs text-gray-500 mt-1">{selectedModel.description}</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 pt-2 border-t border-gray-800">
+            <div className="flex items-center gap-2 pt-2 border-t border-gray-200">
               <Zap className="h-4 w-4 text-gray-500" />
               <div>
                 <p className="text-xs text-gray-500">Capacité</p>
-                <p className="text-sm font-medium text-white">{selectedModel.max_tokens.toLocaleString()} tokens</p>
+                <p className="text-sm font-medium text-gray-900">{selectedModel.max_tokens.toLocaleString()} tokens</p>
               </div>
             </div>
           </div>

@@ -38,28 +38,28 @@ export default function ViewModePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-white">Chargement...</div>
+      <div className="min-h-screen bg-brand-light flex items-center justify-center">
+        <div className="text-gray-900">Chargement...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-brand-light">
       {/* Header */}
-      <header className="bg-[#0f0f0f] border-b border-[#2a2a2a] sticky top-0 z-50">
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link href="/settings">
-                <Button variant="ghost" size="sm" className="text-slate-300 hover:text-white">
+                <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900">
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Retour aux paramètres
                 </Button>
               </Link>
               <div>
-                <h1 className="text-2xl font-bold text-white">Mode d'affichage</h1>
-                <p className="text-sm text-slate-400">
+                <h1 className="text-2xl font-bold text-gray-900">Mode d'affichage</h1>
+                <p className="text-sm text-gray-500">
                   Configurez les pages que vous souhaitez voir
                 </p>
               </div>
@@ -77,12 +77,12 @@ export default function ViewModePage() {
       <main className="container mx-auto px-6 py-8">
         <div className="max-w-6xl mx-auto">
           {/* Introduction */}
-          <Card className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 border-blue-500/50 mb-8">
+          <Card className="bg-blue-50 border-blue-200 mb-8">
             <CardContent className="p-6">
-              <h2 className="text-xl font-bold text-white mb-3">
+              <h2 className="text-xl font-bold text-gray-900 mb-3">
                 Restriction de vue personnalisée
               </h2>
-              <p className="text-slate-300 mb-4">
+              <p className="text-gray-600 mb-4">
                 Vous pouvez configurer votre compte pour afficher <strong>uniquement la page des paramètres détaillés</strong>
                 et masquer toutes les autres pages. Cette configuration persiste automatiquement entre les sessions.
               </p>
@@ -91,7 +91,7 @@ export default function ViewModePage() {
                   <div className="w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center mt-0.5">
                     <span className="text-green-400 text-xs">✓</span>
                   </div>
-                  <p className="text-slate-400">
+                  <p className="text-gray-500">
                     Redirection automatique vers la page autorisée
                   </p>
                 </div>
@@ -99,7 +99,7 @@ export default function ViewModePage() {
                   <div className="w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center mt-0.5">
                     <span className="text-green-400 text-xs">✓</span>
                   </div>
-                  <p className="text-slate-400">
+                  <p className="text-gray-500">
                     Configuration sauvegardée dans Supabase
                   </p>
                 </div>
@@ -107,7 +107,7 @@ export default function ViewModePage() {
                   <div className="w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center mt-0.5">
                     <span className="text-green-400 text-xs">✓</span>
                   </div>
-                  <p className="text-slate-400">
+                  <p className="text-gray-500">
                     Réversible à tout moment
                   </p>
                 </div>
@@ -121,12 +121,12 @@ export default function ViewModePage() {
           {/* Quick Actions */}
           <div className="mt-8 flex items-center justify-between">
             <Link href="/settings">
-              <Button variant="outline" className="border-[#2a2a2a] text-slate-300">
+              <Button variant="outline" className="border-gray-200 text-gray-600">
                 Retour aux paramètres
               </Button>
             </Link>
             <Link href="/dashboard">
-              <Button variant="outline" className="border-[#2a2a2a] text-slate-300">
+              <Button variant="outline" className="border-gray-200 text-gray-600">
                 Retour au Dashboard
               </Button>
             </Link>

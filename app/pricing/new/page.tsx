@@ -70,11 +70,11 @@ export default function PricingPage() {
 
   const getTierColor = (tierLevel: number) => {
     switch (tierLevel) {
-      case 1: return 'from-slate-500 to-slate-600';
-      case 2: return 'from-cyan-500 to-cyan-600';
-      case 3: return 'from-blue-500 to-purple-600';
-      case 4: return 'from-purple-500 to-pink-600';
-      default: return 'from-slate-500 to-slate-600';
+      case 1: return 'from-gray-400 to-gray-500';
+      case 2: return 'from-brand-green to-emerald-500';
+      case 3: return 'from-blue-500 to-blue-600';
+      case 4: return 'from-amber-500 to-orange-600';
+      default: return 'from-gray-400 to-gray-500';
     }
   };
 
@@ -99,27 +99,27 @@ export default function PricingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#020617]">
+    <div className="min-h-screen bg-white">
       <SiteHeader />
 
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 max-w-7xl">
         {/* Header Section */}
         <div className="text-center mb-16">
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 mb-6">
             Choose Your Plan
           </h1>
-          <p className="text-xl text-slate-400 mb-8 max-w-3xl mx-auto">
+          <p className="text-xl text-gray-500 mb-8 max-w-3xl mx-auto">
             Unlock more powerful AI capabilities and features as you scale. All plans include full access to our construction estimating platform.
           </p>
 
           {/* Billing Toggle */}
-          <div className="inline-flex items-center bg-slate-900/50 rounded-lg p-1 border border-slate-700/50">
+          <div className="inline-flex items-center bg-gray-100 rounded-lg p-1 border border-gray-200">
             <button
               onClick={() => setBillingPeriod('monthly')}
               className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${
                 billingPeriod === 'monthly'
-                  ? 'bg-gradient-to-r from-cyan-600 to-cyan-700 text-white shadow-lg'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-brand-green text-white shadow-lg'
+                  : 'text-gray-500 hover:text-gray-900'
               }`}
             >
               Monthly
@@ -128,8 +128,8 @@ export default function PricingPage() {
               onClick={() => setBillingPeriod('yearly')}
               className={`px-6 py-2 rounded-md text-sm font-medium transition-all relative ${
                 billingPeriod === 'yearly'
-                  ? 'bg-gradient-to-r from-cyan-600 to-cyan-700 text-white shadow-lg'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-brand-green text-white shadow-lg'
+                  : 'text-gray-500 hover:text-gray-900'
               }`}
             >
               Yearly
@@ -142,7 +142,7 @@ export default function PricingPage() {
 
         {/* Pricing Cards */}
         {loading ? (
-          <div className="text-center text-white">Loading plans...</div>
+          <div className="text-center text-gray-900">Loading plans...</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
             {plans.map((plan) => {
@@ -153,15 +153,15 @@ export default function PricingPage() {
               return (
                 <Card
                   key={plan.id}
-                  className={`relative bg-gradient-to-br from-slate-800/90 to-slate-800/50 border shadow-2xl transition-all duration-300 hover:scale-105 ${
+                  className={`relative bg-white border shadow-lg transition-all duration-300 hover:scale-105 ${
                     isPopular
-                      ? 'border-cyan-500/50 shadow-cyan-500/20'
-                      : 'border-slate-700/50'
+                      ? 'border-brand-green/30 shadow-brand-green/20'
+                      : 'border-gray-200'
                   }`}
                 >
                   {isPopular && (
                     <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                      <span className="bg-gradient-to-r from-cyan-600 to-cyan-700 text-white text-xs font-semibold px-4 py-1 rounded-full shadow-lg">
+                      <span className="bg-brand-green text-white text-xs font-semibold px-4 py-1 rounded-full shadow-lg">
                         Most Popular
                       </span>
                     </div>
@@ -171,17 +171,17 @@ export default function PricingPage() {
                     <div className={`inline-flex mx-auto mb-4 p-3 rounded-xl bg-gradient-to-br ${getTierColor(plan.tier_level)} shadow-lg`}>
                       <Icon className="h-6 w-6 text-white" />
                     </div>
-                    <CardTitle className="text-2xl font-bold text-white mb-2">
+                    <CardTitle className="text-2xl font-bold text-gray-900 mb-2">
                       {plan.display_name}
                     </CardTitle>
-                    <CardDescription className="text-slate-400 text-sm min-h-[3rem]">
+                    <CardDescription className="text-gray-500 text-sm min-h-[3rem]">
                       {plan.description}
                     </CardDescription>
 
                     {/* AI Capability Badge */}
-                    <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 bg-cyan-500/10 border border-cyan-500/30 rounded-full">
-                      <Sparkles className="h-3 w-3 text-cyan-400" />
-                      <span className="text-xs text-cyan-400 font-medium">
+                    <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 bg-brand-green/10 border border-brand-green/30 rounded-full">
+                      <Sparkles className="h-3 w-3 text-brand-green" />
+                      <span className="text-xs text-brand-green font-medium">
                         {plan.ai_capability_level}
                       </span>
                     </div>
@@ -189,10 +189,10 @@ export default function PricingPage() {
                     {/* Price */}
                     <div className="mt-6">
                       <div className="flex items-baseline justify-center gap-1">
-                        <span className="text-4xl font-bold text-white">
+                        <span className="text-4xl font-bold text-gray-900">
                           ${getPrice(plan).toFixed(0)}
                         </span>
-                        <span className="text-slate-400">/month</span>
+                        <span className="text-gray-500">/month</span>
                       </div>
                       {billingPeriod === 'yearly' && getSavings(plan) > 0 && (
                         <div className="text-xs text-emerald-400 mt-1">
@@ -200,7 +200,7 @@ export default function PricingPage() {
                         </div>
                       )}
                       {billingPeriod === 'yearly' && (
-                        <div className="text-xs text-slate-500 mt-1">
+                        <div className="text-xs text-gray-500 mt-1">
                           ${plan.price_yearly}/year
                         </div>
                       )}
@@ -211,8 +211,8 @@ export default function PricingPage() {
                     {/* Features List */}
                     <ul className="space-y-3">
                       {plan.features.map((feature, idx) => (
-                        <li key={idx} className="flex items-start gap-3 text-sm text-slate-300">
-                          <Check className="h-5 w-5 text-cyan-400 flex-shrink-0 mt-0.5" />
+                        <li key={idx} className="flex items-start gap-3 text-sm text-gray-600">
+                          <Check className="h-5 w-5 text-brand-green flex-shrink-0 mt-0.5" />
                           <span>{feature}</span>
                         </li>
                       ))}
@@ -223,8 +223,8 @@ export default function PricingPage() {
                       onClick={() => handleSelectPlan(plan)}
                       className={`w-full transition-all duration-200 ${
                         isPopular || isEnterprise
-                          ? 'bg-gradient-to-r from-cyan-600 to-cyan-700 hover:from-cyan-700 hover:to-cyan-800 text-white shadow-lg shadow-cyan-600/20'
-                          : 'bg-slate-700 hover:bg-slate-600 text-white'
+                          ? 'bg-brand-green hover:bg-brand-greenDark text-white shadow-lg shadow-brand-green/20'
+                          : 'bg-gray-200 hover:bg-gray-100 text-gray-900'
                       }`}
                     >
                       {plan.price_monthly === 0 ? 'Get Started Free' : `Select ${plan.display_name}`}
@@ -238,50 +238,50 @@ export default function PricingPage() {
         )}
 
         {/* AI Intelligence Levels Explanation */}
-        <Card className="mt-16 bg-gradient-to-br from-slate-800/90 to-slate-800/50 border border-slate-700/50 shadow-2xl">
+        <Card className="mt-16 bg-white border border-gray-200 shadow-lg">
           <CardHeader>
-            <CardTitle className="text-2xl font-bold text-white flex items-center gap-2">
-              <Sparkles className="h-6 w-6 text-cyan-400" />
+            <CardTitle className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+              <Sparkles className="h-6 w-6 text-brand-green" />
               What Makes Each AI Intelligence Level Different?
             </CardTitle>
-            <CardDescription className="text-slate-400">
+            <CardDescription className="text-gray-500">
               Our AI becomes more sophisticated and accurate as you move up tiers
             </CardDescription>
           </CardHeader>
           <CardContent className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="space-y-2">
-              <div className="flex items-center gap-2 text-cyan-400 font-semibold">
+              <div className="flex items-center gap-2 text-brand-green font-semibold">
                 <Sparkles className="h-5 w-5" />
                 Standard AI
               </div>
-              <p className="text-sm text-slate-300">
+              <p className="text-sm text-gray-600">
                 Reliable estimates for straightforward projects. Fast processing with solid accuracy for common construction scenarios.
               </p>
             </div>
             <div className="space-y-2">
-              <div className="flex items-center gap-2 text-cyan-400 font-semibold">
+              <div className="flex items-center gap-2 text-brand-green font-semibold">
                 <Zap className="h-5 w-5" />
                 Advanced AI
               </div>
-              <p className="text-sm text-slate-300">
+              <p className="text-sm text-gray-600">
                 Enhanced understanding of complex requirements. Better at handling nuanced project details and regional variations.
               </p>
             </div>
             <div className="space-y-2">
-              <div className="flex items-center gap-2 text-cyan-400 font-semibold">
+              <div className="flex items-center gap-2 text-brand-green font-semibold">
                 <Rocket className="h-5 w-5" />
                 Premium AI
               </div>
-              <p className="text-sm text-slate-300">
+              <p className="text-sm text-gray-600">
                 Superior accuracy for sophisticated projects. Excels at technical specifications and detailed cost breakdowns.
               </p>
             </div>
             <div className="space-y-2">
-              <div className="flex items-center gap-2 text-cyan-400 font-semibold">
+              <div className="flex items-center gap-2 text-brand-green font-semibold">
                 <Crown className="h-5 w-5" />
                 Enterprise AI
               </div>
-              <p className="text-sm text-slate-300">
+              <p className="text-sm text-gray-600">
                 Maximum intelligence for mission-critical estimates. Unparalleled accuracy, comprehensive analysis, and deep industry knowledge.
               </p>
             </div>
@@ -290,12 +290,12 @@ export default function PricingPage() {
 
         {/* FAQ Section */}
         <div className="mt-16 text-center">
-          <h2 className="text-2xl font-bold text-white mb-4">Have Questions?</h2>
-          <p className="text-slate-400 mb-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Have Questions?</h2>
+          <p className="text-gray-500 mb-6">
             Our team is here to help you choose the right plan for your business
           </p>
           <Link href="/faq">
-            <Button variant="outline" className="border-slate-700 text-slate-300 hover:bg-slate-800">
+            <Button variant="outline" className="border-gray-200 text-gray-600 hover:bg-gray-100">
               View FAQ
             </Button>
           </Link>

@@ -20,24 +20,24 @@ export function KpiCard({
   subtitle,
   icon: Icon,
   trend,
-  valueColor = 'text-white',
-  iconColor = 'text-slate-400',
+  valueColor = 'text-gray-900',
+  iconColor = 'text-gray-400',
   onClick
 }: KpiCardProps) {
   return (
     <Card
-      className={`bg-gradient-to-br from-slate-800/90 to-slate-800/50 border-slate-700/50 hover:border-slate-600 transition-all duration-300 hover:shadow-xl hover:shadow-slate-900/50 backdrop-blur-sm ${onClick ? 'cursor-pointer hover:-translate-y-1' : ''}`}
+      className={`bg-white border-gray-200 hover:border-brand-green/30 transition-all duration-300 hover:shadow-lg ${onClick ? 'cursor-pointer hover:-translate-y-1' : ''}`}
       onClick={onClick}
     >
       <CardContent className="p-4 sm:p-5 lg:p-6">
         <div className="flex items-start justify-between mb-2 sm:mb-4">
           <div className="flex-1 min-w-0">
-            <p className="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 truncate">
+            <p className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 truncate">
               {title}
             </p>
           </div>
           {Icon && (
-            <div className="p-1.5 sm:p-2.5 bg-slate-900/50 rounded-lg sm:rounded-xl border border-slate-700/50 ml-2 shrink-0">
+            <div className="p-1.5 sm:p-2.5 bg-gray-50 rounded-lg sm:rounded-xl border border-gray-200 ml-2 shrink-0">
               <Icon className={`h-4 w-4 sm:h-5 sm:w-5 ${iconColor}`} />
             </div>
           )}
@@ -60,7 +60,7 @@ export function KpiCard({
           </div>
 
           {subtitle && (
-            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed truncate">
+            <p className="text-xs sm:text-sm text-gray-500 leading-relaxed truncate">
               {subtitle}
             </p>
           )}

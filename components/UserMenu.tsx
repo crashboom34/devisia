@@ -82,7 +82,7 @@ export default function UserMenu() {
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link href="/admin" className="cursor-pointer text-purple-600">
+              <Link href="/admin" className="cursor-pointer text-brand-green">
                 <Shield className="mr-2 h-4 w-4" />
                 <span className="font-medium">Administration</span>
               </Link>

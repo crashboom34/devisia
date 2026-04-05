@@ -19,10 +19,10 @@ const UserAvatarButton = React.forwardRef<HTMLButtonElement, UserAvatarButtonPro
       <button
         ref={ref}
         className={cn(
-          'relative rounded-full p-[2px] bg-gradient-to-r from-cyan-500 via-blue-500 to-cyan-500',
+          'relative rounded-full p-[2px] bg-gradient-to-r from-brand-green to-emerald-500',
           'transition-all duration-200',
-          'hover:shadow-[0_0_20px_rgba(6,182,212,0.5)] hover:scale-105',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950',
+          'hover:shadow-[0_0_20px_rgba(31,191,115,0.4)] hover:scale-105',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-green focus-visible:ring-offset-2 focus-visible:ring-offset-white',
           'active:scale-95',
           className
         )}
@@ -31,8 +31,8 @@ const UserAvatarButton = React.forwardRef<HTMLButtonElement, UserAvatarButtonPro
       >
         <div
           className={cn(
-            'flex items-center justify-center rounded-full bg-slate-900',
-            'font-bold text-white',
+            'flex items-center justify-center rounded-full bg-white',
+            'font-bold text-gray-900',
             sizeClasses[size]
           )}
         >
