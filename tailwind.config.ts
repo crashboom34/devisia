@@ -12,37 +12,21 @@ const config: Config = {
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
       },
-      backgroundImage: {
-        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
-        'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
-        'gradient-cta': 'linear-gradient(135deg, #1FBF73 0%, #0EA5E9 100%)',
-        'gradient-dark': 'linear-gradient(135deg, #1a1a1a 0%, #121212 100%)',
-      },
-      borderRadius: {
-        lg: 'var(--radius)',
-        md: 'calc(var(--radius) - 2px)',
-        sm: 'calc(var(--radius) - 4px)',
-      },
       colors: {
         brand: {
           green: '#1FBF73',
-          dark: '#121212',
-          darkLight: '#1A1A1A',
+          greenDark: '#18a562',
+          dark: '#111827',
+          darkLight: '#1f2937',
           darkCard: '#1E1E1E',
-          light: '#F6F7FB',
+          light: '#F8FAFB',
+          muted: '#F1F5F9',
         },
         status: {
           success: '#1FBF73',
           warning: '#F59E0B',
           danger: '#EF4444',
           neutral: '#64748B',
-        },
-        devisia: {
-          blue: '#0EA5E9',
-          purple: {
-            DEFAULT: '#667eea',
-            dark: '#764ba2',
-          },
         },
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
@@ -85,38 +69,39 @@ const config: Config = {
           '5': 'hsl(var(--chart-5))',
         },
       },
+      borderRadius: {
+        lg: 'var(--radius)',
+        md: 'calc(var(--radius) - 2px)',
+        sm: 'calc(var(--radius) - 4px)',
+      },
       keyframes: {
         'accordion-down': {
-          from: {
-            height: '0',
-          },
-          to: {
-            height: 'var(--radix-accordion-content-height)',
-          },
+          from: { height: '0' },
+          to: { height: 'var(--radix-accordion-content-height)' },
         },
         'accordion-up': {
-          from: {
-            height: 'var(--radix-accordion-content-height)',
-          },
-          to: {
-            height: '0',
-          },
+          from: { height: 'var(--radix-accordion-content-height)' },
+          to: { height: '0' },
         },
         'fade-in': {
-          from: {
-            opacity: '0',
-            transform: 'translateY(10px)',
-          },
-          to: {
-            opacity: '1',
-            transform: 'translateY(0)',
-          },
+          from: { opacity: '0', transform: 'translateY(10px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
+        'fade-in-up': {
+          from: { opacity: '0', transform: 'translateY(20px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
+        'count-up': {
+          from: { opacity: '0', transform: 'translateY(8px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
         },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
-        'fade-in': 'fade-in 0.5s ease-out',
+        'fade-in': 'fade-in 0.5s ease-out forwards',
+        'fade-in-up': 'fade-in-up 0.6s ease-out forwards',
+        'count-up': 'count-up 0.4s ease-out forwards',
       },
     },
   },

@@ -9,7 +9,7 @@ export function StatBlock({ value, label }: StatBlockProps) {
       <div className="text-4xl sm:text-5xl font-bold text-brand-green mb-2">
         {value}
       </div>
-      <div className="text-gray-400 text-sm sm:text-base">
+      <div className="text-gray-500 text-sm sm:text-base">
         {label}
       </div>
     </div>

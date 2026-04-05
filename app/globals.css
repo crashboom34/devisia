@@ -2,24 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@keyframes pulse-delay-75 {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
-@keyframes pulse-delay-150 {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
 @keyframes gradient {
   0% {
     background-position: 0% 50%;
@@ -32,87 +14,37 @@
   }
 }
 
-.animate-pulse.delay-75 {
-  animation: pulse-delay-75 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  animation-delay: 75ms;
-}
-
-.animate-pulse.delay-150 {
-  animation: pulse-delay-150 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  animation-delay: 150ms;
-}
-
 .animate-gradient {
   animation: gradient 3s ease infinite;
 }
 
-:root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
-  }
-}
-
 @layer base {
   :root {
-    --background: 0 0% 7%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 12%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 12%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 156 73% 44%;
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 152 60% 42%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 0 0% 15%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 15%;
-    --muted-foreground: 215 16% 65%;
-    --accent: 156 73% 44%;
-    --accent-foreground: 0 0% 100%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+    --accent: 220 14% 96%;
+    --accent-foreground: 222 47% 11%;
     --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 20%;
-    --input: 0 0% 20%;
-    --ring: 156 73% 44%;
-    --chart-1: 156 73% 44%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 152 60% 42%;
+    --chart-1: 152 60% 42%;
     --chart-2: 199 89% 48%;
     --chart-3: 43 96% 56%;
     --chart-4: 340 82% 52%;
     --chart-5: 27 87% 67%;
     --radius: 0.75rem;
-  }
-  .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
   }
 }
 
@@ -126,7 +58,7 @@
     scroll-behavior: smooth;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
     overscroll-behavior-y: none;
     -webkit-overflow-scrolling: touch;
   }
@@ -142,75 +74,5 @@
   }
   .touch-manipulation {
     touch-action: manipulation;
-  }
-}
-
-@layer components {
-  /* Enhanced Button Animations */
-  .button-shine {
-    position: relative;
-    overflow: hidden;
-  }
-
-  .button-shine::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      rgba(255, 255, 255, 0.2),
-      transparent
-    );
-    transition: left 0.5s;
-  }
-
-  .button-shine:hover::before {
-    left: 100%;
-  }
-
-  /* Glow Effect for Primary Actions */
-  .button-glow {
-    animation: glow 2s ease-in-out infinite;
-  }
-
-  @keyframes glow {
-    0%, 100% {
-      box-shadow: 0 0 5px rgba(6, 182, 212, 0.2),
-                  0 0 10px rgba(6, 182, 212, 0.1);
-    }
-    50% {
-      box-shadow: 0 0 10px rgba(6, 182, 212, 0.4),
-                  0 0 20px rgba(6, 182, 212, 0.2),
-                  0 0 30px rgba(6, 182, 212, 0.1);
-    }
-  }
-
-  /* Ripple Effect */
-  .button-ripple {
-    position: relative;
-    overflow: hidden;
-  }
-
-  .button-ripple::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 0;
-    height: 0;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.5);
-    transform: translate(-50%, -50%);
-    transition: width 0.6s, height 0.6s;
-  }
-
-  .button-ripple:active::after {
-    width: 300px;
-    height: 300px;
-    opacity: 0;
   }
 }

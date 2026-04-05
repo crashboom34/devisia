@@ -75,26 +75,24 @@ export const PLAN_PRICES = {
 
 export const PLAN_FEATURES: Record<string, string[]> = {
   starter: [
-    "Génération de devis rapide et fiable",
-    "Jusqu'à 10 devis par mois",
-    "Jusqu'à 20 clients",
+    "10 devis par mois",
+    "20 clients",
     "1 utilisateur",
+    "Export PDF",
     "Support par email",
   ],
   business: [
-    "Génération de devis précise sur chantiers variés",
-    "Jusqu'à 30 devis par mois",
-    "Jusqu'à 60 clients",
-    "Jusqu'à 3 utilisateurs",
-    "Exports PDF illimités et professionnels",
-    "Transformation des devis en factures",
+    "30 devis par mois",
+    "60 clients",
+    "3 utilisateurs",
+    "Exports PDF professionnels",
+    "Devis vers factures",
   ],
   pro: [
-    "Génération optimale sur devis complexes multi-lots",
-    "Devis illimités pour forte demande",
-    "Clients et utilisateurs illimités",
-    "Suivi complet du portefeuille client",
-    "Collaboration d'équipe avancée",
+    "Devis illimites",
+    "Clients et utilisateurs illimites",
+    "Suivi portefeuille client",
+    "Collaboration d'equipe",
     "Support prioritaire",
   ],
 };

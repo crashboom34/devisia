@@ -4,93 +4,90 @@ import { SiteHeader } from '@/components/marketing/SiteHeader';
 import { SiteFooter } from '@/components/marketing/SiteFooter';
 import { FeatureCard } from '@/components/marketing/FeatureCard';
 import { CTASection } from '@/components/marketing/CTASection';
-import { Sparkles, Clock, Mic, FileText, ChartBar as BarChart3, Download, CreditCard as Edit3, Users, Shield, Zap } from 'lucide-react';
+import { MobileCTABar } from '@/components/marketing/MobileCTABar';
+import { Sparkles, Clock, Mic, FileText, ChartBar as BarChart3, Download, CreditCard as Edit3, Users, Shield } from 'lucide-react';
 
 export default function FeaturesPage() {
   return (
-    <div className="min-h-screen bg-brand-dark">
+    <div className="min-h-screen bg-white">
       <SiteHeader />
 
       <main>
-        <section className="pt-24 pb-12 bg-gradient-dark">
+        <section className="pt-20 pb-12 bg-brand-light">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h1 className="text-4xl sm:text-5xl font-bold text-white mb-6">
-              Fonctionnalités conçues pour accélérer votre succès
+            <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-6">
+              Tout ce qu&apos;il faut pour faire des devis pro
             </h1>
-            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-              Découvrez les outils qui vous permettront de créer des devis professionnels en quelques minutes et d&apos;augmenter vos taux de conversion.
+            <p className="text-xl text-gray-500 max-w-3xl mx-auto">
+              Des outils concrets pour creer des devis professionnels en quelques minutes.
             </p>
           </div>
         </section>
 
-        <section className="py-20 bg-brand-dark">
+        <section className="py-16 bg-white">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
               <FeatureCard
                 icon={Sparkles}
-                title="Intelligence Artificielle Avancée"
-                description="Notre IA analyse votre description et génère automatiquement des devis détaillés, structurés et professionnels adaptés à votre secteur."
+                title="IA specialisee BTP"
+                description="L'IA analyse votre description et genere un devis detaille, structure et adapte a votre secteur d'activite."
               />
               <FeatureCard
                 icon={Clock}
-                title="Gain de Temps Radical"
-                description="Créez un devis complet en 2 minutes au lieu de 2 heures. Concentrez-vous sur votre métier, pas sur la paperasse."
+                title="Un devis en 2 minutes"
+                description="Fini les soirs sur Excel. Generez un devis complet en 2 minutes au lieu de 2 heures."
               />
               <FeatureCard
                 icon={Mic}
-                title="Dictée Vocale Intelligente"
-                description="Décrivez votre projet à la voix, même sur chantier ou en déplacement. L'IA transcrit et structure automatiquement."
+                title="Dictee vocale"
+                description="Decrivez votre projet a la voix, meme sur chantier. L'IA transcrit et structure automatiquement."
               />
               <FeatureCard
                 icon={BarChart3}
-                title="3 Scénarios Automatiques"
-                description="Générez instantanément 3 versions (Éco, Standard, Premium) pour proposer plus d'options et maximiser vos ventes."
+                title="3 scenarios de prix"
+                description="Generez automatiquement 3 versions (Eco, Standard, Premium) pour proposer plus d'options."
               />
               <FeatureCard
                 icon={FileText}
-                title="10 Templates BTP Professionnels"
-                description="Modèles pré-configurés pour rénovation, construction, plomberie, électricité et plus encore. Prêts à l'emploi."
+                title="10 templates BTP"
+                description="Modeles pre-configures pour renovation, construction, plomberie, electricite et plus encore."
               />
               <FeatureCard
                 icon={Download}
-                title="Export PDF Instantané"
-                description="Téléchargez vos devis au format PDF professionnel en un clic. Prêts à envoyer à vos clients immédiatement."
+                title="Export PDF en 1 clic"
+                description="Telechargez vos devis au format PDF professionnel, prets a envoyer a vos clients."
               />
               <FeatureCard
                 icon={Edit3}
-                title="Éditeur Intuitif"
-                description="Interface glisser-déposer simple et puissante. Modifiez vos devis sans compétences techniques requises."
+                title="Editeur intuitif"
+                description="Modifiez chaque ligne de votre devis facilement. Aucune competence technique requise."
               />
               <FeatureCard
                 icon={Users}
-                title="Gestion de Clients"
-                description="Organisez vos contacts et infos client pour pré-remplir automatiquement vos devis et gagner encore plus de temps."
+                title="Gestion de clients"
+                description="Organisez vos contacts pour pre-remplir automatiquement vos devis et gagner du temps."
               />
               <FeatureCard
                 icon={Shield}
-                title="Données Sécurisées"
-                description="Vos données sont hébergées en Europe avec chiffrement de bout en bout. Conformité RGPD garantie."
-              />
-              <FeatureCard
-                icon={Zap}
-                title="Moteur adapté à votre plan"
-                description="Chaque plan embarque un moteur de génération calibré pour son niveau d'usage, du chantier simple au devis complexe multi-lots."
+                title="Donnees securisees"
+                description="Vos donnees sont hebergees en France avec chiffrement de bout en bout. Conforme RGPD."
               />
             </div>
           </div>
         </section>
 
         <CTASection
-          title="Prêt à découvrir toutes les fonctionnalités ?"
-          description="Commencez gratuitement et explorez tous les outils Devisia."
+          title="Pret a tester ?"
+          description="14 jours gratuits, sans carte bancaire."
           cta={{
-            label: 'Créer mon compte',
+            label: 'Creer mon premier devis gratuit',
             href: '/auth/register',
           }}
         />
       </main>
 
       <SiteFooter />
+      <MobileCTABar />
     </div>
   );
 }

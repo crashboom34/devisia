@@ -5,9 +5,10 @@ import Link from 'next/link';
 import { SiteHeader } from '@/components/marketing/SiteHeader';
 import { SiteFooter } from '@/components/marketing/SiteFooter';
 import { CTASection } from '@/components/marketing/CTASection';
-import { Check, FileText, Users, Crown, Info, Gift } from 'lucide-react';
+import { MobileCTABar } from '@/components/marketing/MobileCTABar';
+import { Check, FileText, Users, Crown, Gift } from 'lucide-react';
 import { PLAN_PRICES, PLAN_FEATURES } from '@/lib/tier-model';
-import { PLAN_LABELS, PLAN_VALUE_PROPS, PLAN_TOOLTIP } from '@/lib/plan-labels';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 type BillingPeriod = 'monthly' | 'yearly';
 
@@ -17,43 +18,27 @@ interface Plan {
   description: string;
   icon: React.ElementType;
   popular?: boolean;
-  stripePriceIds: {
-    monthly: string;
-    yearly: string;
-  };
 }
 
 const PLANS: Plan[] = [
   {
     key: 'starter',
     name: 'Starter',
-    description: "Pour les artisans qui débutent ou qui veulent tester",
+    description: 'Ideal pour les artisans solo',
     icon: FileText,
-    stripePriceIds: {
-      monthly: 'starter_monthly_price_id',
-      yearly:  'starter_yearly_price_id',
-    },
   },
   {
     key: 'business',
     name: 'Business',
-    description: "Le choix de la majorité des artisans Devisia",
+    description: 'Pour les artisans avec plusieurs chantiers',
     icon: Users,
     popular: true,
-    stripePriceIds: {
-      monthly: 'business_monthly_price_id',
-      yearly:  'business_yearly_price_id',
-    },
   },
   {
     key: 'pro',
     name: 'Pro',
-    description: "Pour les entreprises et artisans qui gèrent beaucoup de clients",
+    description: 'Pour les equipes et gros volumes',
     icon: Crown,
-    stripePriceIds: {
-      monthly: 'pro_monthly_price_id',
-      yearly:  'pro_yearly_price_id',
-    },
   },
 ];
 
@@ -61,71 +46,86 @@ function formatPrice(n: number): string {
   return n % 1 === 0 ? `${n}` : n.toFixed(2).replace('.', ',');
 }
 
+const pricingFaqs = [
+  {
+    q: 'Puis-je changer de plan a tout moment ?',
+    a: "Oui, vous pouvez changer de plan ou annuler votre abonnement a tout moment sans frais supplementaires.",
+  },
+  {
+    q: 'Comment fonctionne la facturation annuelle ?',
+    a: "En choisissant la facturation annuelle, vous payez 10 mois et beneficiez de 12 mois d'acces -- soit 2 mois offerts.",
+  },
+  {
+    q: 'Ou sont hebergees mes donnees ?',
+    a: 'Toutes vos donnees sont hebergees en France avec des serveurs conformes RGPD. Vos informations sont chiffrees et securisees.',
+  },
+  {
+    q: "Dois-je installer quelque chose ?",
+    a: "Non, Devisia fonctionne directement dans votre navigateur. Rien a installer, aucune configuration technique. Vous creez un compte et vous commencez.",
+  },
+];
+
 export default function PricingPage() {
   const [billing, setBilling] = useState<BillingPeriod>('monthly');
 
   return (
-    <div className="min-h-screen bg-brand-dark">
+    <div className="min-h-screen bg-white">
       <SiteHeader />
 
       <main>
-        <section className="pt-24 pb-12 bg-gradient-dark">
+        <section className="pt-20 pb-12 bg-brand-light">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h1 className="text-4xl sm:text-5xl font-bold text-white mb-6">
-              Tarifs simples et transparents
+            <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-6">
+              Des tarifs simples et transparents
             </h1>
-            <p className="text-xl text-gray-300 max-w-3xl mx-auto mb-10">
-              Choisissez le plan qui correspond à vos besoins. Changez ou annulez à tout moment.
+            <p className="text-xl text-gray-500 max-w-3xl mx-auto mb-10">
+              Choisissez le plan qui correspond a vos besoins. 14 jours d&apos;essai gratuit sur tous les plans.
             </p>
 
-            <div className="inline-flex items-center gap-3 bg-gray-900/60 border border-gray-700 rounded-full p-1.5">
-              <span className="text-sm text-gray-400 pl-3">Facturation :</span>
+            <div className="inline-flex items-center gap-2 bg-white border border-gray-200 rounded-full p-1 shadow-sm">
               <button
                 onClick={() => setBilling('monthly')}
                 className={`px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
                   billing === 'monthly'
-                    ? 'bg-brand-green text-white shadow'
-                    : 'text-gray-400 hover:text-white'
+                    ? 'bg-brand-green text-white shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
-                Mensuelle
+                Mensuel
               </button>
               <button
                 onClick={() => setBilling('yearly')}
                 className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
                   billing === 'yearly'
-                    ? 'bg-brand-green text-white shadow'
-                    : 'text-gray-400 hover:text-white'
+                    ? 'bg-brand-green text-white shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
-                Annuelle
-                <span className="inline-flex items-center gap-1 bg-emerald-500/20 text-emerald-400 text-xs px-2 py-0.5 rounded-full border border-emerald-500/30">
+                Annuel
+                <span className="inline-flex items-center gap-1 bg-brand-green/10 text-brand-green text-xs px-2 py-0.5 rounded-full font-medium">
                   <Gift className="h-3 w-3" />
-                  2 mois offerts
+                  -2 mois
                 </span>
               </button>
             </div>
           </div>
         </section>
 
-        <section className="py-20 bg-brand-dark">
+        <section className="py-16 bg-white">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
               {PLANS.map((plan) => {
                 const prices = PLAN_PRICES[plan.key];
                 const features = PLAN_FEATURES[plan.key];
-                const modeLabel = PLAN_LABELS[plan.key]?.label ?? '';
-                const valueProp = PLAN_VALUE_PROPS[plan.key] ?? '';
                 const Icon = plan.icon;
-                const priceId = plan.stripePriceIds[billing];
 
                 return (
                   <div
                     key={plan.key}
-                    className={`relative flex flex-col rounded-2xl border bg-brand-darkCard transition-all duration-300 hover:-translate-y-1 ${
+                    className={`relative flex flex-col rounded-2xl border bg-white transition-all duration-300 hover:-translate-y-1 ${
                       plan.popular
-                        ? 'ring-2 ring-brand-green shadow-xl shadow-brand-green/20 border-brand-green/40'
-                        : 'border-gray-800 hover:border-brand-green/30'
+                        ? 'ring-2 ring-brand-green shadow-xl shadow-brand-green/10 border-brand-green/40'
+                        : 'border-gray-200 hover:border-brand-green/30 hover:shadow-lg'
                     }`}
                   >
                     {plan.popular && (
@@ -138,7 +138,7 @@ export default function PricingPage() {
 
                     {billing === 'yearly' && (
                       <div className="absolute top-4 right-4">
-                        <span className="flex items-center gap-1 bg-emerald-500/15 text-emerald-400 text-xs font-semibold px-2.5 py-1 rounded-full border border-emerald-500/25">
+                        <span className="flex items-center gap-1 bg-brand-green/10 text-brand-green text-xs font-semibold px-2.5 py-1 rounded-full">
                           <Gift className="h-3 w-3" />
                           2 mois offerts
                         </span>
@@ -150,50 +150,39 @@ export default function PricingPage() {
                         <Icon className="h-5 w-5 text-brand-green" />
                       </div>
 
-                      <h3 className="text-2xl font-bold text-white mb-1">{plan.name}</h3>
-                      <p className="text-sm text-gray-400 mb-6">{plan.description}</p>
+                      <h3 className="text-2xl font-bold text-gray-900 mb-1">{plan.name}</h3>
+                      <p className="text-sm text-gray-500 mb-6">{plan.description}</p>
 
                       <div className="mb-1">
                         {billing === 'monthly' ? (
                           <>
                             <div className="flex items-baseline gap-1">
-                              <span className="text-4xl font-bold text-white">
-                                {formatPrice(prices.monthly)} €
+                              <span className="text-4xl font-bold text-gray-900">
+                                {formatPrice(prices.monthly)} &euro;
                               </span>
                               <span className="text-gray-400 text-sm">/mois</span>
                             </div>
-                            <p className="text-xs text-gray-500 mt-1">
-                              ou {prices.yearly} € / an (2 mois offerts)
+                            <p className="text-xs text-gray-400 mt-1">
+                              ou {prices.yearly} &euro;/an (2 mois offerts)
                             </p>
                           </>
                         ) : (
                           <>
                             <div className="flex items-baseline gap-1">
-                              <span className="text-4xl font-bold text-white">
-                                {prices.yearly} €
+                              <span className="text-4xl font-bold text-gray-900">
+                                {prices.yearly} &euro;
                               </span>
                               <span className="text-gray-400 text-sm">/an</span>
                             </div>
-                            <p className="text-xs text-emerald-400 mt-1">
-                              équivaut à {formatPrice(prices.monthlyEquiv)} € / mois
+                            <p className="text-xs text-brand-green mt-1 font-medium">
+                              soit {formatPrice(prices.monthlyEquiv)} &euro;/mois
                             </p>
                           </>
                         )}
                       </div>
 
-                      <div className="mt-4 flex flex-col gap-1.5">
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-brand-green/10 border border-brand-green/20 self-start">
-                          <span className="text-xs text-brand-green font-semibold">{modeLabel}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <span className="text-xs text-gray-500">{valueProp}</span>
-                          <span className="relative group cursor-default">
-                            <Info className="h-3 w-3 text-gray-600 hover:text-gray-400 transition-colors" />
-                            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-56 bg-gray-900 border border-gray-700 text-gray-300 text-xs rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 text-center shadow-xl">
-                              {PLAN_TOOLTIP}
-                            </span>
-                          </span>
-                        </div>
+                      <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-brand-green/5 border border-brand-green/15">
+                        <span className="text-xs text-brand-green font-medium">14 jours d&apos;essai gratuit</span>
                       </div>
                     </div>
 
@@ -202,22 +191,20 @@ export default function PricingPage() {
                         {features.map((feature, i) => (
                           <li key={i} className="flex items-start gap-3">
                             <Check className="h-4 w-4 text-brand-green flex-shrink-0 mt-0.5" />
-                            <span className="text-gray-300 text-sm">{feature}</span>
+                            <span className="text-gray-600 text-sm">{feature}</span>
                           </li>
                         ))}
                       </ul>
 
                       <Link
-                        href={`/auth/register?plan=${plan.key}&billing=${billing}&price_id=${priceId}`}
+                        href={`/auth/register?plan=${plan.key}&billing=${billing}`}
                         className={`block w-full text-center py-3 px-6 rounded-lg font-semibold text-sm transition-all duration-200 ${
                           plan.popular
-                            ? 'bg-brand-green hover:bg-green-600 text-white shadow-lg shadow-brand-green/20'
-                            : 'bg-gray-800 hover:bg-gray-700 text-white border border-gray-700'
+                            ? 'bg-brand-green hover:bg-brand-greenDark text-white shadow-lg shadow-brand-green/20'
+                            : 'bg-gray-900 hover:bg-gray-800 text-white'
                         }`}
                       >
-                        {billing === 'monthly'
-                          ? `Choisir ${plan.name}`
-                          : `Choisir ${plan.name} — ${prices.yearly} € / an`}
+                        14 jours gratuits
                       </Link>
                     </div>
                   </div>
@@ -225,61 +212,53 @@ export default function PricingPage() {
               })}
             </div>
 
-            <div className="mt-16 text-center">
-              <p className="text-gray-400 mb-2">
-                Toutes les formules incluent l&apos;accès complet aux fonctionnalités principales de Devisia.
+            <div className="mt-12 text-center">
+              <p className="text-gray-500 mb-1">
+                Toutes les formules incluent l&apos;acces complet aux fonctionnalites de Devisia.
               </p>
-              <p className="text-gray-500 text-sm">
-                Facturation mensuelle ou annuelle. Aucun engagement. Annulez quand vous voulez.
+              <p className="text-gray-400 text-sm">
+                Aucun engagement. Annulation en 1 clic.
               </p>
             </div>
           </div>
         </section>
 
-        <section className="py-20 bg-brand-darkLight">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
-            <h2 className="text-3xl font-bold text-white text-center mb-12">
-              Questions fréquentes
+        <section className="py-16 bg-brand-light">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
+            <h2 className="text-2xl font-bold text-gray-900 text-center mb-8">
+              Questions sur les tarifs
             </h2>
-            <div className="space-y-6">
-              {[
-                {
-                  q: "Puis-je changer de plan à tout moment ?",
-                  a: "Oui, vous pouvez changer de plan ou annuler votre abonnement à tout moment sans frais supplémentaires.",
-                },
-                {
-                  q: "Comment fonctionne la facturation annuelle ?",
-                  a: "En choisissant la facturation annuelle, vous payez 10 mois et bénéficiez de 12 mois d'accès — soit 2 mois offerts. Le paiement est effectué en une seule fois.",
-                },
-                {
-                  q: "Quelle est la différence entre Mode Essentiel, Mode Avancé et Mode Expert ?",
-                  a: "Chaque plan embarque un moteur de génération calibré pour son niveau d'usage. Mode Essentiel est rapide et fiable pour les chantiers simples. Mode Avancé apporte plus de cohérence sur des projets variés. Mode Expert est optimisé pour les devis complexes multi-lots et les grandes équipes.",
-                },
-                {
-                  q: "Où sont hébergées mes données ?",
-                  a: "Toutes vos données sont hébergées en Europe avec des serveurs conformes RGPD. Vos informations sont chiffrées et sécurisées.",
-                },
-              ].map(({ q, a }) => (
-                <div key={q} className="bg-brand-darkCard border border-gray-800 rounded-lg p-6">
-                  <h3 className="text-lg font-semibold text-white mb-2">{q}</h3>
-                  <p className="text-gray-400">{a}</p>
-                </div>
+            <Accordion type="single" collapsible className="space-y-3">
+              {pricingFaqs.map((faq, i) => (
+                <AccordionItem
+                  key={i}
+                  value={`item-${i}`}
+                  className="border border-gray-200 rounded-xl px-6 bg-white hover:border-brand-green/30 transition-colors"
+                >
+                  <AccordionTrigger className="text-gray-900 hover:text-brand-green text-left font-medium py-5">
+                    {faq.q}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-gray-500 pb-5 leading-relaxed">
+                    {faq.a}
+                  </AccordionContent>
+                </AccordionItem>
               ))}
-            </div>
+            </Accordion>
           </div>
         </section>
 
         <CTASection
-          title="Prêt à commencer ?"
+          title="Pret a commencer ?"
           description="Essayez Devisia gratuitement pendant 14 jours. Aucune carte bancaire requise."
           cta={{
-            label: "Démarrer l'essai gratuit",
+            label: "Demarrer l'essai gratuit",
             href: '/auth/register',
           }}
         />
       </main>
 
       <SiteFooter />
+      <MobileCTABar />
     </div>
   );
 }

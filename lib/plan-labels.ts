@@ -1,19 +1,19 @@
 export const PLAN_LABELS: Record<string, { label: string; short: string }> = {
-  starter:  { label: "Mode Essentiel", short: "Essentiel" },
-  business: { label: "Mode Avancé",    short: "Avancé"    },
-  pro:      { label: "Mode Expert",    short: "Expert"    },
-  unlimited:{ label: "Mode Expert",    short: "Expert"    },
+  starter:  { label: "Artisan solo", short: "Solo" },
+  business: { label: "Plusieurs chantiers", short: "Business" },
+  pro:      { label: "Equipe & volumes", short: "Pro" },
+  unlimited:{ label: "Equipe & volumes", short: "Pro" },
 };
 
 export const PLAN_VALUE_PROPS: Record<string, string> = {
-  starter:  "Rapide & fiable pour chantiers simples",
-  business: "Meilleure cohérence sur chantiers variés",
-  pro:      "Optimal sur devis complexes multi-lots",
-  unlimited:"Optimal sur devis complexes multi-lots",
+  starter:  "Ideal pour les petits chantiers",
+  business: "Pour les artisans avec plusieurs projets",
+  pro:      "Pour les equipes et gros volumes",
+  unlimited:"Pour les equipes et gros volumes",
 };
 
 export const PLAN_TOOLTIP =
-  "Le moteur peut évoluer pour améliorer la qualité, sans action de votre part.";
+  "L'IA s'ameliore en continu pour generer des devis toujours plus precis.";
 
 export function getPlanLabel(tierName: string): string {
   const normalized = (tierName || "").toLowerCase().trim();
