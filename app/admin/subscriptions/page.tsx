@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Plus, CreditCard as Edit, Shield, CreditCard, Sparkles, CircleAlert as AlertCircle, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Plus, Pencil as Edit, Shield, CreditCard, Sparkles, CircleAlert as AlertCircle, RotateCcw } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { Alert, AlertDescription } from '@/components/ui/alert';

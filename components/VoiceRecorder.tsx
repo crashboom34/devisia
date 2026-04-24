@@ -33,6 +33,8 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
   const onChangeRef = useRef(onChange);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const sessionFinalCountRef = useRef(0);
+  const isMobileRef = useRef(false);
+  const restartAttemptsRef = useRef(0);
 
   onChangeRef.current = onChange;
 
@@ -73,14 +75,22 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
       return;
     }
 
+    const ua = navigator.userAgent || '';
+    const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
+    const isIOS = /iPhone|iPad|iPod/i.test(ua);
+    isMobileRef.current = isMobile;
+
     const recognition = new SpeechRecognition();
-    recognition.continuous = true;
+    recognition.continuous = !isIOS;
     recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
     recognition.lang = 'fr-FR';
 
     recognition.onstart = () => {
       isRecognitionActiveRef.current = true;
       sessionFinalCountRef.current = 0;
+      lastFinalChunkRef.current = '';
+      restartAttemptsRef.current = 0;
     };
 
     recognition.onresult = (event: any) => {
@@ -125,10 +135,12 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
     recognition.onerror = (event: any) => {
       isRecognitionActiveRef.current = false;
 
-      if (event.error === 'no-speech') return;
+      if (event.error === 'no-speech' || event.error === 'audio-capture') {
+        return;
+      }
 
       if (event.error === 'aborted') {
-        if (!isRestartingRef.current) {
+        if (!isRestartingRef.current && !isListeningRef.current) {
           setIsListening(false);
           isListeningRef.current = false;
           isPausedRef.current = false;
@@ -136,17 +148,25 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
         return;
       }
 
+      if (event.error === 'network' && isListeningRef.current && !isPausedRef.current) {
+        return;
+      }
+
       let message = '';
       switch (event.error) {
         case 'not-allowed':
         case 'permission-denied':
-          message = 'Acces au microphone refuse. Veuillez autoriser l\'acces dans les parametres de votre navigateur.';
+        case 'service-not-allowed':
+          message = 'Acces au microphone refuse. Autorisez le micro dans les parametres du navigateur puis rechargez la page.';
           break;
         case 'network':
           message = 'Erreur reseau. Verifiez votre connexion internet.';
           break;
+        case 'language-not-supported':
+          message = 'Langue non supportee par le navigateur.';
+          break;
         default:
-          message = `Erreur: ${event.error}. Sur mobile, HTTPS est requis pour la reconnaissance vocale.`;
+          message = `Erreur: ${event.error}. Sur mobile, HTTPS est requis pour la dictee vocale.`;
       }
 
       setErrorMessage(message);
@@ -160,18 +180,34 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
 
       if (isListeningRef.current && !isPausedRef.current && !isRestartingRef.current) {
         isRestartingRef.current = true;
-        setTimeout(() => {
-          if (isListeningRef.current && !isPausedRef.current && !isRecognitionActiveRef.current) {
-            try {
-              recognition.start();
-            } catch {
+        const delay = isMobileRef.current ? 500 : 250;
+
+        const attemptRestart = () => {
+          if (!isListeningRef.current || isPausedRef.current) {
+            isRestartingRef.current = false;
+            return;
+          }
+          if (isRecognitionActiveRef.current) {
+            isRestartingRef.current = false;
+            return;
+          }
+          try {
+            recognition.start();
+            isRestartingRef.current = false;
+          } catch (err: any) {
+            if (err?.name === 'InvalidStateError' && restartAttemptsRef.current < 5) {
+              restartAttemptsRef.current += 1;
+              setTimeout(attemptRestart, 400);
+            } else {
+              isRestartingRef.current = false;
               setIsListening(false);
               isListeningRef.current = false;
-              setErrorMessage('Impossible de redemarrer la reconnaissance vocale.');
+              setErrorMessage('Impossible de redemarrer la dictee. Appuyez sur Commencer pour reprendre.');
             }
           }
-          isRestartingRef.current = false;
-        }, 250);
+        };
+
+        setTimeout(attemptRestart, delay);
       }
     };
 
@@ -210,12 +246,28 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
     return cleaned.join(' ');
   };
 
-  const startListening = () => {
+  const startListening = async () => {
     if (!recognitionRef.current || isListening || isRecognitionActiveRef.current) return;
+
+    if (typeof window !== 'undefined' && window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
+      setErrorMessage('HTTPS requis pour la dictee vocale sur mobile. Ouvrez le site en https://');
+      return;
+    }
+
+    if (typeof navigator !== 'undefined' && navigator.mediaDevices?.getUserMedia) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach((t) => t.stop());
+      } catch {
+        setErrorMessage('Acces au microphone refuse. Autorisez le micro dans les parametres du navigateur.');
+        return;
+      }
+    }
 
     finalTextRef.current = value.trim();
     lastFinalChunkRef.current = '';
     sessionFinalCountRef.current = 0;
+    restartAttemptsRef.current = 0;
     setInterimText('');
     setIsValidated(false);
     setIsEditing(false);
@@ -233,9 +285,20 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
       isListeningRef.current = false;
       isRecognitionActiveRef.current = false;
       if (error?.name === 'InvalidStateError') {
-        setErrorMessage('La reconnaissance vocale est deja en cours. Veuillez attendre.');
+        try { recognitionRef.current.stop(); } catch { /* ignore */ }
+        setTimeout(() => {
+          try {
+            recognitionRef.current.start();
+            setIsListening(true);
+            isListeningRef.current = true;
+            setIsPaused(false);
+            isPausedRef.current = false;
+          } catch {
+            setErrorMessage('Impossible de demarrer la dictee. Rechargez la page et reessayez.');
+          }
+        }, 400);
       } else {
-        setErrorMessage('Impossible de demarrer la reconnaissance vocale. Assurez-vous d\'etre en HTTPS sur mobile.');
+        setErrorMessage('Impossible de demarrer la dictee. Assurez-vous d\'etre en HTTPS sur mobile.');
       }
     }
   };
@@ -317,15 +380,15 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
 
   if (!isSupported) {
     return (
-      <Card className="bg-yellow-900/20 border-yellow-700">
+      <Card className="bg-amber-50 border-amber-200">
         <CardContent className="pt-6">
           <div className="flex items-start gap-3">
-            <AlertCircle className="h-5 w-5 text-yellow-400 flex-shrink-0 mt-0.5" />
+            <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm text-yellow-400 mb-1 font-medium">
+              <p className="text-sm text-amber-800 mb-1 font-medium">
                 Reconnaissance vocale non disponible
               </p>
-              <p className="text-xs text-yellow-500">
+              <p className="text-xs text-amber-700">
                 Navigateurs compatibles: Chrome/Edge (Android), Safari 14.5+ (iOS). HTTPS requis sur mobile.
               </p>
             </div>
@@ -341,14 +404,14 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
   return (
     <div className="space-y-4">
       {errorMessage && (
-        <Card className="bg-red-900/20 border-red-700">
+        <Card className="bg-red-50 border-red-200">
           <CardContent className="pt-6">
             <div className="flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
+              <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm text-red-400">{errorMessage}</p>
+                <p className="text-sm text-red-700">{errorMessage}</p>
                 {errorMessage.includes('HTTPS') && (
-                  <p className="text-xs text-red-500 mt-1">
+                  <p className="text-xs text-red-600 mt-1">
                     Pour la dictee vocale sur mobile, HTTPS est obligatoire.
                   </p>
                 )}
