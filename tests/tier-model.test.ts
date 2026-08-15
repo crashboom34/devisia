@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { resolveTierModel, resolveTierModelLabel } from '../lib/tier-model';
 
 type TestCase = { input: string; expectedModelId: string; expectedLabel: string };
@@ -45,29 +46,9 @@ const cases: TestCase[] = [
   },
 ];
 
-let passed = 0;
-let failed = 0;
-
-for (const { input, expectedModelId, expectedLabel } of cases) {
-  const gotModelId = resolveTierModel(input);
-  const gotLabel = resolveTierModelLabel(input);
-
-  const modelOk = gotModelId === expectedModelId;
-  const labelOk = gotLabel === expectedLabel;
-
-  if (modelOk && labelOk) {
-    console.log(`  PASS  resolveTierModel("${input}") → ${gotModelId}`);
-    passed++;
-  } else {
-    if (!modelOk) {
-      console.error(`  FAIL  resolveTierModel("${input}"): expected ${expectedModelId}, got ${gotModelId}`);
-    }
-    if (!labelOk) {
-      console.error(`  FAIL  resolveTierModelLabel("${input}"): expected "${expectedLabel}", got "${gotLabel}"`);
-    }
-    failed++;
-  }
-}
-
-console.log(`\nResults: ${passed} passed, ${failed} failed`);
-if (failed > 0) process.exit(1);
+describe('resolveTierModel / resolveTierModelLabel', () => {
+  it.each(cases)('resolves "$input" to $expectedModelId', ({ input, expectedModelId, expectedLabel }) => {
+    expect(resolveTierModel(input)).toBe(expectedModelId);
+    expect(resolveTierModelLabel(input)).toBe(expectedLabel);
+  });
+});
