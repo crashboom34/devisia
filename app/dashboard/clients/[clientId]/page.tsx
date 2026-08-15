@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { supabase } from '@/lib/supabase';
+import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { Building2, Mail, Phone, MapPin, ArrowLeft, Edit } from 'lucide-react';
 
 interface Client {
@@ -27,22 +27,18 @@ interface Client {
 }
 
 export default function ClientDetailPage({ params }: { params: { clientId: string } }) {
-  const router = useRouter();
+  const { user, loading: authLoading } = useAuthGuard();
   const [client, setClient] = useState<Client | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
+    if (authLoading || !user) return;
+
     const fetchClient = async () => {
       setError('');
 
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          router.push('/auth/login');
-          return;
-        }
-
         const { data, error } = await supabase
           .from('clients')
           .select('*')
@@ -61,7 +57,7 @@ export default function ClientDetailPage({ params }: { params: { clientId: strin
     };
 
     fetchClient();
-  }, [params.clientId, router]);
+  }, [params.clientId, authLoading, user]);
 
   const statusBadge = client?.status !== 'inactive'
     ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'

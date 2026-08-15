@@ -13,6 +13,7 @@ import { DashboardLayout } from '@/components/DashboardLayout';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { EmptyState } from '@/components/dashboard/EmptyState';
 import { KpiCard } from '@/components/dashboard/KpiCard';
+import { useAuthGuard } from '@/hooks/use-auth-guard';
 
 interface Client {
   id: string;
@@ -33,7 +34,7 @@ interface Client {
 
 export default function ClientsPage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const { user, loading: authLoading } = useAuthGuard();
   const [loading, setLoading] = useState(true);
   const [clients, setClients] = useState<Client[]>([]);
   const [filteredClients, setFilteredClients] = useState<Client[]>([]);
@@ -42,20 +43,9 @@ export default function ClientsPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
-    const initialize = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) {
-        router.push('/auth/login');
-        return;
-      }
-
-      setUser(user);
-      await loadClients(user.id);
-    };
-
-    initialize();
-  }, [router]);
+    if (authLoading || !user) return;
+    loadClients(user.id);
+  }, [authLoading, user]);
 
   useEffect(() => {
     let filtered = [...clients];

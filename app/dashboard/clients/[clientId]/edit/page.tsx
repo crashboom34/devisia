@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { supabase } from '@/lib/supabase';
+import { useAuthGuard } from '@/hooks/use-auth-guard';
 
 interface ClientFormData {
   name: string;
@@ -27,6 +28,7 @@ interface ClientFormData {
 
 export default function EditClientPage({ params }: { params: { clientId: string } }) {
   const router = useRouter();
+  const { user, loading: authLoading } = useAuthGuard();
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -43,14 +45,9 @@ export default function EditClientPage({ params }: { params: { clientId: string 
   });
 
   useEffect(() => {
+    if (authLoading || !user) return;
+
     const fetchClient = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) {
-        router.push('/auth/login');
-        return;
-      }
-
       const { data, error } = await supabase
         .from('clients')
         .select('*')
@@ -79,7 +76,7 @@ export default function EditClientPage({ params }: { params: { clientId: string 
     };
 
     fetchClient();
-  }, [params.clientId, router]);
+  }, [params.clientId, authLoading, user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
