@@ -32,6 +32,8 @@ import dynamic from 'next/dynamic';
 import { supabase } from '@/lib/supabase';
 import UserMenu from '@/components/UserMenu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuthGuard } from '@/hooks/use-auth-guard';
+import { toast } from 'sonner';
 
 const EstimateTable = dynamic(() => import('@/components/EstimateTable'), {
   loading: () => <div className="animate-pulse h-64 bg-gray-800 rounded-lg" />,
@@ -48,7 +50,7 @@ interface ProjectDetailClientProps {
 
 export default function ProjectDetailClient({ projectId }: ProjectDetailClientProps) {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const { user, loading: authLoading } = useAuthGuard();
   const [project, setProject] = useState<Project | null>(null);
   const [estimates, setEstimates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,19 +67,9 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    checkUser();
-  }, []);
-
-  const checkUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      router.push('/auth/login');
-      return;
-    }
-
-    setUser(user);
+    if (authLoading || !user) return;
     loadProject(user.id);
-  };
+  }, [authLoading, user]);
 
   const loadProject = async (userId: string) => {
     try {
@@ -157,7 +149,7 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
       setShowEditDialog(false);
     } catch (err) {
       console.error('Error updating project:', err);
-      alert('Erreur lors de la mise à jour du projet');
+      toast.error('Erreur lors de la mise à jour du projet');
     } finally {
       setIsSaving(false);
     }
@@ -213,7 +205,7 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
       router.push('/dashboard');
     } catch (err) {
       console.error('Error deleting project:', err);
-      alert('Erreur lors de la suppression du projet');
+      toast.error('Erreur lors de la suppression du projet');
       setIsDeleting(false);
     }
   };
@@ -235,7 +227,7 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
       setEstimateToDelete(null);
     } catch (err) {
       console.error('Error deleting estimate:', err);
-      alert('Erreur lors de la suppression du scénario');
+      toast.error('Erreur lors de la suppression du scénario');
     } finally {
       setIsDeletingEstimate(false);
     }
@@ -478,7 +470,7 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
                             }}
                             projectTitle={project.title}
                             projectDescription={project.description}
-                            onRegenerate={() => loadProject(user.id)}
+                            onRegenerate={() => user && loadProject(user.id)}
                           />
                         </div>
                       )}
