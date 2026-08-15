@@ -2,7 +2,6 @@
 /* eslint-disable react/no-unescaped-entities, react-hooks/exhaustive-deps */
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -27,6 +26,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { DashboardLayout } from '@/components/DashboardLayout';
+import { useAuthGuard } from '@/hooks/use-auth-guard';
 
 type SettingsSection = 'general' | 'devis' | 'notifications' | 'appearance' | 'security';
 
@@ -49,8 +49,7 @@ interface UserSettings {
 }
 
 export default function ParametresPage() {
-  const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const { user, loading: authLoading } = useAuthGuard();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeSection, setActiveSection] = useState<SettingsSection>('notifications');
@@ -74,19 +73,9 @@ export default function ParametresPage() {
   });
 
   useEffect(() => {
-    checkUser();
-  }, []);
-
-  const checkUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      router.push('/auth/login');
-      return;
-    }
-    setUser(user);
-    await loadSettings(user.id);
-    setLoading(false);
-  };
+    if (authLoading || !user) return;
+    loadSettings(user.id).then(() => setLoading(false));
+  }, [authLoading, user]);
 
   const loadSettings = async (userId: string) => {
     const { data: profile } = await supabase

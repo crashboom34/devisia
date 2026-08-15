@@ -1,14 +1,12 @@
 'use client';
 /* eslint-disable react/no-unescaped-entities, react-hooks/exhaustive-deps */
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ViewModeSelector } from '@/components/ViewModeSelector';
-import { supabase } from '@/lib/supabase';
 import { ArrowLeft, Settings } from 'lucide-react';
+import { useAuthGuard } from '@/hooks/use-auth-guard';
 
 /**
  * View Mode Configuration Page
@@ -18,23 +16,7 @@ import { ArrowLeft, Settings } from 'lucide-react';
  */
 
 export default function ViewModePage() {
-  const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    checkUser();
-  }, []);
-
-  const checkUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      router.push('/auth/login');
-      return;
-    }
-    setUser(user);
-    setLoading(false);
-  };
+  const { loading } = useAuthGuard();
 
   if (loading) {
     return (

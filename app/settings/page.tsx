@@ -1,36 +1,18 @@
 'use client';
 /* eslint-disable react/no-unescaped-entities, react-hooks/exhaustive-deps */
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FileText, Key, AlertCircle, EyeOff } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 import { SettingsNavigation } from '@/components/SettingsNavigation';
 import { DashboardLayout } from '@/components/DashboardLayout';
+import { useAuthGuard } from '@/hooks/use-auth-guard';
 
 export default function SettingsPage() {
-  const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    checkUser();
-  }, []);
-
-  const checkUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      router.push('/auth/login');
-      return;
-    }
-    setUser(user);
-    setLoading(false);
-  };
+  const { loading } = useAuthGuard();
 
   if (loading) {
     return (
