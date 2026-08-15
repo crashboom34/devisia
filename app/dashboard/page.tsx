@@ -2,7 +2,6 @@
 /* eslint-disable react/no-unescaped-entities, react-hooks/exhaustive-deps */
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,10 +18,10 @@ import { supabase } from '@/lib/supabase';
 import type { Project } from '@/lib/supabase';
 import { checkProjectLimit, isUserAdmin, type ProjectLimitInfo } from '@/lib/subscription-helper';
 import { cn } from '@/lib/utils';
+import { useAuthGuard } from '@/hooks/use-auth-guard';
 
 export default function DashboardPage() {
-  const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const { user, loading: authLoading } = useAuthGuard();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [estimatesCount, setEstimatesCount] = useState({ total: 0, completed: 0, processing: 0, pending: 0 });
@@ -31,22 +30,16 @@ export default function DashboardPage() {
   const [projectLimits, setProjectLimits] = useState<ProjectLimitInfo | null>(null);
 
   useEffect(() => {
-    initDashboard();
-  }, []);
+    if (authLoading || !user) return;
+    initDashboard(user.id);
+  }, [authLoading, user]);
 
-  const initDashboard = async () => {
-    const { data: { user: currentUser } } = await supabase.auth.getUser();
-    if (!currentUser) {
-      router.push('/auth/login');
-      return;
-    }
-    setUser(currentUser);
-
+  const initDashboard = async (userId: string) => {
     const [adminStatus, limits, projectsResult, estimatesResult] = await Promise.all([
-      isUserAdmin(currentUser.id),
-      checkProjectLimit(currentUser.id),
-      supabase.from('projects').select('*').order('created_at', { ascending: false }),
-      supabase.from('estimates').select('id, scenario_type').eq('user_id', currentUser.id),
+      isUserAdmin(userId),
+      checkProjectLimit(userId),
+      supabase.from('projects').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+      supabase.from('estimates').select('id, scenario_type').eq('user_id', userId),
     ]);
 
     setIsAdmin(adminStatus);
@@ -70,7 +63,7 @@ export default function DashboardPage() {
     if (!user) return;
     setLoading(true);
     const [projectsResult, estimatesResult, limits] = await Promise.all([
-      supabase.from('projects').select('*').order('created_at', { ascending: false }),
+      supabase.from('projects').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
       supabase.from('estimates').select('id, scenario_type').eq('user_id', user.id),
       checkProjectLimit(user.id),
     ]);

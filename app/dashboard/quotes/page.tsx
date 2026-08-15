@@ -12,6 +12,7 @@ import { KpiCard } from '@/components/dashboard/KpiCard';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { FilterBar } from '@/components/dashboard/FilterBar';
 import { EmptyState } from '@/components/dashboard/EmptyState';
+import { useAuthGuard } from '@/hooks/use-auth-guard';
 
 interface Estimate {
   id: string;
@@ -27,7 +28,7 @@ interface Estimate {
 
 export default function QuotesPage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const { user, loading: authLoading } = useAuthGuard();
   const [estimates, setEstimates] = useState<Estimate[]>([]);
   const [filteredEstimates, setFilteredEstimates] = useState<Estimate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,28 +36,17 @@ export default function QuotesPage() {
   const [statusFilter, setStatusFilter] = useState('all');
 
   useEffect(() => {
-    checkUser();
+    if (authLoading || !user) return;
     loadEstimates();
-  }, []);
+  }, [authLoading, user]);
 
   useEffect(() => {
     filterEstimates();
   }, [estimates, searchValue, statusFilter]);
 
-  const checkUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      router.push('/auth/login');
-    } else {
-      setUser(user);
-    }
-  };
-
   const loadEstimates = async () => {
+    if (!user) return;
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
       const { data, error } = await supabase
         .from('estimates')
         .select(`
