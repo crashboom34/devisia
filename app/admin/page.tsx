@@ -1,19 +1,17 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FileText, ArrowLeft, Shield, Database, TrendingUp, Users, Eye } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { useAuthGuard } from '@/hooks/use-auth-guard';
 import AdminPlanPreview from '@/components/AdminPlanPreview';
 
 export default function AdminDashboard() {
-  const router = useRouter();
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const { loading } = useAuthGuard({ requireAdmin: true });
   const [stats, setStats] = useState({
     totalUsers: 0,
     activeSubscriptions: 0,
@@ -22,31 +20,9 @@ export default function AdminDashboard() {
   });
 
   useEffect(() => {
-    checkAdmin();
+    if (loading) return;
     loadStats();
-  }, []);
-
-  const checkAdmin = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      router.push('/auth/login');
-      return;
-    }
-
-    const { data: adminData } = await supabase
-      .from('admin_users')
-      .select('*')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    if (!adminData) {
-      router.push('/dashboard');
-      return;
-    }
-
-    setIsAdmin(true);
-    setLoading(false);
-  };
+  }, [loading]);
 
   const loadStats = async () => {
     try {
@@ -82,20 +58,18 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex items-center gap-3">
-          <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-          <p className="text-gray-500">Chargement...</p>
+          <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <p className="text-muted-foreground">Chargement...</p>
         </div>
       </div>
     );
   }
 
-  if (!isAdmin) return null;
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b shadow-sm">
+    <div className="min-h-screen bg-background">
+      <header className="bg-card border-b border-border shadow-sm">
         <div className="container mx-auto px-4 py-4 flex items-center gap-4">
           <Link href="/dashboard">
             <Button variant="ghost" size="icon">
@@ -103,14 +77,14 @@ export default function AdminDashboard() {
             </Button>
           </Link>
           <div className="flex items-center gap-2">
-            <Shield className="h-8 w-8 text-blue-600" />
-            <span className="text-2xl font-bold text-gray-900">Administration</span>
+            <Shield className="h-8 w-8 text-primary" />
+            <span className="text-2xl font-bold text-foreground">Administration</span>
           </div>
         </div>
       </header>
 
       <main className="container mx-auto px-4 py-8 max-w-7xl">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Dashboard Administrateur</h1>
+        <h1 className="text-3xl font-bold text-foreground mb-8">Dashboard Administrateur</h1>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
           <Card className="hover:shadow-md transition-shadow">

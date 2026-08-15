@@ -2,7 +2,6 @@
 /* eslint-disable react/no-unescaped-entities, react-hooks/exhaustive-deps */
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft, Plus, Edit, Trash2, Key, Info } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { useAuthGuard } from '@/hooks/use-auth-guard';
 
 interface AIModel {
   id: string;
@@ -29,9 +29,8 @@ interface AIModel {
 }
 
 export default function AdminModelsPage() {
-  const router = useRouter();
+  const { loading } = useAuthGuard({ requireAdmin: true });
   const [models, setModels] = useState<AIModel[]>([]);
-  const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingModel, setEditingModel] = useState<AIModel | null>(null);
 
@@ -47,30 +46,9 @@ export default function AdminModelsPage() {
   });
 
   useEffect(() => {
-    checkAdmin();
+    if (loading) return;
     loadModels();
-  }, []);
-
-  const checkAdmin = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      router.push('/auth/login');
-      return;
-    }
-
-    const { data: adminData } = await supabase
-      .from('admin_users')
-      .select('*')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!adminData) {
-      router.push('/dashboard');
-      return;
-    }
-
-    setLoading(false);
-  };
+  }, [loading]);
 
   const loadModels = async () => {
     const { data, error } = await supabase
@@ -172,19 +150,26 @@ export default function AdminModelsPage() {
   };
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Chargement...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex items-center gap-3">
+          <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <p className="text-muted-foreground">Chargement...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b">
+    <div className="min-h-screen bg-background">
+      <header className="bg-card border-b border-border">
         <div className="container mx-auto px-4 py-4 flex items-center gap-4">
           <Link href="/admin">
             <Button variant="ghost" size="icon">
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </Link>
-          <h1 className="text-2xl font-bold text-gray-900">Gestion des Modèles IA</h1>
+          <h1 className="text-2xl font-bold text-foreground">Gestion des Modèles IA</h1>
         </div>
       </header>
 
@@ -195,7 +180,7 @@ export default function AdminModelsPage() {
               <Info className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
               <div>
                 <h3 className="font-semibold mb-2">Gestion Centralisée des Clés API</h3>
-                <ul className="text-sm text-gray-700 space-y-1">
+                <ul className="text-sm text-muted-foreground space-y-1">
                   <li>• Les clés API sont gérées via <Link href="/admin/config" className="text-blue-600 hover:underline font-medium">Configuration Système</Link> (catégorie: api_keys)</li>
                   <li>• Les utilisateurs sélectionnent uniquement le modèle qu'ils souhaitent utiliser</li>
                   <li>• Tous les appels API utilisent les clés configurées par les admins</li>
@@ -356,7 +341,7 @@ export default function AdminModelsPage() {
                     <TableCell>
                       <div>
                         <p className="font-medium">{model.display_name}</p>
-                        <p className="text-sm text-gray-500">{model.model_id}</p>
+                        <p className="text-sm text-muted-foreground">{model.model_id}</p>
                       </div>
                     </TableCell>
                     <TableCell className="capitalize">{model.provider}</TableCell>

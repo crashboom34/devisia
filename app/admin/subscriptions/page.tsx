@@ -2,7 +2,6 @@
 /* eslint-disable react/no-unescaped-entities, react-hooks/exhaustive-deps */
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,6 +18,7 @@ import { PageHeader } from '@/components/dashboard/PageHeader';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CANONICAL_MAPPING } from '@/lib/tier-model';
 import { PLAN_LABELS } from '@/lib/plan-labels';
+import { useAuthGuard } from '@/hooks/use-auth-guard';
 
 interface AIModel {
   id: string;
@@ -56,10 +56,9 @@ interface TierWithModel extends SubscriptionTier {
 }
 
 export default function AdminSubscriptionsPage() {
-  const router = useRouter();
+  const { loading } = useAuthGuard({ requireAdmin: true });
   const [tiers, setTiers] = useState<TierWithModel[]>([]);
   const [aiModels, setAIModels] = useState<AIModel[]>([]);
-  const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTier, setEditingTier] = useState<SubscriptionTier | null>(null);
 
@@ -80,30 +79,10 @@ export default function AdminSubscriptionsPage() {
   });
 
   useEffect(() => {
-    checkAdmin();
-  }, []);
-
-  const checkAdmin = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      router.push('/auth/login');
-      return;
-    }
-
-    const { data: adminData } = await supabase
-      .from('admin_users')
-      .select('*')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!adminData) {
-      router.push('/dashboard');
-      return;
-    }
-
-    await Promise.all([loadTiers(), loadAIModels()]);
-    setLoading(false);
-  };
+    if (loading) return;
+    Promise.all([loadTiers(), loadAIModels()]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
 
   const loadTiers = async () => {
     const { data, error } = await supabase

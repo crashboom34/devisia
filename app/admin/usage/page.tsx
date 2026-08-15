@@ -2,7 +2,6 @@
 /* eslint-disable react/no-unescaped-entities, react-hooks/exhaustive-deps */
 
 import { useEffect, useState, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft, RefreshCw } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { useAuthGuard } from '@/hooks/use-auth-guard';
 
 interface APIUsageLog {
   id: string;
@@ -31,37 +31,16 @@ interface APIUsageLog {
 }
 
 export default function AdminUsagePage() {
-  const router = useRouter();
+  const { loading } = useAuthGuard({ requireAdmin: true, notAdminRedirectTo: '/admin' });
   const [logs, setLogs] = useState<APIUsageLog[]>([]);
-  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>('all');
   const [limit, setLimit] = useState(50);
 
   useEffect(() => {
-    checkAdmin();
+    if (loading) return;
     loadLogs();
-  }, [filter, limit]);
-
-  const checkAdmin = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      router.push('/auth/login');
-      return;
-    }
-
-    const { data: adminData } = await supabase
-      .from('admin_users')
-      .select('*')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    if (!adminData) {
-      router.push('/admin');
-      return;
-    }
-
-    setLoading(false);
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, filter, limit]);
 
   const loadLogs = async () => {
     let query = supabase
@@ -116,7 +95,7 @@ export default function AdminUsagePage() {
       case 'timeout':
         return <span className="px-2 py-1 text-xs rounded bg-orange-200 text-orange-700">Timeout</span>;
       default:
-        return <span className="px-2 py-1 text-xs rounded bg-gray-200 text-gray-700">{status}</span>;
+        return <span className="px-2 py-1 text-xs rounded bg-muted text-muted-foreground">{status}</span>;
     }
   };
 
@@ -149,19 +128,26 @@ export default function AdminUsagePage() {
   }, [logs]);
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Chargement...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex items-center gap-3">
+          <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <p className="text-muted-foreground">Chargement...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b">
+    <div className="min-h-screen bg-background">
+      <header className="bg-card border-b border-border">
         <div className="container mx-auto px-4 py-4 flex items-center gap-4">
           <Link href="/admin">
             <Button variant="ghost" size="icon">
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </Link>
-          <h1 className="text-2xl font-bold text-gray-900">Logs d&apos;Utilisation API</h1>
+          <h1 className="text-2xl font-bold text-foreground">Logs d&apos;Utilisation API</h1>
         </div>
       </header>
 
@@ -203,19 +189,19 @@ export default function AdminUsagePage() {
             <CardContent>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <p className="text-gray-500">Appels</p>
+                  <p className="text-muted-foreground">Appels</p>
                   <p className="text-lg font-semibold">{periodStats.week.calls}</p>
                 </div>
                 <div>
-                  <p className="text-gray-500">Cout</p>
+                  <p className="text-muted-foreground">Cout</p>
                   <p className="text-lg font-semibold">{formatCurrency(periodStats.week.cost)}</p>
                 </div>
                 <div>
-                  <p className="text-gray-500">Tokens In</p>
+                  <p className="text-muted-foreground">Tokens In</p>
                   <p className="text-lg font-semibold">{periodStats.week.tokensIn.toLocaleString()}</p>
                 </div>
                 <div>
-                  <p className="text-gray-500">Tokens Out</p>
+                  <p className="text-muted-foreground">Tokens Out</p>
                   <p className="text-lg font-semibold">{periodStats.week.tokensOut.toLocaleString()}</p>
                 </div>
               </div>
@@ -229,19 +215,19 @@ export default function AdminUsagePage() {
             <CardContent>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <p className="text-gray-500">Appels</p>
+                  <p className="text-muted-foreground">Appels</p>
                   <p className="text-lg font-semibold">{periodStats.month.calls}</p>
                 </div>
                 <div>
-                  <p className="text-gray-500">Cout</p>
+                  <p className="text-muted-foreground">Cout</p>
                   <p className="text-lg font-semibold">{formatCurrency(periodStats.month.cost)}</p>
                 </div>
                 <div>
-                  <p className="text-gray-500">Tokens In</p>
+                  <p className="text-muted-foreground">Tokens In</p>
                   <p className="text-lg font-semibold">{periodStats.month.tokensIn.toLocaleString()}</p>
                 </div>
                 <div>
-                  <p className="text-gray-500">Tokens Out</p>
+                  <p className="text-muted-foreground">Tokens Out</p>
                   <p className="text-lg font-semibold">{periodStats.month.tokensOut.toLocaleString()}</p>
                 </div>
               </div>
@@ -326,7 +312,7 @@ export default function AdminUsagePage() {
 
             {logs.length === 0 && (
               <div className="text-center py-12">
-                <p className="text-gray-500">Aucun log trouve</p>
+                <p className="text-muted-foreground">Aucun log trouve</p>
               </div>
             )}
           </CardContent>

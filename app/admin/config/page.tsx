@@ -2,7 +2,6 @@
 /* eslint-disable react/no-unescaped-entities, react-hooks/exhaustive-deps */
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ArrowLeft, Plus, Edit, Key, Info, ExternalLink } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { useAuthGuard } from '@/hooks/use-auth-guard';
 
 interface SystemConfig {
   id: string;
@@ -26,9 +26,8 @@ interface SystemConfig {
 }
 
 export default function AdminConfigPage() {
-  const router = useRouter();
+  const { loading } = useAuthGuard({ requireSuperAdmin: true });
   const [configs, setConfigs] = useState<SystemConfig[]>([]);
-  const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingConfig, setEditingConfig] = useState<SystemConfig | null>(null);
 
@@ -41,30 +40,9 @@ export default function AdminConfigPage() {
   });
 
   useEffect(() => {
-    checkAdmin();
+    if (loading) return;
     loadConfigs();
-  }, []);
-
-  const checkAdmin = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      router.push('/auth/login');
-      return;
-    }
-
-    const { data: adminData } = await supabase
-      .from('admin_users')
-      .select('*')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!adminData || adminData.role !== 'super_admin') {
-      router.push('/admin');
-      return;
-    }
-
-    setLoading(false);
-  };
+  }, [loading]);
 
   const loadConfigs = async () => {
     const { data, error } = await supabase
@@ -153,19 +131,26 @@ export default function AdminConfigPage() {
   }, {} as Record<string, SystemConfig[]>);
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Chargement...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex items-center gap-3">
+          <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <p className="text-muted-foreground">Chargement...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b">
+    <div className="min-h-screen bg-background">
+      <header className="bg-card border-b border-border">
         <div className="container mx-auto px-4 py-4 flex items-center gap-4">
           <Link href="/admin">
             <Button variant="ghost" size="icon">
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </Link>
-          <h1 className="text-2xl font-bold text-gray-900">Configuration Système</h1>
+          <h1 className="text-2xl font-bold text-foreground">Configuration Système</h1>
         </div>
       </header>
 
@@ -176,7 +161,7 @@ export default function AdminConfigPage() {
               <Info className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
               <div>
                 <h3 className="font-semibold mb-2 text-blue-900">Comment ajouter une clé API OpenRouter</h3>
-                <div className="space-y-3 text-sm text-gray-700">
+                <div className="space-y-3 text-sm text-muted-foreground">
                   <div>
                     <p className="font-medium mb-1">1. Obtenir votre clé API</p>
                     <a
@@ -193,14 +178,14 @@ export default function AdminConfigPage() {
                     <p className="font-medium mb-1">2. Ajouter la configuration</p>
                     <ul className="ml-4 space-y-1">
                       <li>• Cliquez sur "Ajouter une configuration" ci-dessous</li>
-                      <li>• <strong>Clé:</strong> <code className="bg-gray-100 px-1 rounded">openrouter_api_key</code></li>
+                      <li>• <strong>Clé:</strong> <code className="bg-muted px-1 rounded">openrouter_api_key</code></li>
                       <li>• <strong>Valeur:</strong> Collez votre clé API (commence par sk-or-...)</li>
                       <li>• <strong>Catégorie:</strong> api_keys</li>
                       <li>• <strong>Chiffré:</strong> Activé (recommandé)</li>
                     </ul>
                   </div>
                   <div className="pt-2 border-t border-blue-200">
-                    <p className="text-xs text-gray-600">
+                    <p className="text-xs text-muted-foreground">
                       Note: Les clés API système sont utilisées par les Edge Functions backend. Elles ne sont jamais exposées au client.
                     </p>
                   </div>
@@ -243,7 +228,7 @@ export default function AdminConfigPage() {
                       <TableCell className="font-mono text-sm">
                         {maskValue(config.value, config.is_encrypted)}
                       </TableCell>
-                      <TableCell className="text-sm text-gray-600">
+                      <TableCell className="text-sm text-muted-foreground">
                         {config.description || '-'}
                       </TableCell>
                       <TableCell className="text-right">
@@ -259,7 +244,7 @@ export default function AdminConfigPage() {
                   ))}
                   {categoryConfigs.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center text-gray-500">
+                      <TableCell colSpan={4} className="text-center text-muted-foreground">
                         Aucune configuration
                       </TableCell>
                     </TableRow>
@@ -273,9 +258,9 @@ export default function AdminConfigPage() {
         {Object.keys(groupedConfigs).length === 0 && (
           <Card>
             <CardContent className="text-center py-12">
-              <Key className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+              <Key className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-xl font-semibold mb-2">Aucune configuration</h3>
-              <p className="text-gray-600 mb-6">
+              <p className="text-muted-foreground mb-6">
                 Commencez par ajouter votre première configuration système
               </p>
               <Button onClick={() => { resetForm(); setEditingConfig(null); setDialogOpen(true); }}>
