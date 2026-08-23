@@ -20,25 +20,25 @@ export function KpiCard({
   subtitle,
   icon: Icon,
   trend,
-  valueColor = 'text-white',
-  iconColor = 'text-slate-400',
+  valueColor = 'text-foreground',
+  iconColor = 'text-primary',
   onClick
 }: KpiCardProps) {
   return (
     <Card
-      className={`bg-gradient-to-br from-slate-800/90 to-slate-800/50 border-slate-700/50 hover:border-slate-600 transition-all duration-300 hover:shadow-xl hover:shadow-slate-900/50 backdrop-blur-sm ${onClick ? 'cursor-pointer hover:-translate-y-1' : ''}`}
+      className={`min-w-[10rem] border-border bg-surface shadow-panel transition-colors hover:border-primary/30 ${onClick ? 'cursor-pointer' : ''}`}
       onClick={onClick}
     >
       <CardContent className="p-4 sm:p-5 lg:p-6">
         <div className="flex items-start justify-between mb-2 sm:mb-4">
           <div className="flex-1 min-w-0">
-            <p className="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 truncate">
+            <p className="mb-1 truncate text-[10px] font-semibold uppercase tracking-wider text-muted-foreground sm:text-xs">
               {title}
             </p>
           </div>
           {Icon && (
-            <div className="p-1.5 sm:p-2.5 bg-slate-900/50 rounded-lg sm:rounded-xl border border-slate-700/50 ml-2 shrink-0">
-              <Icon className={`h-4 w-4 sm:h-5 sm:w-5 ${iconColor}`} />
+            <div className="ml-2 shrink-0 rounded-lg border border-border bg-surface-elevated p-1.5 sm:rounded-xl sm:p-2.5">
+              <Icon className={`h-4 w-4 sm:h-5 sm:w-5 ${iconColor}`} aria-hidden="true" />
             </div>
           )}
         </div>
@@ -51,8 +51,8 @@ export function KpiCard({
             {trend && (
               <span className={`text-[10px] sm:text-sm font-medium px-1.5 sm:px-2 py-0.5 rounded-full ${
                 trend.isPositive
-                  ? 'bg-emerald-500/10 text-emerald-400'
-                  : 'bg-red-500/10 text-red-400'
+                  ? 'bg-success/10 text-success'
+                  : 'bg-danger/10 text-danger'
               }`}>
                 {trend.value}
               </span>
@@ -60,7 +60,7 @@ export function KpiCard({
           </div>
 
           {subtitle && (
-            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed truncate">
+            <p className="truncate text-xs leading-relaxed text-muted-foreground sm:text-sm">
               {subtitle}
             </p>
           )}
