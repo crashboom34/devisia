@@ -37,11 +37,11 @@ export function DashboardLayout({ children, showNewQuoteButton = true }: Dashboa
 
             <div className="flex items-center gap-2.5">
               {showNewQuoteButton && (
-                <Link href="/project/new" className="hidden sm:block">
-                  <Button variant="primary" size="sm">
+                <Button asChild variant="primary" size="sm" className="hidden sm:inline-flex">
+                  <Link href="/project/new">
                     Nouveau devis
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
               )}
               <UserMenu />
             </div>

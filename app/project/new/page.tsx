@@ -42,8 +42,9 @@ export default function NewProjectPage() {
   const [subscriptionInfo, setSubscriptionInfo] = useState<SubscriptionInfo | null>(null);
 
   useEffect(() => {
-    loadTemplates();
-  }, []);
+    if (authLoading || !user) return;
+    void loadTemplates();
+  }, [authLoading, user]);
 
   useEffect(() => {
     if (authLoading || !user) return;
@@ -260,11 +261,11 @@ export default function NewProjectPage() {
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-3 sm:pt-4">
-                  <Link href="/dashboard" className="w-full sm:flex-1">
-                    <Button type="button" variant="outline" className="w-full text-sm sm:text-base" disabled={loading}>
+                  <Button asChild type="button" variant="outline" className="w-full text-sm sm:flex-1 sm:text-base">
+                    <Link href="/dashboard" aria-disabled={loading} className={loading ? 'pointer-events-none opacity-50' : undefined}>
                       Annuler
-                    </Button>
-                  </Link>
+                    </Link>
+                  </Button>
                   <Button
                     onClick={handleSubmit}
                     disabled={loading || !formData.title || !formData.description}
@@ -347,11 +348,11 @@ export default function NewProjectPage() {
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-3 sm:pt-4">
-                  <Link href="/dashboard" className="w-full sm:flex-1">
-                    <Button type="button" variant="outline" className="w-full text-sm sm:text-base" disabled={loading}>
+                  <Button asChild type="button" variant="outline" className="w-full text-sm sm:flex-1 sm:text-base">
+                    <Link href="/dashboard" aria-disabled={loading} className={loading ? 'pointer-events-none opacity-50' : undefined}>
                       Annuler
-                    </Button>
-                  </Link>
+                    </Link>
+                  </Button>
                   <Button
                     onClick={handleSubmit}
                     disabled={loading || !formData.title || !formData.description}

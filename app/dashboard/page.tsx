@@ -192,12 +192,12 @@ export default function DashboardPage() {
                     <CardTitle className="text-lg text-foreground">À reprendre</CardTitle>
                     <p className="mt-1 text-sm text-muted-foreground">Les dossiers qui demandent encore une action.</p>
                   </div>
-                  <Link href="/project/new">
-                    <Button size="sm">
+                  <Button asChild size="sm">
+                    <Link href="/project/new">
                       <Plus className="h-4 w-4" aria-hidden="true" />
                       Nouveau
-                    </Button>
-                  </Link>
+                    </Link>
+                  </Button>
                 </CardHeader>
                 <CardContent className="px-5 pb-5 sm:px-6 sm:pb-6">
                   {attentionProjects.length === 0 ? (

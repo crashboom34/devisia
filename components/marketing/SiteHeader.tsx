@@ -65,25 +65,25 @@ export function SiteHeader() {
           <div className="hidden items-center gap-4 lg:flex">
             {user ? (
               <>
-                <Link href="/dashboard">
-                  <Button variant="ghost" className="text-gray-300 hover:text-white hover:bg-brand-darkCard">
+                <Button asChild variant="ghost" className="text-gray-300 hover:bg-brand-darkCard hover:text-white">
+                  <Link href="/dashboard">
                     Tableau de bord
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
                 <span className="text-sm text-gray-400">{user.email}</span>
               </>
             ) : (
               <>
-                <Link href="/auth/login">
-                  <Button variant="ghost" className="text-gray-300 hover:text-white hover:bg-brand-darkCard">
+                <Button asChild variant="ghost" className="text-gray-300 hover:bg-brand-darkCard hover:text-white">
+                  <Link href="/auth/login">
                     Connexion
-                  </Button>
-                </Link>
-                <Link href="/auth/register">
-                  <Button className="bg-brand-green hover:bg-green-600 text-white">
+                  </Link>
+                </Button>
+                <Button asChild className="bg-brand-green text-white hover:bg-green-600">
+                  <Link href="/auth/register">
                     Commencer gratuitement
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
               </>
             )}
           </div>
@@ -120,23 +120,23 @@ export function SiteHeader() {
               ))}
               <div className="flex flex-col gap-2 pt-4 border-t border-gray-800">
                 {user ? (
-                  <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="outline" className="w-full border-gray-700 text-white">
+                  <Button asChild variant="outline" className="w-full border-gray-700 text-white">
+                    <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)}>
                       Tableau de bord
-                    </Button>
-                  </Link>
+                    </Link>
+                  </Button>
                 ) : (
                   <>
-                    <Link href="/auth/login" onClick={() => setMobileMenuOpen(false)}>
-                      <Button variant="outline" className="w-full border-gray-700 text-white">
+                    <Button asChild variant="outline" className="w-full border-gray-700 text-white">
+                      <Link href="/auth/login" onClick={() => setMobileMenuOpen(false)}>
                         Connexion
-                      </Button>
-                    </Link>
-                    <Link href="/auth/register" onClick={() => setMobileMenuOpen(false)}>
-                      <Button className="w-full bg-brand-green hover:bg-green-600 text-white">
+                      </Link>
+                    </Button>
+                    <Button asChild className="w-full bg-brand-green text-white hover:bg-green-600">
+                      <Link href="/auth/register" onClick={() => setMobileMenuOpen(false)}>
                         Commencer gratuitement
-                      </Button>
-                    </Link>
+                      </Link>
+                    </Button>
                   </>
                 )}
               </div>
