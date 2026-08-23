@@ -1,222 +1,120 @@
 'use client';
-/* eslint-disable react/no-unescaped-entities, react-hooks/exhaustive-deps */
 
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { FileText, Key, AlertCircle, EyeOff } from 'lucide-react';
-import { SettingsNavigation } from '@/components/SettingsNavigation';
+import { ArrowRight, Eye, KeyRound, Settings2, ShieldCheck, UserRound } from 'lucide-react';
 import { DashboardLayout } from '@/components/DashboardLayout';
+import { PageContainer } from '@/components/dashboard/PageContainer';
+import { PageHeader } from '@/components/dashboard/PageHeader';
+import { PageLoading } from '@/components/dashboard/PageState';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 
-export default function SettingsPage() {
-  const { loading } = useAuthGuard();
+const settingsLinks = [
+  {
+    title: 'Paramètres détaillés',
+    description: 'Entreprise, préférences, devis et notifications.',
+    href: '/settings/parametres',
+    icon: Settings2,
+  },
+  {
+    title: 'Affichage avancé',
+    description: 'Consulter les restrictions d’affichage existantes.',
+    href: '/settings/view-mode',
+    icon: Eye,
+  },
+  {
+    title: 'Abonnement',
+    description: 'Voir les plans et les limites associées au compte.',
+    href: '/pricing',
+    icon: ShieldCheck,
+  },
+];
 
-  if (loading) {
+export default function SettingsPage() {
+  const { user, loading } = useAuthGuard();
+
+  if (loading || !user) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-white">Chargement...</div>
-      </div>
+      <DashboardLayout showNewQuoteButton={false}>
+        <PageContainer>
+          <PageLoading label={loading ? 'Vérification de votre accès…' : 'Redirection…'} />
+        </PageContainer>
+      </DashboardLayout>
     );
   }
 
   return (
     <DashboardLayout showNewQuoteButton={false}>
-      <div className="max-w-4xl mx-auto">
-        {/* Page Title */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">Paramètres</h1>
-          <p className="text-gray-400">Configuration de votre compte</p>
-        </div>
+      <PageContainer className="max-w-5xl">
+        <PageHeader
+          title="Paramètres"
+          subtitle="Gérez votre compte et les préférences de Devisia."
+          breadcrumbs={[
+            { label: 'Accueil', href: '/dashboard' },
+            { label: 'Paramètres' },
+          ]}
+          showBackButton={false}
+        />
 
-        {/* Information Alert */}
-        <Alert className="mb-8 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
-          <Key className="h-5 w-5 text-blue-600" />
-          <AlertDescription className="ml-2 text-gray-800">
-            <div className="space-y-3">
-              <p className="font-semibold text-base">
-                Important: La gestion des clés API a été centralisée pour plus de sécurité.
-              </p>
-              <ul className="space-y-2 ml-4 text-sm">
-                <li className="flex items-start gap-2">
-                  <span className="text-blue-600 mt-0.5">•</span>
-                  <span>Les clés API sont maintenant gérées exclusivement par les administrateurs</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-blue-600 mt-0.5">•</span>
-                  <span>
-                    Vous pouvez simplement <strong>sélectionner le modèle IA</strong> de votre choix depuis votre dashboard
-                  </span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-blue-600 mt-0.5">•</span>
-                  <span>Vos appels API utilisent automatiquement les clés configurées par l'équipe</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-blue-600 mt-0.5">•</span>
-                  <span>C'est plus sûr: vos clés personnelles ne sont plus nécessaires</span>
-                </li>
-              </ul>
-            </div>
-          </AlertDescription>
-        </Alert>
-
-        {/* Return to Dashboard Button */}
-        <div className="mb-8">
-          <Link href="/dashboard" className="block">
-            <Button variant="primary" size="lg" className="w-full">
-              Retour au Dashboard
-            </Button>
-          </Link>
-        </div>
-
-        {/* Obsolete Section - API Keys */}
-        <Card className="bg-gradient-to-br from-gray-900 to-gray-800 border-gray-700 mb-8">
-          <CardHeader className="flex flex-row items-center justify-between pb-4">
-            <div>
-              <CardTitle className="text-xl font-bold text-gray-300 mb-1">
-                Ajouter une clé API (Obsolète)
-              </CardTitle>
-              <p className="text-sm text-gray-500">Cette fonctionnalité n'est plus disponible</p>
-            </div>
-            <Badge variant="outline" className="border-gray-600 text-gray-400 px-3 py-1">
-              Désactivé
-            </Badge>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Provider Field - Disabled */}
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">
-                Fournisseur
-              </label>
-              <div className="w-full px-4 py-3 bg-gray-950 border border-gray-700 rounded-lg text-gray-500 cursor-not-allowed">
-                Géré par Devisia (inclus dans votre abonnement)
+        <Card className="border-border bg-surface shadow-panel">
+          <CardContent className="p-5 sm:p-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 items-center gap-4">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-border bg-surface-elevated text-primary">
+                  <UserRound className="h-6 w-6" aria-hidden="true" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Compte connecté</p>
+                  <p className="mt-1 truncate font-semibold text-foreground">{user.email}</p>
+                </div>
               </div>
-            </div>
-
-            {/* Model Field - Disabled */}
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">
-                Moteur de génération
-              </label>
-              <div className="w-full px-4 py-3 bg-gray-950 border border-gray-700 rounded-lg text-gray-500 cursor-not-allowed">
-                Adapté automatiquement à votre plan
-              </div>
-              <p className="text-xs text-gray-500 mt-2">
-                Le moteur de génération est géré par Devisia et évolue pour améliorer la qualité, sans action de votre part.
-              </p>
-            </div>
-
-            {/* API Key Field - Disabled */}
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">
-                Clé API personnalisée
-              </label>
-              <div className="w-full px-4 py-3 bg-gray-950 border border-gray-700 rounded-lg text-gray-500 cursor-not-allowed font-mono">
-                Non disponible
-              </div>
-              <p className="text-xs text-gray-500 mt-2">
-                Cette fonctionnalité n&apos;est plus disponible. Le moteur est entièrement géré par Devisia.
-              </p>
-            </div>
-
-            {/* Disabled Add Button */}
-            <Button
-              disabled
-              className="w-full bg-emerald-500/30 text-emerald-300 cursor-not-allowed py-6 text-base font-semibold"
-            >
-              Ajouter la clé API
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Saved API Keys Section - Empty */}
-        <Card className="bg-gradient-to-br from-gray-900 to-gray-800 border-gray-700">
-          <CardHeader className="flex flex-row items-center justify-between pb-4">
-            <div>
-              <CardTitle className="text-xl font-bold text-gray-300 mb-1">
-                Clés API enregistrées (Obsolète)
-              </CardTitle>
-              <p className="text-sm text-gray-500">Les clés utilisateur ne sont plus utilisées</p>
-            </div>
-            <Badge variant="outline" className="border-gray-600 text-gray-400 px-3 py-1">
-              Désactivé
-            </Badge>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center py-12">
-              <Key className="h-12 w-12 text-gray-600 mx-auto mb-4" />
-              <p className="text-gray-500 text-lg font-medium">Aucune clé API enregistrée</p>
-              <p className="text-gray-600 text-sm mt-2">
-                La gestion des clés est maintenant centralisée côté administrateur
-              </p>
+              <Button asChild variant="outline" size="sm">
+                <Link href="/settings/parametres">Modifier les préférences</Link>
+              </Button>
             </div>
           </CardContent>
         </Card>
 
-        {/* Additional Information */}
-        <div className="mt-8 p-6 bg-blue-900/20 border border-blue-800/30 rounded-lg">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="h-5 w-5 text-blue-400 mt-0.5 flex-shrink-0" />
-            <div className="space-y-2 text-sm text-blue-200">
-              <p className="font-semibold">Pourquoi ce changement ?</p>
-              <ul className="space-y-1 ml-4">
-                <li>✓ Sécurité renforcée: vos clés API personnelles ne sont plus exposées</li>
-                <li>✓ Simplicité: plus besoin de gérer vos propres clés</li>
-                <li>✓ Centralisation: l'équipe gère les quotas et la disponibilité</li>
-                <li>✓ Transparence: vous choisissez le modèle, nous gérons l'accès</li>
-              </ul>
-              <p className="mt-4 pt-4 border-t border-blue-800/50">
-                Pour toute question, contactez l'équipe support ou consultez la documentation.
+        <section aria-labelledby="settings-sections-title">
+          <h2 id="settings-sections-title" className="mb-4 text-lg font-semibold text-foreground">Sections</h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {settingsLinks.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="group rounded-xl border border-border bg-surface p-5 shadow-panel transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                      <Icon className="h-5 w-5" aria-hidden="true" />
+                    </span>
+                    <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-1" aria-hidden="true" />
+                  </div>
+                  <h3 className="mt-5 font-semibold text-foreground">{item.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">{item.description}</p>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+
+        <section aria-labelledby="security-title" className="rounded-xl border border-info/30 bg-info/10 p-5 sm:p-6">
+          <div className="flex items-start gap-4">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-info/10 text-info">
+              <KeyRound className="h-5 w-5" aria-hidden="true" />
+            </span>
+            <div>
+              <h2 id="security-title" className="font-semibold text-foreground">Clés de génération gérées par Devisia</h2>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                Aucune clé API personnelle n’est demandée dans l’application. Les accès aux services de génération sont configurés côté plateforme.
               </p>
             </div>
           </div>
-        </div>
-
-        {/* Settings Navigation */}
-        <div className="mt-8">
-          <h3 className="text-lg font-semibold text-white mb-4">Navigation des paramètres</h3>
-          <SettingsNavigation />
-        </div>
-
-        {/* View Mode Configuration */}
-        <div className="mt-8">
-          <Card className="bg-gradient-to-br from-purple-500/10 to-blue-500/10 border-purple-500/50">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
-                    <EyeOff className="h-5 w-5 text-purple-400" />
-                    Restreindre l'affichage
-                  </h3>
-                  <p className="text-slate-400 text-sm mb-4">
-                    Configurez votre compte pour afficher uniquement certaines pages et masquer toutes les autres.
-                    Utile si vous souhaitez vous concentrer sur une seule section (ex: paramètres détaillés uniquement).
-                  </p>
-                  <div className="flex flex-wrap gap-2 text-xs text-slate-500">
-                    <Badge variant="secondary" className="bg-purple-500/20 text-purple-300">
-                      Redirection automatique
-                    </Badge>
-                    <Badge variant="secondary" className="bg-purple-500/20 text-purple-300">
-                      Sauvegarde permanente
-                    </Badge>
-                    <Badge variant="secondary" className="bg-purple-500/20 text-purple-300">
-                      Réversible
-                    </Badge>
-                  </div>
-                </div>
-                <Link href="/settings/view-mode">
-                  <Button className="bg-purple-600 hover:bg-purple-700 text-white">
-                    Configurer
-                  </Button>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+        </section>
+      </PageContainer>
     </DashboardLayout>
   );
 }

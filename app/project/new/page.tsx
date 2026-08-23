@@ -9,9 +9,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, FileText, Mic, Keyboard, Loader2, Sparkles } from 'lucide-react';
+import { Mic, Keyboard, Loader2, Sparkles } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { DashboardLayout } from '@/components/DashboardLayout';
+import { PageContainer } from '@/components/dashboard/PageContainer';
+import { PageHeader } from '@/components/dashboard/PageHeader';
+import { PageLoading } from '@/components/dashboard/PageState';
 import VoiceRecorder from '@/components/VoiceRecorder';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Slider } from '@/components/ui/slider';
@@ -165,41 +168,45 @@ export default function NewProjectPage() {
     }
   };
 
+  if (authLoading || !user) {
+    return (
+      <DashboardLayout showNewQuoteButton={false}>
+        <PageContainer>
+          <PageLoading label={authLoading ? 'Vérification de votre accès…' : 'Redirection…'} />
+        </PageContainer>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout showNewQuoteButton={false}>
-      <div className="max-w-3xl mx-auto">
-        <div className="mb-4">
-          <Link href="/dashboard">
-            <Button variant="ghost" size="sm" className="hover:bg-slate-800 text-slate-400">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Retour au Dashboard
-            </Button>
-          </Link>
-        </div>
-        <div className="mb-6 sm:mb-8 text-center">
-          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">Nouveau Projet</h1>
-          <p className="text-sm sm:text-base text-slate-400">
-            Dictez ou écrivez votre projet de construction
-          </p>
-        </div>
+      <PageContainer className="max-w-3xl">
+        <PageHeader
+          title="Nouveau devis"
+          subtitle="Décrivez le chantier à la voix ou au clavier pour générer trois variantes."
+          breadcrumbs={[
+            { label: 'Accueil', href: '/dashboard' },
+            { label: 'Nouveau devis' },
+          ]}
+        />
 
-        <Card className="bg-gradient-to-br from-slate-800/90 to-slate-800/50 border border-slate-700/50 shadow-2xl">
+        <Card className="border-border bg-surface shadow-panel">
           <CardHeader>
-            <CardTitle className="text-lg sm:text-xl text-white">Décrivez Votre Projet</CardTitle>
-            <CardDescription className="text-sm sm:text-base text-slate-400">
-              Choisissez votre méthode de saisie préférée
+            <CardTitle className="text-lg text-foreground sm:text-xl">Décrivez votre projet</CardTitle>
+            <CardDescription className="text-sm text-muted-foreground sm:text-base">
+              Choisissez la méthode la plus pratique sur le chantier.
             </CardDescription>
           </CardHeader>
           <CardContent className="px-3 sm:px-6">
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'voice' | 'text')}>
-              <TabsList className="grid w-full grid-cols-2 mb-4 sm:mb-6 bg-slate-900/50 border-slate-700/50">
-                <TabsTrigger value="voice" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-600 data-[state=active]:to-cyan-700 data-[state=active]:text-white">
-                  <Mic className="h-3 w-3 sm:h-4 sm:w-4" />
+              <TabsList className="mb-4 grid h-11 w-full grid-cols-2 border border-border bg-surface-elevated sm:mb-6">
+                <TabsTrigger value="voice" className="flex min-h-10 items-center gap-1 text-xs data-[state=active]:bg-surface data-[state=active]:text-foreground sm:gap-2 sm:text-sm">
+                  <Mic className="h-3 w-3 sm:h-4 sm:w-4" aria-hidden="true" />
                   <span className="hidden xs:inline">Dictée Vocale</span>
                   <span className="xs:hidden">Voix</span>
                 </TabsTrigger>
-                <TabsTrigger value="text" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-600 data-[state=active]:to-cyan-700 data-[state=active]:text-white">
-                  <Keyboard className="h-3 w-3 sm:h-4 sm:w-4" />
+                <TabsTrigger value="text" className="flex min-h-10 items-center gap-1 text-xs data-[state=active]:bg-surface data-[state=active]:text-foreground sm:gap-2 sm:text-sm">
+                  <Keyboard className="h-3 w-3 sm:h-4 sm:w-4" aria-hidden="true" />
                   <span className="hidden xs:inline">Saisie Texte</span>
                   <span className="xs:hidden">Texte</span>
                 </TabsTrigger>
@@ -207,69 +214,61 @@ export default function NewProjectPage() {
 
               <TabsContent value="voice" className="space-y-4 sm:space-y-6">
                 <div className="space-y-2 sm:space-y-3">
-                  <Label className="text-sm sm:text-base text-slate-300">Titre du Projet</Label>
+                  <Label className="text-sm text-foreground sm:text-base">Titre du projet</Label>
                   <VoiceRecorder
                     value={formData.title}
-                    onChange={(text) => {
-                      console.log('[TITLE onChange]', text);
-                      setFormData(prev => ({ ...prev, title: text }));
-                    }}
+                    onChange={(text) => setFormData(prev => ({ ...prev, title: text }))}
                     placeholder="Dictez le titre de votre projet"
                   />
                 </div>
 
                 <div className="space-y-2 sm:space-y-3">
-                  <Label className="text-sm sm:text-base text-slate-300">Description du Projet</Label>
+                  <Label className="text-sm text-foreground sm:text-base">Description du projet</Label>
                   <VoiceRecorder
                     value={formData.description}
-                    onChange={(text) => {
-                      console.log('[DESCRIPTION onChange]', text);
-                      setFormData(prev => ({ ...prev, description: text }));
-                    }}
+                    onChange={(text) => setFormData(prev => ({ ...prev, description: text }))}
                     placeholder="Dictez la description complète de votre projet"
                   />
                 </div>
 
                 <div className="space-y-2 sm:space-y-3">
-                  <Label className="text-sm sm:text-base text-slate-300">Type de Projet (optionnel)</Label>
+                  <Label className="text-sm text-foreground sm:text-base">Type de projet (optionnel)</Label>
                   {loadingTemplates ? (
-                    <div className="flex items-center gap-2 p-3 border border-slate-700/50 rounded-lg bg-slate-800/50">
-                      <Loader2 className="h-4 w-4 animate-spin text-cyan-500" />
-                      <span className="text-sm text-slate-400">Chargement des templates...</span>
+                    <div className="flex items-center gap-2 rounded-lg border border-border bg-surface-elevated p-3">
+                      <Loader2 className="h-4 w-4 animate-spin text-primary" aria-hidden="true" />
+                      <span className="text-sm text-muted-foreground">Chargement des modèles…</span>
                     </div>
                   ) : (
-                    <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
-                      <SelectTrigger className="text-sm sm:text-base bg-slate-800/50 border-slate-700 text-white">
+                    <Select value={selectedTemplateId} onValueChange={(value) => setSelectedTemplateId(value === 'none' ? '' : value)}>
+                      <SelectTrigger className="h-11 bg-surface-elevated text-sm text-foreground sm:text-base">
                         <SelectValue placeholder="Sélectionner un type de projet (optionnel)" />
                       </SelectTrigger>
-                      <SelectContent className="bg-slate-900 border-slate-700">
-                        <SelectItem value="none" className="text-white hover:bg-slate-800 focus:bg-slate-800 focus:text-white">Aucun template (génération libre)</SelectItem>
+                      <SelectContent>
+                        <SelectItem value="none">Aucun modèle (génération libre)</SelectItem>
                         {templates.map((template) => (
-                          <SelectItem key={template.id} value={template.template_id} className="text-white hover:bg-slate-800 focus:bg-slate-800 focus:text-white">
+                          <SelectItem key={template.id} value={template.template_id}>
                             {template.name}
-                            <span className="text-xs text-slate-500 ml-2">• {template.category}</span>
+                            <span className="ml-2 text-xs text-muted-foreground">• {template.category}</span>
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   )}
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-muted-foreground">
                     Sélectionnez un type de projet pour structurer automatiquement votre devis selon les standards BTP
                   </p>
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-3 sm:pt-4">
                   <Link href="/dashboard" className="w-full sm:flex-1">
-                    <Button type="button" variant="outline" className="w-full text-sm sm:text-base border-slate-700 text-slate-300 hover:bg-slate-800" disabled={loading}>
+                    <Button type="button" variant="outline" className="w-full text-sm sm:text-base" disabled={loading}>
                       Annuler
                     </Button>
                   </Link>
                   <Button
                     onClick={handleSubmit}
                     disabled={loading || !formData.title || !formData.description}
-                    className={`w-full sm:flex-1 relative overflow-hidden transition-all text-sm sm:text-base bg-gradient-to-r from-cyan-600 to-cyan-700 hover:from-cyan-700 hover:to-cyan-800 shadow-lg shadow-cyan-600/20 text-white ${
-                      loading ? 'animate-pulse' : ''
-                    }`}
+                    className="relative w-full overflow-hidden text-sm sm:flex-1 sm:text-base"
                   >
                     {loading ? (
                       <span className="flex items-center justify-center gap-1 sm:gap-2">
@@ -286,8 +285,8 @@ export default function NewProjectPage() {
 
               <TabsContent value="text" className="space-y-4 sm:space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="title" className="text-sm sm:text-base text-slate-300">
-                    Titre du Projet <span className="text-red-400">*</span>
+                  <Label htmlFor="title" className="text-sm text-foreground sm:text-base">
+                    Titre du projet <span className="text-danger" aria-hidden="true">*</span>
                   </Label>
                   <Input
                     id="title"
@@ -295,13 +294,14 @@ export default function NewProjectPage() {
                     value={formData.title}
                     onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
                     required
-                    className="text-sm sm:text-base bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500"
+                    aria-required="true"
+                    className="h-11 bg-surface-elevated text-sm sm:text-base"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="description" className="text-sm sm:text-base text-slate-300">
-                    Description du Projet <span className="text-red-400">*</span>
+                  <Label htmlFor="description" className="text-sm text-foreground sm:text-base">
+                    Description du projet <span className="text-danger" aria-hidden="true">*</span>
                   </Label>
                   <Textarea
                     id="description"
@@ -310,53 +310,52 @@ export default function NewProjectPage() {
                     value={formData.description}
                     onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                     required
-                    className="text-sm sm:text-base bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500"
+                    aria-required="true"
+                    className="bg-surface-elevated text-sm sm:text-base"
                   />
-                  <p className="text-xs sm:text-sm text-slate-500">
+                  <p className="text-xs text-muted-foreground sm:text-sm">
                     Plus votre description est détaillée, plus les devis générés seront précis.
                   </p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="template" className="text-sm sm:text-base text-slate-300">Type de Projet (optionnel)</Label>
+                  <Label htmlFor="template" className="text-sm text-foreground sm:text-base">Type de projet (optionnel)</Label>
                   {loadingTemplates ? (
-                    <div className="flex items-center gap-2 p-3 border border-gray-800 rounded-lg bg-slate-800/50">
-                      <Loader2 className="h-4 w-4 animate-spin text-brand-green" />
-                      <span className="text-sm text-slate-400">Chargement des templates...</span>
+                    <div className="flex items-center gap-2 rounded-lg border border-border bg-surface-elevated p-3">
+                      <Loader2 className="h-4 w-4 animate-spin text-primary" aria-hidden="true" />
+                      <span className="text-sm text-muted-foreground">Chargement des modèles…</span>
                     </div>
                   ) : (
-                    <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
-                      <SelectTrigger id="template" className="text-sm sm:text-base bg-slate-800/50 border-slate-700 text-white">
+                    <Select value={selectedTemplateId} onValueChange={(value) => setSelectedTemplateId(value === 'none' ? '' : value)}>
+                      <SelectTrigger id="template" className="h-11 bg-surface-elevated text-sm text-foreground sm:text-base">
                         <SelectValue placeholder="Sélectionner un type de projet (optionnel)" />
                       </SelectTrigger>
-                      <SelectContent className="bg-slate-900 border-slate-700">
-                        <SelectItem value="none" className="text-white hover:bg-slate-800 focus:bg-slate-800 focus:text-white">Aucun template (génération libre)</SelectItem>
+                      <SelectContent>
+                        <SelectItem value="none">Aucun modèle (génération libre)</SelectItem>
                         {templates.map((template) => (
-                          <SelectItem key={template.id} value={template.template_id} className="text-white hover:bg-slate-800 focus:bg-slate-800 focus:text-white">
+                          <SelectItem key={template.id} value={template.template_id}>
                             {template.name}
-                            <span className="text-xs text-slate-500 ml-2">• {template.category}</span>
+                            <span className="ml-2 text-xs text-muted-foreground">• {template.category}</span>
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   )}
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-muted-foreground">
                     Sélectionnez un type de projet pour structurer automatiquement votre devis selon les standards BTP
                   </p>
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-3 sm:pt-4">
                   <Link href="/dashboard" className="w-full sm:flex-1">
-                    <Button type="button" variant="outline" className="w-full text-sm sm:text-base border-slate-700 text-slate-300 hover:bg-slate-800" disabled={loading}>
+                    <Button type="button" variant="outline" className="w-full text-sm sm:text-base" disabled={loading}>
                       Annuler
                     </Button>
                   </Link>
                   <Button
                     onClick={handleSubmit}
                     disabled={loading || !formData.title || !formData.description}
-                    className={`w-full sm:flex-1 relative overflow-hidden transition-all text-sm sm:text-base bg-gradient-to-r from-cyan-600 to-cyan-700 hover:from-cyan-700 hover:to-cyan-800 shadow-lg shadow-cyan-600/20 text-white ${
-                      loading ? 'animate-pulse' : ''
-                    }`}
+                    className="relative w-full overflow-hidden text-sm sm:flex-1 sm:text-base"
                   >
                     {loading ? (
                       <span className="flex items-center justify-center gap-1 sm:gap-2">
@@ -375,46 +374,46 @@ export default function NewProjectPage() {
         </Card>
 
         {/* Subscription Tier Info - Automatic AI Model Assignment */}
-        <Card className="mt-4 sm:mt-6 bg-gradient-to-br from-slate-800/90 to-slate-800/50 border border-slate-700/50 shadow-2xl">
+        <Card className="border-border bg-surface shadow-panel">
           <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-cyan-500/10">
-                <Sparkles className="h-5 w-5 text-cyan-400" />
+              <div className="rounded-lg bg-primary/10 p-2">
+                <Sparkles className="h-5 w-5 text-primary" aria-hidden="true" />
               </div>
               <div className="flex-1">
-                <h3 className="text-sm font-semibold text-white">
+                <h3 className="text-sm font-semibold text-foreground">
                   {subscriptionInfo ? getPlanLabel(subscriptionInfo.tier_name) : 'Génération intelligente'}
                 </h3>
-                <p className="text-xs text-slate-400 mt-0.5">
+                <p className="mt-0.5 text-xs text-muted-foreground">
                   {subscriptionInfo
                     ? getPlanValueProp(subscriptionInfo.tier_name)
                     : 'Vos devis seront générés automatiquement selon votre abonnement'}
                 </p>
               </div>
               {subscriptionInfo && subscriptionInfo.tier_level > 1 && (
-                <div className="px-2 py-1 rounded-full bg-cyan-500/20 border border-cyan-500/30">
-                  <span className="text-xs font-medium text-cyan-300">Premium</span>
+                <div className="rounded-full border border-primary/30 bg-primary/10 px-2 py-1">
+                  <span className="text-xs font-medium text-primary">Premium</span>
                 </div>
               )}
             </div>
           </CardContent>
         </Card>
 
-        <Card className="mt-4 sm:mt-6 bg-gradient-to-br from-slate-800/90 to-slate-800/50 border border-slate-700/50 shadow-2xl">
+        <Card className="border-border bg-surface shadow-panel">
           <CardHeader>
-            <CardTitle className="text-base sm:text-lg flex items-center gap-2 text-white">
-              <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-cyan-400" />
+            <CardTitle className="flex items-center gap-2 text-base text-foreground sm:text-lg">
+              <Sparkles className="h-4 w-4 text-primary sm:h-5 sm:w-5" aria-hidden="true" />
               Créativité de l'IA
             </CardTitle>
-            <CardDescription className="text-xs sm:text-sm text-slate-400">
+            <CardDescription className="text-xs text-muted-foreground sm:text-sm">
               Ajustez la créativité du modèle (0 = précis et conservateur, 1 = créatif et varié)
             </CardDescription>
           </CardHeader>
           <CardContent className="px-3 sm:px-6 pb-4 sm:pb-6">
             <div className="space-y-3 sm:space-y-4">
               <div className="flex items-center justify-between text-xs sm:text-sm">
-                <span className="text-slate-300">Température: {temperature.toFixed(2)}</span>
-                <span className="text-slate-400">
+                <span className="text-foreground">Température : {temperature.toFixed(2)}</span>
+                <span className="text-muted-foreground">
                   {temperature < 0.3 ? '❄️ Très conservateur' :
                    temperature < 0.5 ? '🧊 Conservateur' :
                    temperature < 0.7 ? '⚖️ Équilibré' :
@@ -430,7 +429,7 @@ export default function NewProjectPage() {
                 step={0.05}
                 className="w-full"
               />
-              <div className="flex justify-between text-xs text-slate-500">
+              <div className="flex justify-between text-xs text-muted-foreground">
                 <span>0.0 - Précis</span>
                 <span>0.5 - Équilibré</span>
                 <span>1.0 - Créatif</span>
@@ -439,10 +438,10 @@ export default function NewProjectPage() {
           </CardContent>
         </Card>
 
-        <Card className="mt-4 sm:mt-6 bg-cyan-500/10 border border-cyan-500/30">
+        <Card className="border border-info/30 bg-info/10">
           <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
-            <h3 className="font-semibold mb-2 text-cyan-400 text-sm sm:text-base">Conseils pour une bonne description</h3>
-            <ul className="text-xs sm:text-sm text-slate-300 space-y-1">
+            <h3 className="mb-2 text-sm font-semibold text-foreground sm:text-base">Conseils pour une description utile</h3>
+            <ul className="space-y-1 text-xs text-muted-foreground sm:text-sm">
               <li>• Précisez le type de travaux (construction, rénovation, extension...)</li>
               <li>• Indiquez les dimensions et surfaces concernées</li>
               <li>• Mentionnez les matériaux et finitions souhaités</li>
@@ -451,7 +450,7 @@ export default function NewProjectPage() {
             </ul>
           </CardContent>
         </Card>
-      </div>
+      </PageContainer>
     </DashboardLayout>
   );
 }

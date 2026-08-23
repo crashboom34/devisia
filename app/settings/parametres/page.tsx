@@ -26,6 +26,9 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { DashboardLayout } from '@/components/DashboardLayout';
+import { PageContainer } from '@/components/dashboard/PageContainer';
+import { PageHeader } from '@/components/dashboard/PageHeader';
+import { PageLoading } from '@/components/dashboard/PageState';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 
 type SettingsSection = 'general' | 'devis' | 'notifications' | 'appearance' | 'security';
@@ -151,22 +154,28 @@ export default function ParametresPage() {
     },
   ];
 
-  if (loading) {
+  if (authLoading || loading || !user) {
     return (
-      <div className="min-h-screen bg-[#1a1a1a] flex items-center justify-center">
-        <div className="text-white">Chargement...</div>
-      </div>
+      <DashboardLayout showNewQuoteButton={false}>
+        <PageContainer>
+          <PageLoading label={authLoading ? 'Vérification de votre accès…' : 'Chargement des paramètres…'} />
+        </PageContainer>
+      </DashboardLayout>
     );
   }
 
   return (
     <DashboardLayout showNewQuoteButton={false}>
-      <div className="max-w-7xl mx-auto">
-        {/* Page Title */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Paramètres</h1>
-          <p className="text-slate-400">Gérez les paramètres de votre compte et application</p>
-        </div>
+      <PageContainer>
+        <PageHeader
+          title="Paramètres détaillés"
+          subtitle="Gérez les informations de l’entreprise et les préférences de devis."
+          breadcrumbs={[
+            { label: 'Accueil', href: '/dashboard' },
+            { label: 'Paramètres', href: '/settings' },
+            { label: 'Paramètres détaillés' },
+          ]}
+        />
 
         {/* Main Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -182,7 +191,9 @@ export default function ParametresPage() {
                       return (
                         <button
                           key={section.id}
+                          type="button"
                           onClick={() => setActiveSection(section.id)}
+                          aria-current={isActive ? 'page' : undefined}
                           className={`w-full flex items-start gap-3 px-3 py-3 rounded-lg transition-all ${
                             isActive
                               ? 'bg-slate-700 text-white'
@@ -325,7 +336,7 @@ export default function ParametresPage() {
                     </div>
                   </CardHeader>
                   <CardContent className="p-6 space-y-6">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <div className="space-y-2">
                         <Label htmlFor="quote_prefix" className="text-slate-300 text-sm">
                           Préfixe des devis
@@ -357,7 +368,7 @@ export default function ParametresPage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <div className="space-y-2">
                         <Label htmlFor="currency" className="text-slate-300 text-sm">
                           Devise par défaut
@@ -445,7 +456,7 @@ export default function ParametresPage() {
                         Informations du compte
                       </h3>
                       <div className="space-y-4">
-                        <div className="flex items-start gap-4">
+                        <div className="flex flex-col gap-5 xl:flex-row xl:items-start">
                           <div className="space-y-2 flex-1">
                             <Label className="text-slate-300 text-sm">Logo de l'entreprise</Label>
                             <div className="flex items-center gap-4">
@@ -493,7 +504,7 @@ export default function ParametresPage() {
                         Informations de l'entreprise
                       </h3>
                       <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                           <div className="space-y-2">
                             <Label htmlFor="company_name" className="text-slate-300 text-sm flex items-center gap-2">
                               <Building2 className="h-3 w-3" />
@@ -542,7 +553,7 @@ export default function ParametresPage() {
                           </p>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                           <div className="space-y-2">
                             <Label htmlFor="website" className="text-slate-300 text-sm flex items-center gap-2">
                               <Globe className="h-3 w-3" />
@@ -616,7 +627,7 @@ export default function ParametresPage() {
               {/* Security Section */}
               {activeSection === 'security' && (
                 <Card className="bg-gradient-to-br from-slate-800/90 to-slate-800/50 border-slate-700/50 shadow-xl">
-                  <CardContent className="p-12 text-center">
+                  <CardContent className="p-6 text-center sm:p-12">
                     <div className="max-w-md mx-auto">
                       <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-red-500/10 border-2 border-red-500/30 flex items-center justify-center">
                         <Shield className="h-10 w-10 text-red-400" />
@@ -634,7 +645,7 @@ export default function ParametresPage() {
               {/* Appearance Section */}
               {activeSection === 'appearance' && (
                 <Card className="bg-gradient-to-br from-slate-800/90 to-slate-800/50 border-slate-700/50 shadow-xl">
-                  <CardContent className="p-12 text-center">
+                  <CardContent className="p-6 text-center sm:p-12">
                     <div className="max-w-md mx-auto">
                       <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-purple-500/10 border-2 border-purple-500/30 flex items-center justify-center">
                         <Palette className="h-10 w-10 text-purple-400" />
@@ -650,7 +661,7 @@ export default function ParametresPage() {
               )}
             </div>
           </div>
-      </div>
+      </PageContainer>
     </DashboardLayout>
   );
 }

@@ -82,7 +82,8 @@ export function ViewModeSelector() {
       title: 'Accès complet',
       description: 'Accéder à toutes les pages (mode par défaut)',
       icon: Eye,
-      color: 'blue',
+      iconClass: 'bg-info/10 text-info',
+      buttonClass: 'bg-info text-white hover:bg-info/90',
       pages: ['Dashboard', 'Tous les paramètres', 'Projets', 'Clients'],
     },
     {
@@ -90,7 +91,8 @@ export function ViewModeSelector() {
       title: 'Paramètres Détaillés uniquement',
       description: 'Afficher uniquement la page des paramètres détaillés',
       icon: Settings,
-      color: 'purple',
+      iconClass: 'bg-primary/10 text-primary',
+      buttonClass: 'bg-primary text-primary-foreground hover:bg-primary/90',
       pages: ['Paramètres Détaillés'],
       recommended: true,
     },
@@ -99,7 +101,8 @@ export function ViewModeSelector() {
       title: 'Informations API uniquement',
       description: 'Afficher uniquement la page d\'information API',
       icon: Info,
-      color: 'emerald',
+      iconClass: 'bg-success/10 text-success',
+      buttonClass: 'bg-success text-white hover:bg-success/90',
       pages: ['Informations API'],
     },
     {
@@ -107,7 +110,8 @@ export function ViewModeSelector() {
       title: 'Paramètres Complets uniquement',
       description: 'Afficher uniquement la page des paramètres complets',
       icon: FileText,
-      color: 'orange',
+      iconClass: 'bg-warning/10 text-warning',
+      buttonClass: 'bg-warning text-black hover:bg-warning/90',
       pages: ['Paramètres Complets'],
     },
   ];
@@ -180,8 +184,8 @@ export function ViewModeSelector() {
               <CardHeader className="pb-4">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className={`p-3 rounded-lg bg-${mode.color}-500/20`}>
-                      <IconComponent className={`h-5 w-5 text-${mode.color}-400`} />
+                    <div className={`rounded-lg p-3 ${mode.iconClass}`}>
+                      <IconComponent className="h-5 w-5" aria-hidden="true" />
                     </div>
                     <div>
                       <CardTitle className="text-white text-lg flex items-center gap-2">
@@ -225,7 +229,7 @@ export function ViewModeSelector() {
                     w-full
                     ${isActive
                       ? 'bg-green-600 hover:bg-green-700'
-                      : `bg-${mode.color}-600 hover:bg-${mode.color}-700`
+                      : mode.buttonClass
                     }
                   `}
                 >
