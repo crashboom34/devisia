@@ -31,7 +31,6 @@ export function SettingsNavigation() {
       description: 'Configuration par section',
       icon: Settings,
       path: '/settings/parametres',
-      color: 'purple',
       active: pathname === '/settings/parametres' || pathname === '/settings',
     },
   ];
@@ -50,8 +49,8 @@ export function SettingsNavigation() {
                 className={`
                   cursor-pointer transition-all duration-300
                   ${card.active
-                    ? `bg-${card.color}-600/20 border-${card.color}-500 border-2`
-                    : 'bg-[#0f0f0f] border-[#2a2a2a] hover:border-[#3a3a3a]'
+                    ? 'border-2 border-primary bg-primary/10'
+                    : 'border-border bg-surface hover:border-primary/40'
                   }
                   ${isHovered ? 'transform scale-105 shadow-lg' : ''}
                 `}
@@ -63,19 +62,13 @@ export function SettingsNavigation() {
                     <div
                       className={`
                         p-3 rounded-lg
-                        ${card.active
-                          ? `bg-${card.color}-500/20`
-                          : 'bg-[#1a1a1a]'
-                        }
+                        ${card.active ? 'bg-primary/10' : 'bg-surface-elevated'}
                       `}
                     >
                       <IconComponent
                         className={`
                           h-6 w-6
-                          ${card.active
-                            ? `text-${card.color}-400`
-                            : 'text-slate-400'
-                          }
+                          ${card.active ? 'text-primary' : 'text-muted-foreground'}
                         `}
                       />
                     </div>
@@ -86,10 +79,10 @@ export function SettingsNavigation() {
                     )}
                   </div>
 
-                  <h3 className="text-lg font-bold text-white mb-2">
+                  <h3 className="mb-2 text-lg font-bold text-foreground">
                     {card.title}
                   </h3>
-                  <p className="text-sm text-slate-400 mb-4">
+                  <p className="mb-4 text-sm text-muted-foreground">
                     {card.description}
                   </p>
 
@@ -154,7 +147,7 @@ export function PageSwitcher({ currentPage, onPageChange }: PageSwitcherProps) {
   ];
 
   return (
-    <div className="flex items-center gap-2 p-1 bg-[#0f0f0f] rounded-lg border border-[#2a2a2a]">
+    <div className="flex items-center gap-2 rounded-lg border border-border bg-surface p-1">
       {pages.map((page) => (
         <Link key={page.id} href={page.path}>
           <Button

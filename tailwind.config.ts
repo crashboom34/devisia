@@ -25,17 +25,20 @@ const config: Config = {
       },
       colors: {
         brand: {
-          green: '#1FBF73',
+          green: '#147A49',
           dark: '#121212',
           darkLight: '#1A1A1A',
           darkCard: '#1E1E1E',
           light: '#F6F7FB',
         },
         status: {
-          success: '#1FBF73',
-          warning: '#F59E0B',
-          danger: '#EF4444',
-          neutral: '#64748B',
+          success: 'hsl(var(--success))',
+          warning: 'hsl(var(--warning))',
+          danger: 'hsl(var(--danger))',
+          neutral: 'hsl(var(--muted-foreground))',
+        },
+        green: {
+          600: '#116B3F',
         },
         devisia: {
           blue: '#0EA5E9',
@@ -77,6 +80,15 @@ const config: Config = {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
+        surface: {
+          DEFAULT: 'hsl(var(--surface))',
+          elevated: 'hsl(var(--surface-elevated))',
+        },
+        success: 'hsl(var(--success))',
+        warning: 'hsl(var(--warning))',
+        danger: 'hsl(var(--danger))',
+        info: 'hsl(var(--info))',
+        focus: 'hsl(var(--focus))',
         chart: {
           '1': 'hsl(var(--chart-1))',
           '2': 'hsl(var(--chart-2))',
@@ -117,6 +129,9 @@ const config: Config = {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
         'fade-in': 'fade-in 0.5s ease-out',
+      },
+      boxShadow: {
+        panel: '0 18px 50px -28px rgb(0 0 0 / 0.75)',
       },
     },
   },

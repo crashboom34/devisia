@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { Search, RefreshCw, Filter } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -28,41 +29,45 @@ export function FilterBar({
   onRefresh,
   additionalActions,
 }: FilterBarProps) {
+  const searchId = useId();
+
   return (
-    <div className="space-y-2.5 sm:space-y-0 sm:flex sm:flex-row sm:gap-3 mb-4 lg:mb-6 p-3 lg:p-4 bg-slate-900/30 rounded-xl border border-slate-800/50">
+    <div className="mb-4 space-y-2.5 rounded-xl border border-border bg-surface p-3 shadow-panel sm:flex sm:flex-row sm:gap-3 sm:space-y-0 lg:mb-6 lg:p-4">
       <div className="relative flex-1">
-        <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-500" />
+        <label htmlFor={searchId} className="sr-only">Rechercher</label>
+        <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
         <Input
+          id={searchId}
           type="text"
           placeholder={searchPlaceholder}
           value={searchValue}
           onChange={(e) => onSearchChange?.(e.target.value)}
-          className="pl-10 h-10 lg:h-11 bg-slate-800/50 border-slate-700/50 text-white text-sm placeholder:text-slate-500 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 rounded-lg"
+          className="h-11 rounded-lg bg-surface-elevated pl-10 text-sm"
         />
       </div>
 
       <div className="flex gap-2 flex-wrap">
         {onStatusChange && (
           <Select value={statusFilter} onValueChange={onStatusChange}>
-            <SelectTrigger className="min-w-[140px] sm:min-w-[160px] h-10 lg:h-11 bg-slate-800/50 border-slate-700/50 text-white text-sm hover:bg-slate-800 transition-colors">
+            <SelectTrigger aria-label="Filtrer par statut" className="h-11 min-w-[140px] bg-surface-elevated text-sm sm:min-w-[160px]">
               <Filter className="h-3.5 w-3.5 mr-1.5" />
               <SelectValue placeholder="Statut" />
             </SelectTrigger>
-            <SelectContent className="bg-slate-900 border-slate-700">
-              <SelectItem value="all" className="text-white hover:bg-slate-800 focus:bg-slate-800">
+            <SelectContent>
+              <SelectItem value="all">
                 Tous
               </SelectItem>
-              <SelectItem value="draft" className="text-white hover:bg-slate-800 focus:bg-slate-800">
+              <SelectItem value="draft">
                 Brouillon
               </SelectItem>
-              <SelectItem value="sent" className="text-white hover:bg-slate-800 focus:bg-slate-800">
-                Envoye
+              <SelectItem value="sent">
+                Envoyé
               </SelectItem>
-              <SelectItem value="approved" className="text-white hover:bg-slate-800 focus:bg-slate-800">
-                Approuve
+              <SelectItem value="approved">
+                Approuvé
               </SelectItem>
-              <SelectItem value="rejected" className="text-white hover:bg-slate-800 focus:bg-slate-800">
-                Rejete
+              <SelectItem value="rejected">
+                Rejeté
               </SelectItem>
             </SelectContent>
           </Select>
@@ -73,7 +78,8 @@ export function FilterBar({
             variant="ghost"
             size="icon"
             onClick={onRefresh}
-            className="h-10 w-10 lg:h-11 lg:w-11 text-slate-400 hover:text-white"
+            aria-label="Actualiser la liste"
+            className="h-11 w-11 text-muted-foreground hover:text-foreground"
           >
             <RefreshCw className="h-4 w-4" />
           </Button>
