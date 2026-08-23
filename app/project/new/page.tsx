@@ -19,10 +19,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import type { EstimateTemplate } from '@/lib/supabase';
 import { getUserSubscriptionInfo, canCreateProject, type SubscriptionInfo } from '@/lib/subscription-helper';
 import { getPlanLabel, getPlanValueProp } from '@/lib/plan-labels';
+import { useAuthGuard } from '@/hooks/use-auth-guard';
+import { toast } from 'sonner';
 
 export default function NewProjectPage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const { user, loading: authLoading } = useAuthGuard();
   const [loading, setLoading] = useState(false);
   const [loadingStage, setLoadingStage] = useState<'creating' | 'eco' | 'standard' | 'premium' | null>(null);
   const [formData, setFormData] = useState({
@@ -37,21 +39,14 @@ export default function NewProjectPage() {
   const [subscriptionInfo, setSubscriptionInfo] = useState<SubscriptionInfo | null>(null);
 
   useEffect(() => {
-    checkUser();
     loadTemplates();
   }, []);
 
-  const checkUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      router.push('/auth/login');
-    } else {
-      setUser(user);
-      // Load subscription info to display AI capability level
-      const subInfo = await getUserSubscriptionInfo(user.id);
-      setSubscriptionInfo(subInfo);
-    }
-  };
+  useEffect(() => {
+    if (authLoading || !user) return;
+    // Load subscription info to display AI capability level
+    getUserSubscriptionInfo(user.id).then(setSubscriptionInfo);
+  }, [authLoading, user]);
 
   const loadTemplates = async () => {
     try {
@@ -87,10 +82,11 @@ export default function NewProjectPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) return;
 
     const createPermission = await canCreateProject(user.id);
     if (!createPermission.allowed) {
-      alert(createPermission.message || 'Vous avez atteint votre limite de projets');
+      toast.error(createPermission.message || 'Vous avez atteint votre limite de projets');
       if (createPermission.upgrade_url) {
         router.push(createPermission.upgrade_url);
       }
@@ -162,7 +158,7 @@ export default function NewProjectPage() {
       router.push(`/project/${project.id}`);
     } catch (err) {
       console.error('Error creating project:', err);
-      alert('Erreur lors de la création du projet: ' + (err instanceof Error ? err.message : 'Erreur inconnue'));
+      toast.error('Erreur lors de la création du projet: ' + (err instanceof Error ? err.message : 'Erreur inconnue'));
     } finally {
       setLoading(false);
       setLoadingStage(null);

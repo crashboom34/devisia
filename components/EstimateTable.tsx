@@ -9,33 +9,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Eye, EyeOff, Download, ChevronDown, ChevronUp, Edit2, Save, X, Trash2, History } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import EditableEstimateRow from './EditableEstimateRow';
+import { toast } from 'sonner';
+import {
+  recalculateEstimateTotals,
+  calculateMargin,
+  calculateTotalMargin,
+  formatCurrencyEUR as formatCurrency,
+  type EstimateItem,
+  type EstimateCategory,
+} from '@/lib/pricing/engine';
 
 type ViewMode = 'client' | 'detailed' | 'internal';
-
-interface EstimateItem {
-  poste: string;
-  description: string;
-  quantity: number;
-  unit: string;
-  unit_price_ht: number;
-  amount_ht: number;
-  tva_percent: number;
-  tva_amount: number;
-  amount_ttc: number;
-  materials_cost?: number;
-  labor_cost?: number;
-  cost_price?: number;
-  sell_price?: number;
-}
-
-interface EstimateCategory {
-  name: string;
-  description: string;
-  items: EstimateItem[];
-  subtotal_ht: number;
-  subtotal_tva: number;
-  subtotal_ttc: number;
-}
 
 interface EstimateData {
   id: string;
@@ -108,91 +92,12 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(amount);
-  };
-
   const formatDate = (dateString?: string) => {
     if (!dateString) return new Date().toLocaleDateString('fr-FR');
     return new Date(dateString).toLocaleDateString('fr-FR');
   };
 
-  const calculateMargin = (item: EstimateItem) => {
-    if (!item.cost_price || !item.sell_price) return null;
-    const margin = item.sell_price - item.cost_price;
-    const marginPercent = (margin / item.sell_price) * 100;
-    return { margin, marginPercent };
-  };
-
-  const totalMargin = () => {
-    let totalCost = 0;
-    let totalSell = 0;
-
-    estimate.categories.forEach(cat => {
-      cat.items.forEach(item => {
-        if (item.cost_price && item.sell_price) {
-          totalCost += item.cost_price;
-          totalSell += item.sell_price;
-        }
-      });
-    });
-
-    if (totalSell === 0) return null;
-    const margin = totalSell - totalCost;
-    const marginPercent = (margin / totalSell) * 100;
-    return { margin, marginPercent };
-  };
-
-  const recalculateTotals = (categories: EstimateCategory[]) => {
-    let totalHT = 0;
-    let totalTVA = 0;
-    let totalTTC = 0;
-
-    const updatedCategories = categories.map(category => {
-      let catSubtotalHT = 0;
-      let catSubtotalTVA = 0;
-      let catSubtotalTTC = 0;
-
-      const updatedItems = category.items.map(item => {
-        const amountHT = item.quantity * item.unit_price_ht;
-        const tvaAmount = amountHT * (item.tva_percent / 100);
-        const amountTTC = amountHT + tvaAmount;
-
-        catSubtotalHT += amountHT;
-        catSubtotalTVA += tvaAmount;
-        catSubtotalTTC += amountTTC;
-
-        return {
-          ...item,
-          amount_ht: amountHT,
-          tva_amount: tvaAmount,
-          amount_ttc: amountTTC
-        };
-      });
-
-      totalHT += catSubtotalHT;
-      totalTVA += catSubtotalTVA;
-      totalTTC += catSubtotalTTC;
-
-      return {
-        ...category,
-        items: updatedItems,
-        subtotal_ht: catSubtotalHT,
-        subtotal_tva: catSubtotalTVA,
-        subtotal_ttc: catSubtotalTTC
-      };
-    });
-
-    return {
-      categories: updatedCategories,
-      total_ht: totalHT,
-      total_tva: totalTVA,
-      total_ttc: totalTTC
-    };
-  };
+  const totalMargin = () => calculateTotalMargin(estimate.categories);
 
   const handleDeleteItem = (categoryIndex: number, itemIndex: number) => {
     const newCategories = [...editedEstimate.categories];
@@ -202,7 +107,7 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
       newCategories.splice(categoryIndex, 1);
     }
 
-    const recalculated = recalculateTotals(newCategories);
+    const recalculated = recalculateEstimateTotals(newCategories);
     setEditedEstimate({
       ...editedEstimate,
       ...recalculated
@@ -216,7 +121,7 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
       [field]: value
     };
 
-    const recalculated = recalculateTotals(newCategories);
+    const recalculated = recalculateEstimateTotals(newCategories);
     setEditedEstimate({
       ...editedEstimate,
       ...recalculated
@@ -247,7 +152,7 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
     } catch (err) {
       console.error('Error saving changes:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erreur inconnue';
-      alert(`Erreur lors de la sauvegarde: ${errorMessage}`);
+      toast.error(`Erreur lors de la sauvegarde: ${errorMessage}`);
     } finally {
       setIsSaving(false);
     }

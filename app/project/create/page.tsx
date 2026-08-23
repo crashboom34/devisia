@@ -13,10 +13,11 @@ import { ArrowLeft, FileText, Save, Sparkles } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import UserMenu from '@/components/UserMenu';
 import { toast } from 'sonner';
+import { useAuthGuard } from '@/hooks/use-auth-guard';
 
 export default function CreateProjectPage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const { user, loading: authLoading } = useAuthGuard();
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -27,19 +28,6 @@ export default function CreateProjectPage() {
     notes: '',
   });
 
-  useEffect(() => {
-    checkUser();
-  }, []);
-
-  const checkUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      router.push('/auth/login');
-    } else {
-      setUser(user);
-    }
-  };
-
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -47,6 +35,8 @@ export default function CreateProjectPage() {
       toast.error('Le titre du projet est requis');
       return;
     }
+
+    if (!user) return;
 
     setSaving(true);
 
@@ -78,13 +68,20 @@ export default function CreateProjectPage() {
     }
   };
 
-  if (!user) {
-    return null;
+  if (authLoading || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex items-center gap-3">
+          <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <p className="text-muted-foreground">Chargement...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b sticky top-0 z-10">
+    <div className="min-h-screen bg-background">
+      <header className="bg-card border-b border-border sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link href="/dashboard">
@@ -93,8 +90,8 @@ export default function CreateProjectPage() {
               </Button>
             </Link>
             <div className="flex items-center gap-2">
-              <FileText className="h-8 w-8 text-blue-600" />
-              <span className="text-2xl font-bold">Nouveau Projet</span>
+              <FileText className="h-8 w-8 text-primary" />
+              <span className="text-2xl font-bold text-foreground">Nouveau Projet</span>
             </div>
           </div>
           <UserMenu />
@@ -200,12 +197,12 @@ export default function CreateProjectPage() {
                 </Button>
               </div>
 
-              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+              <div className="bg-primary/10 p-4 rounded-lg border border-primary/20">
                 <div className="flex items-start gap-3">
-                  <Sparkles className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                  <div className="text-sm text-blue-900">
+                  <Sparkles className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                  <div className="text-sm text-foreground">
                     <p className="font-medium mb-1">Vous pourrez ensuite :</p>
-                    <ul className="list-disc list-inside space-y-1 ml-2">
+                    <ul className="list-disc list-inside space-y-1 ml-2 text-muted-foreground">
                       <li>Ajouter des pièces et des photos avec dimensions</li>
                       <li>Générer des devis à la demande avec l'IA</li>
                       <li>Modifier et compléter les informations</li>

@@ -12,6 +12,7 @@ import { KpiCard } from '@/components/dashboard/KpiCard';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { FilterBar } from '@/components/dashboard/FilterBar';
 import { EmptyState } from '@/components/dashboard/EmptyState';
+import { useAuthGuard } from '@/hooks/use-auth-guard';
 
 interface Invoice {
   id: string;
@@ -25,31 +26,20 @@ interface Invoice {
 
 export default function InvoicesPage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const { loading } = useAuthGuard();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [filteredInvoices, setFilteredInvoices] = useState<Invoice[]>([]);
   const [searchValue, setSearchValue] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
   useEffect(() => {
-    checkUser();
-  }, []);
+    if (loading) return;
+    loadMockInvoices();
+  }, [loading]);
 
   useEffect(() => {
     filterInvoices();
   }, [invoices, searchValue, statusFilter]);
-
-  const checkUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      router.push('/auth/login');
-    } else {
-      setUser(user);
-      loadMockInvoices();
-      setLoading(false);
-    }
-  };
 
   const loadMockInvoices = () => {
     const mockData: Invoice[] = [];
