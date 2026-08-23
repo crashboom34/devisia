@@ -62,25 +62,32 @@
 
 @layer base {
   :root {
-    --background: 0 0% 7%;
+    --background: 222 47% 5%;
     --foreground: 0 0% 98%;
-    --card: 0 0% 12%;
+    --card: 222 35% 10%;
     --card-foreground: 0 0% 98%;
-    --popover: 0 0% 12%;
+    --popover: 222 35% 10%;
     --popover-foreground: 0 0% 98%;
     --primary: 156 73% 44%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 0 0% 15%;
+    --secondary: 219 25% 16%;
     --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 15%;
-    --muted-foreground: 215 16% 65%;
+    --muted: 219 25% 15%;
+    --muted-foreground: 215 16% 70%;
     --accent: 156 73% 44%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 20%;
-    --input: 0 0% 20%;
+    --border: 218 24% 20%;
+    --input: 218 24% 20%;
     --ring: 156 73% 44%;
+    --surface: 222 35% 9%;
+    --surface-elevated: 220 28% 13%;
+    --success: 156 73% 44%;
+    --warning: 38 92% 50%;
+    --danger: 0 84% 60%;
+    --info: 199 89% 48%;
+    --focus: 156 73% 52%;
     --chart-1: 156 73% 44%;
     --chart-2: 199 89% 48%;
     --chart-3: 43 96% 56%;
@@ -130,6 +137,13 @@
     overscroll-behavior-y: none;
     -webkit-overflow-scrolling: touch;
   }
+  ::selection {
+    @apply bg-primary/30 text-foreground;
+  }
+  :focus-visible {
+    outline: 2px solid hsl(var(--focus));
+    outline-offset: 2px;
+  }
 }
 
 @layer utilities {
@@ -142,6 +156,20 @@
   }
   .touch-manipulation {
     touch-action: manipulation;
+  }
+  .safe-area-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 0.5rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 

@@ -4,116 +4,70 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
   FileText,
-  Receipt,
-  Users,
-  Settings,
-  CreditCard,
   FilePlus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-interface NavigationItem {
-  id: string;
-  label: string;
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
-  badge?: string;
-}
-
-const navigationItems: NavigationItem[] = [
-  {
-    id: 'new-quote',
-    label: 'Nouveaux devis',
-    href: '/project/new',
-    icon: FilePlus,
-  },
-  {
-    id: 'quotes',
-    label: 'Devis',
-    href: '/dashboard/quotes',
-    icon: FileText,
-  },
-  {
-    id: 'invoices',
-    label: 'Factures',
-    href: '/dashboard/invoices',
-    icon: Receipt,
-  },
-  {
-    id: 'clients',
-    label: 'Clients',
-    href: '/dashboard/clients',
-    icon: Users,
-  },
-  {
-    id: 'settings',
-    label: 'Paramètres',
-    href: '/settings/parametres',
-    icon: Settings,
-  },
-  {
-    id: 'subscription',
-    label: 'Abonnement',
-    href: '/pricing',
-    icon: CreditCard,
-  },
-];
+import { Button } from '@/components/ui/button';
+import {
+  navigationItemIsActive,
+  primaryNavigation,
+  secondaryNavigation,
+  type AppNavigationItem,
+} from '@/components/app-navigation';
 
 export function Sidebar() {
   const pathname = usePathname();
 
-  const isActive = (href: string) => {
-    if (href === '/dashboard') {
-      return pathname === href;
-    }
-    return pathname.startsWith(href);
+  const renderItem = (item: AppNavigationItem) => {
+    const Icon = item.icon;
+    const active = navigationItemIsActive(pathname, item);
+
+    return (
+      <Link
+        key={item.id}
+        href={item.href}
+        aria-current={active ? 'page' : undefined}
+        className={cn(
+          'flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+          active
+            ? 'bg-primary/15 text-primary'
+            : 'text-muted-foreground hover:bg-surface-elevated hover:text-foreground'
+        )}
+      >
+        <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
+        <span>{item.label}</span>
+      </Link>
+    );
   };
 
   return (
-    <aside className="hidden lg:block fixed left-0 top-0 z-40 h-screen w-64 bg-slate-900 border-r border-slate-800">
-      <div className="flex items-center gap-3 px-6 py-5 border-b border-slate-800">
-        <Link href="/dashboard" className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-gradient-to-br from-emerald-500 to-cyan-600 shadow-lg">
-            <FileText className="h-5 w-5 text-white" />
+    <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 border-r border-border bg-surface lg:flex lg:flex-col">
+      <div className="border-b border-border px-5 py-5">
+        <Link href="/dashboard" className="flex items-center gap-3 rounded-lg focus-visible:ring-2 focus-visible:ring-focus">
+          <div className="rounded-lg bg-primary p-2 shadow-sm">
+            <FileText className="h-5 w-5 text-primary-foreground" aria-hidden="true" />
           </div>
-          <span className="text-xl font-bold text-white">Devisia</span>
+          <div>
+            <span className="block text-lg font-bold text-foreground">Devisia</span>
+            <span className="block text-[11px] text-muted-foreground">Espace professionnel</span>
+          </div>
         </Link>
       </div>
 
-      <nav className="flex flex-col gap-1 p-4">
-        {navigationItems.map((item) => {
-          const Icon = item.icon;
-          const active = isActive(item.href);
+      <nav aria-label="Navigation principale" className="flex flex-1 flex-col gap-5 overflow-y-auto p-4">
+        <Button asChild className="w-full justify-start">
+          <Link href="/project/new">
+            <FilePlus className="h-5 w-5" aria-hidden="true" />
+            Nouveau devis
+          </Link>
+        </Button>
 
-          return (
-            <Link
-              key={item.id}
-              href={item.href}
-              className={cn(
-                'flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200',
-                'hover:bg-slate-800/50 active:scale-[0.98]',
-                active
-                  ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-600/20'
-                  : 'text-slate-400 hover:text-white'
-              )}
-            >
-              <Icon className={cn('h-5 w-5 shrink-0', active ? 'text-white' : 'text-slate-400')} />
-              <span className="font-medium text-sm">{item.label}</span>
-              {item.badge && (
-                <span className="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                  {item.badge}
-                </span>
-              )}
-            </Link>
-          );
-        })}
-      </nav>
+        <div className="space-y-1">{primaryNavigation.map(renderItem)}</div>
 
-      <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-800">
-        <div className="text-xs text-slate-500 text-center">
-          v2.0 - Devisia
+        <div className="mt-auto space-y-1 border-t border-border pt-4">
+          {secondaryNavigation.map(renderItem)}
         </div>
-      </div>
+      </nav>
     </aside>
   );
 }
