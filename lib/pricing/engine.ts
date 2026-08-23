@@ -30,8 +30,8 @@ export interface EstimateItem {
   amount_ttc: number;
   materials_cost?: number;
   labor_cost?: number;
-  cost_price?: number;
-  sell_price?: number;
+  cost_price?: number | null;
+  sell_price?: number | null;
 }
 
 export interface EstimateCategory {
@@ -53,6 +53,10 @@ export interface EstimateTotals {
 export interface Margin {
   margin: number;
   marginPercent: number;
+}
+
+function isFinitePrice(value: number | null | undefined): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
 }
 
 /** Rounds a monetary amount to the nearest cent. Guards against -0. */
@@ -131,15 +135,18 @@ export function recalculateEstimateTotals(categories: EstimateCategory[]): Estim
 }
 
 /**
- * Margin for a single line item, only when both cost_price and sell_price
- * are present (internal/cost data, never shown to the end client). Returns
- * null when there's nothing to compute from — this is a normal state (most
- * items don't carry cost data), not an error.
+ * Margin for a single line item when cost_price and sell_price are finite
+ * numbers (zero is valid). A zero sell price has no meaningful percentage,
+ * so it returns null rather than NaN, Infinity or a misleading percentage.
+ * Missing/non-finite prices likewise return null.
  */
 export function calculateMargin(item: Pick<EstimateItem, 'cost_price' | 'sell_price'>): Margin | null {
-  if (!item.cost_price || !item.sell_price) return null;
+  if (!isFinitePrice(item.cost_price) || !isFinitePrice(item.sell_price) || item.sell_price === 0) return null;
+
   const margin = roundCents(item.sell_price - item.cost_price);
   const marginPercent = (margin / item.sell_price) * 100;
+  if (!Number.isFinite(margin) || !Number.isFinite(marginPercent)) return null;
+
   return { margin, marginPercent };
 }
 
@@ -151,19 +158,26 @@ export function calculateMargin(item: Pick<EstimateItem, 'cost_price' | 'sell_pr
 export function calculateTotalMargin(categories: EstimateCategory[]): Margin | null {
   let totalCost = 0;
   let totalSell = 0;
+  let pricedItemCount = 0;
 
   for (const category of categories) {
     for (const item of category.items) {
-      if (item.cost_price && item.sell_price) {
+      if (isFinitePrice(item.cost_price) && isFinitePrice(item.sell_price)) {
         totalCost += item.cost_price;
         totalSell += item.sell_price;
+        pricedItemCount += 1;
       }
     }
   }
 
-  if (totalSell === 0) return null;
+  if (pricedItemCount === 0 || totalSell === 0 || !Number.isFinite(totalCost) || !Number.isFinite(totalSell)) {
+    return null;
+  }
+
   const margin = roundCents(totalSell - totalCost);
   const marginPercent = (margin / totalSell) * 100;
+  if (!Number.isFinite(margin) || !Number.isFinite(marginPercent)) return null;
+
   return { margin, marginPercent };
 }
 

@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
+import type { EstimateItem } from '@/lib/pricing/engine';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,22 +17,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-
-interface EstimateItem {
-  poste: string;
-  description: string;
-  quantity: number;
-  unit: string;
-  unit_price_ht: number;
-  amount_ht: number;
-  tva_percent: number;
-  tva_amount: number;
-  amount_ttc: number;
-  materials_cost?: number;
-  labor_cost?: number;
-  cost_price?: number;
-  sell_price?: number;
-}
 
 interface EditableEstimateRowProps {
   item: EstimateItem;

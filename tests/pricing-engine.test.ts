@@ -156,6 +156,36 @@ describe('calculateMargin', () => {
   it('returns null when both are missing', () => {
     expect(calculateMargin({})).toBeNull();
   });
+
+  it('returns null when either price is null', () => {
+    expect(calculateMargin({ cost_price: null, sell_price: 100 })).toBeNull();
+    expect(calculateMargin({ cost_price: 50, sell_price: null })).toBeNull();
+  });
+
+  it('treats a zero cost price as a valid numeric value', () => {
+    expect(calculateMargin({ cost_price: 0, sell_price: 100 })).toEqual({
+      margin: 100,
+      marginPercent: 100,
+    });
+  });
+
+  it('returns null when sell price is zero and cost is positive', () => {
+    expect(calculateMargin({ cost_price: 70, sell_price: 0 })).toBeNull();
+  });
+
+  it('returns null when both prices are zero', () => {
+    expect(calculateMargin({ cost_price: 0, sell_price: 0 })).toBeNull();
+  });
+
+  it('rejects non-finite prices without emitting NaN or Infinity', () => {
+    const results = [
+      calculateMargin({ cost_price: Number.NaN, sell_price: 100 }),
+      calculateMargin({ cost_price: 50, sell_price: Number.POSITIVE_INFINITY }),
+      calculateMargin({ cost_price: Number.NEGATIVE_INFINITY, sell_price: 100 }),
+    ];
+
+    expect(results).toEqual([null, null, null]);
+  });
 });
 
 describe('calculateTotalMargin', () => {
@@ -181,6 +211,56 @@ describe('calculateTotalMargin', () => {
 
   it('returns null for an empty estimate', () => {
     expect(calculateTotalMargin([])).toBeNull();
+  });
+
+  it('aggregates normal lines together with a zero-cost line', () => {
+    const categories = [
+      makeCategory([
+        makeItem({ cost_price: 60, sell_price: 100 }),
+        makeItem({ cost_price: 0, sell_price: 50 }),
+      ]),
+    ];
+
+    const result = calculateTotalMargin(categories);
+    expect(result).not.toBeNull();
+    expect(result!.margin).toBe(90);
+    expect(result!.marginPercent).toBeCloseTo(60, 5);
+  });
+
+  it('includes a zero-selling line in aggregate cost when total sales stay positive', () => {
+    const categories = [
+      makeCategory([
+        makeItem({ cost_price: 60, sell_price: 100 }),
+        makeItem({ cost_price: 10, sell_price: 0 }),
+      ]),
+    ];
+
+    const result = calculateTotalMargin(categories);
+    expect(result).not.toBeNull();
+    expect(result!.margin).toBe(30);
+    expect(result!.marginPercent).toBeCloseTo(30, 5);
+  });
+
+  it('returns null for an aggregate whose valid sell prices total zero', () => {
+    const categories = [makeCategory([makeItem({ cost_price: 10, sell_price: 0 })])];
+    expect(calculateTotalMargin(categories)).toBeNull();
+  });
+
+  it('ignores undefined and non-finite prices and never emits NaN or Infinity', () => {
+    const categories = [
+      makeCategory([
+        makeItem({ cost_price: 40, sell_price: 100 }),
+        makeItem({ sell_price: 50 }),
+        makeItem({ cost_price: Number.NaN, sell_price: 20 }),
+        makeItem({ cost_price: 10, sell_price: Number.POSITIVE_INFINITY }),
+      ]),
+    ];
+
+    const result = calculateTotalMargin(categories);
+    expect(result).not.toBeNull();
+    expect(Number.isFinite(result!.margin)).toBe(true);
+    expect(Number.isFinite(result!.marginPercent)).toBe(true);
+    expect(result).toEqual({ margin: 60, marginPercent: 60 });
   });
 });
 
