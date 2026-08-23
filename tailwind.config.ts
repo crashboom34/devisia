@@ -25,7 +25,7 @@ const config: Config = {
       },
       colors: {
         brand: {
-          green: '#1FBF73',
+          green: '#147A49',
           dark: '#121212',
           darkLight: '#1A1A1A',
           darkCard: '#1E1E1E',
@@ -36,6 +36,9 @@ const config: Config = {
           warning: 'hsl(var(--warning))',
           danger: 'hsl(var(--danger))',
           neutral: 'hsl(var(--muted-foreground))',
+        },
+        green: {
+          600: '#116B3F',
         },
         devisia: {
           blue: '#0EA5E9',

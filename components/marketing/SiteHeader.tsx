@@ -47,7 +47,7 @@ export function SiteHeader() {
               <span className="text-xl font-bold text-white">Devisia</span>
             </Link>
 
-            <div className="hidden md:flex items-center gap-6">
+            <div className="hidden items-center gap-6 lg:flex">
               {navigation.map((item) => (
                 <Link
                   key={item.name}
@@ -62,7 +62,7 @@ export function SiteHeader() {
             </div>
           </div>
 
-          <div className="hidden md:flex items-center gap-4">
+          <div className="hidden items-center gap-4 lg:flex">
             {user ? (
               <>
                 <Link href="/dashboard">
@@ -90,7 +90,7 @@ export function SiteHeader() {
 
           <button
             type="button"
-            className="md:hidden p-2 text-gray-300"
+            className="p-2 text-gray-300 lg:hidden"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label={mobileMenuOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
             aria-expanded={mobileMenuOpen}
@@ -104,7 +104,7 @@ export function SiteHeader() {
         </div>
 
         {mobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-gray-800">
+          <div className="border-t border-gray-800 py-4 lg:hidden">
             <div className="flex flex-col gap-4">
               {navigation.map((item) => (
                 <Link
