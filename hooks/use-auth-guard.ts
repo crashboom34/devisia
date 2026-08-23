@@ -22,6 +22,20 @@ interface AuthGuardState {
   adminRole: string | null;
   /** true while the initial getUser()/admin_users check is in flight */
   loading: boolean;
+  /** Generic, user-safe error when the guard could not verify access. */
+  error: Error | null;
+}
+
+const UNAUTHORIZED_STATE: AuthGuardState = {
+  user: null,
+  isAdmin: false,
+  adminRole: null,
+  loading: true,
+  error: null,
+};
+
+function authGuardError(): Error {
+  return new Error('Impossible de vérifier vos droits d’accès. Veuillez vous reconnecter.');
 }
 
 /**
@@ -45,47 +59,120 @@ export function useAuthGuard(options: UseAuthGuardOptions = {}): AuthGuardState 
   } = options;
   const needsAdminRow = requireAdmin || requireSuperAdmin;
   const router = useRouter();
-  const [state, setState] = useState<AuthGuardState>({ user: null, isAdmin: false, adminRole: null, loading: true });
-  const cancelledRef = useRef(false);
+  const [state, setState] = useState<AuthGuardState>(UNAUTHORIZED_STATE);
+  const requestIdRef = useRef(0);
 
   useEffect(() => {
-    cancelledRef.current = false;
+    let cancelled = false;
+    let authChangeTimer: ReturnType<typeof setTimeout> | null = null;
 
-    async function check() {
-      const { data: { user } } = await supabase.auth.getUser();
+    const isCurrentRequest = (requestId: number) => (
+      !cancelled && requestIdRef.current === requestId
+    );
+
+    const beginRequest = (): number => {
+      const requestId = ++requestIdRef.current;
+      setState(UNAUTHORIZED_STATE);
+      return requestId;
+    };
+
+    const failClosed = (requestId: number, error: unknown, destination: string) => {
+      if (!isCurrentRequest(requestId)) return;
+
+      console.error('Auth guard verification failed:', error);
+      setState({
+        user: null,
+        isAdmin: false,
+        adminRole: null,
+        loading: false,
+        error: authGuardError(),
+      });
+      router.replace(destination);
+    };
+
+    const verifyUser = async (user: User, requestId: number) => {
+      try {
+        if (!needsAdminRow) {
+          if (isCurrentRequest(requestId)) {
+            setState({ user, isAdmin: false, adminRole: null, loading: false, error: null });
+          }
+          return;
+        }
+
+        const { data: adminRow, error: adminError } = await supabase
+          .from('admin_users')
+          .select('role')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (adminError) throw adminError;
+        if (!isCurrentRequest(requestId)) return;
+
+        const hasAccess = !!adminRow && (!requireSuperAdmin || adminRow.role === 'super_admin');
+
+        if (!hasAccess) {
+          setState(UNAUTHORIZED_STATE);
+          router.replace(notAdminRedirectTo);
+          return;
+        }
+
+        setState({ user, isAdmin: true, adminRole: adminRow.role, loading: false, error: null });
+      } catch (error) {
+        failClosed(requestId, error, needsAdminRow ? notAdminRedirectTo : redirectTo);
+      }
+    };
+
+    const handleSessionUser = (user: User | null) => {
+      const requestId = beginRequest();
 
       if (!user) {
-        if (!cancelledRef.current) router.push(redirectTo);
+        router.replace(redirectTo);
         return;
       }
 
-      if (!needsAdminRow) {
-        if (!cancelledRef.current) setState({ user, isAdmin: false, adminRole: null, loading: false });
-        return;
+      // Keep the Supabase auth callback synchronous. Deferring avoids doing
+      // async Supabase work while the auth client's internal lock is held.
+      authChangeTimer = setTimeout(() => {
+        authChangeTimer = null;
+        void verifyUser(user, requestId);
+      }, 0);
+    };
+
+    // Subscribe before getUser() so a newer auth event always supersedes the
+    // initial request. requestIdRef prevents stale async results from winning.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (cancelled) return;
+      if (authChangeTimer) clearTimeout(authChangeTimer);
+      handleSessionUser(session?.user ?? null);
+    });
+
+    const initialRequestId = beginRequest();
+    async function checkInitialUser() {
+      try {
+        const { data, error } = await supabase.auth.getUser();
+        if (error) throw error;
+        if (!isCurrentRequest(initialRequestId)) return;
+
+        if (!data.user) {
+          setState(UNAUTHORIZED_STATE);
+          router.replace(redirectTo);
+          return;
+        }
+
+        await verifyUser(data.user, initialRequestId);
+      } catch (error) {
+        failClosed(initialRequestId, error, redirectTo);
       }
-
-      const { data: adminRow } = await supabase
-        .from('admin_users')
-        .select('role')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      const hasAccess = !!adminRow && (!requireSuperAdmin || adminRow.role === 'super_admin');
-
-      if (!hasAccess) {
-        if (!cancelledRef.current) router.push(notAdminRedirectTo);
-        return;
-      }
-
-      if (!cancelledRef.current) setState({ user, isAdmin: true, adminRole: adminRow.role, loading: false });
     }
 
-    check();
+    void checkInitialUser();
     return () => {
-      cancelledRef.current = true;
+      cancelled = true;
+      ++requestIdRef.current;
+      if (authChangeTimer) clearTimeout(authChangeTimer);
+      subscription.unsubscribe();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [needsAdminRow, requireSuperAdmin, redirectTo, notAdminRedirectTo]);
+  }, [needsAdminRow, requireSuperAdmin, redirectTo, notAdminRedirectTo, router]);
 
   return state;
 }
