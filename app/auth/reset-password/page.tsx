@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
+  clearRecoverySession,
   createSubmissionGuard,
   establishRecoverySession,
   updateRecoveryPassword,
@@ -16,7 +17,14 @@ import {
 } from '@/lib/auth/password-recovery';
 import { getSupabaseClient, SupabaseConfigurationError } from '@/lib/supabase';
 
-type RecoveryState = 'checking' | 'ready' | 'expired' | 'invalid' | 'error' | 'success';
+type RecoveryState =
+  | 'checking'
+  | 'ready'
+  | 'expired'
+  | 'invalid'
+  | 'error'
+  | 'cleanup-error'
+  | 'success';
 
 const UPDATE_ERROR =
   'Impossible de modifier votre mot de passe pour le moment. Demandez un nouveau lien puis réessayez.';
@@ -29,6 +37,7 @@ export default function ResetPasswordPage() {
   const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
   const [loading, setLoading] = useState(false);
+  const [cleanupLoading, setCleanupLoading] = useState(false);
   const [fieldError, setFieldError] = useState('');
   const [error, setError] = useState('');
   const [diagnostic, setDiagnostic] = useState('');
@@ -37,11 +46,16 @@ export default function ResetPasswordPage() {
   useEffect(() => {
     let active = true;
     let settled = false;
+    let timedOut = false;
+    let recoveryReady = false;
+    let cleanupStarted = false;
     let timeoutId: number | undefined;
+    let clearLateSession: (() => void) | undefined;
 
     const finish = (state: RecoveryState) => {
       if (!active || settled) return;
       settled = true;
+      recoveryReady = state === 'ready';
       if (timeoutId) window.clearTimeout(timeoutId);
       setRecoveryState(state);
       window.history.replaceState({}, document.title, window.location.pathname);
@@ -51,14 +65,38 @@ export default function ResetPasswordPage() {
 
     try {
       const client = getSupabaseClient();
+      clearLateSession = () => {
+        if (cleanupStarted) return;
+        cleanupStarted = true;
+        void clearRecoverySession(client.auth).then((cleared) => {
+          if (!cleared) {
+            console.error('Password recovery cleanup failed: late session remains active');
+          }
+        });
+      };
       const authListener = client.auth.onAuthStateChange((event, session) => {
-        if (event === 'PASSWORD_RECOVERY' && session) finish('ready');
+        if (event !== 'PASSWORD_RECOVERY' || !session) return;
+        if (timedOut || !active || (settled && !recoveryReady)) {
+          clearLateSession?.();
+          return;
+        }
+        finish('ready');
       });
       subscription = authListener.data.subscription;
 
-      timeoutId = window.setTimeout(() => finish('invalid'), 8000);
+      timeoutId = window.setTimeout(() => {
+        timedOut = true;
+        finish('invalid');
+      }, 8000);
 
       void establishRecoverySession(client.auth, initialHref.current).then((result) => {
+        if (
+          result.status === 'ready' &&
+          (timedOut || !active || (settled && !recoveryReady))
+        ) {
+          clearLateSession?.();
+          return;
+        }
         if (result.status === 'service-error') {
           console.error('Password recovery link verification failed: Supabase service error');
           finish('error');
@@ -78,6 +116,7 @@ export default function ResetPasswordPage() {
       active = false;
       if (timeoutId) window.clearTimeout(timeoutId);
       subscription?.unsubscribe();
+      if (recoveryReady) clearLateSession?.();
     };
   }, []);
 
@@ -114,15 +153,19 @@ export default function ResetPasswordPage() {
     if (!guardedResult.started) return;
 
     if (
-      guardedResult.value.status === 'updated' ||
-      guardedResult.value.status === 'updated-session-active'
+      guardedResult.value.status === 'updated'
     ) {
-      if (guardedResult.value.status === 'updated-session-active') {
-        console.error('Password recovery completed: local session cleanup failed');
-      }
       setPassword('');
       setConfirmation('');
       setRecoveryState('success');
+      return;
+    }
+
+    if (guardedResult.value.status === 'updated-session-active') {
+      console.error('Password recovery completed: local session cleanup failed');
+      setPassword('');
+      setConfirmation('');
+      setRecoveryState('cleanup-error');
       return;
     }
 
@@ -151,6 +194,10 @@ export default function ResetPasswordPage() {
       title: 'Vérification impossible',
       description: 'Nous ne pouvons pas vérifier ce lien pour le moment.',
     },
+    'cleanup-error': {
+      title: 'Mot de passe modifié',
+      description: 'La session de récupération doit encore être fermée avant de continuer.',
+    },
     success: {
       title: 'Mot de passe modifié',
       description: 'Votre nouveau mot de passe est prêt. Vous pouvez maintenant vous reconnecter.',
@@ -158,6 +205,22 @@ export default function ResetPasswordPage() {
   } as const;
 
   const copy = stateCopy[recoveryState];
+
+  const retrySessionCleanup = async () => {
+    setCleanupLoading(true);
+    try {
+      const client = getSupabaseClient();
+      if (await clearRecoverySession(client.auth)) {
+        setRecoveryState('success');
+        return;
+      }
+      console.error('Password recovery cleanup retry failed: local session remains active');
+    } catch {
+      console.error('Password recovery cleanup retry failed: invalid Supabase configuration');
+    } finally {
+      setCleanupLoading(false);
+    }
+  };
 
   return (
     <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-dark px-4 py-8 sm:py-12">
@@ -297,6 +360,35 @@ export default function ResetPasswordPage() {
                 </p>
                 <Button asChild size="lg" className="w-full bg-brand-green text-white hover:bg-green-600">
                   <Link href="/auth/login">Se reconnecter</Link>
+                </Button>
+              </div>
+            ) : null}
+
+            {recoveryState === 'cleanup-error' ? (
+              <div className="flex flex-col items-center gap-5 py-3 text-center">
+                <span className="rounded-full bg-amber-500/15 p-3">
+                  <AlertCircle className="h-8 w-8 text-amber-400" aria-hidden="true" />
+                </span>
+                <p className="text-sm leading-6 text-gray-300">
+                  Votre mot de passe a bien été modifié, mais la session sécurisée est encore
+                  active. Réessayez de la fermer avant de vous reconnecter.
+                </p>
+                <Button
+                  type="button"
+                  onClick={retrySessionCleanup}
+                  disabled={cleanupLoading}
+                  aria-busy={cleanupLoading}
+                  size="lg"
+                  className="w-full bg-brand-green text-white hover:bg-green-600"
+                >
+                  {cleanupLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                      Fermeture en cours…
+                    </>
+                  ) : (
+                    'Fermer la session sécurisée'
+                  )}
                 </Button>
               </div>
             ) : null}

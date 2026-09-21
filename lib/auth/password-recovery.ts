@@ -32,6 +32,8 @@ type UpdatePasswordAuth = {
   signOut(options: { scope: 'local' }): Promise<{ error: unknown | null }>;
 };
 
+type RecoverySignOutAuth = Pick<UpdatePasswordAuth, 'signOut'>;
+
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function validateRecoveryEmail(email: string): RecoveryEmailError {
@@ -194,11 +196,25 @@ export async function updateRecoveryPassword(
     const { error } = await auth.updateUser({ password });
     if (error) return { status: 'service-error' };
 
-    const { error: signOutError } = await auth.signOut({ scope: 'local' });
-    return signOutError
-      ? { status: 'updated-session-active' }
-      : { status: 'updated' };
+    return (await clearRecoverySession(auth))
+      ? { status: 'updated' }
+      : { status: 'updated-session-active' };
   } catch {
     return { status: 'service-error' };
   }
+}
+
+export async function clearRecoverySession(
+  auth: RecoverySignOutAuth,
+  attempts = 2
+): Promise<boolean> {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      const { error } = await auth.signOut({ scope: 'local' });
+      if (!error) return true;
+    } catch {
+      // Retry once before requiring explicit user action.
+    }
+  }
+  return false;
 }

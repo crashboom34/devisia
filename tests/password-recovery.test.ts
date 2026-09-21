@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import {
+  clearRecoverySession,
   classifyRecoveryRequestError,
   createSubmissionGuard,
   establishRecoverySession,
@@ -339,5 +340,41 @@ describe('new password update', () => {
       status: 'service-error',
     });
     expect(auth.signOut).not.toHaveBeenCalled();
+  });
+
+  it('retries local session cleanup before reporting success', async () => {
+    const auth = {
+      updateUser: vi.fn().mockResolvedValue({ error: null }),
+      signOut: vi
+        .fn()
+        .mockResolvedValueOnce({ error: new Error('storage busy') })
+        .mockResolvedValueOnce({ error: null }),
+    };
+
+    await expect(updateRecoveryPassword(auth, 'new-password')).resolves.toEqual({
+      status: 'updated',
+    });
+    expect(auth.signOut).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps cleanup failure distinct from a fully completed reset', async () => {
+    const auth = {
+      updateUser: vi.fn().mockResolvedValue({ error: null }),
+      signOut: vi.fn().mockResolvedValue({ error: new Error('storage unavailable') }),
+    };
+
+    await expect(updateRecoveryPassword(auth, 'new-password')).resolves.toEqual({
+      status: 'updated-session-active',
+    });
+    expect(auth.signOut).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('recovery session cleanup', () => {
+  it('returns false after the configured cleanup attempts fail', async () => {
+    const signOut = vi.fn().mockRejectedValue(new Error('storage unavailable'));
+
+    await expect(clearRecoverySession({ signOut }, 3)).resolves.toBe(false);
+    expect(signOut).toHaveBeenCalledTimes(3);
   });
 });
