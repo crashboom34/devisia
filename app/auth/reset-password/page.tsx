@@ -44,10 +44,7 @@ export default function ResetPasswordPage() {
       settled = true;
       if (timeoutId) window.clearTimeout(timeoutId);
       setRecoveryState(state);
-
-      if (state === 'ready') {
-        window.history.replaceState({}, document.title, window.location.pathname);
-      }
+      window.history.replaceState({}, document.title, window.location.pathname);
     };
 
     let subscription: { unsubscribe: () => void } | undefined;
