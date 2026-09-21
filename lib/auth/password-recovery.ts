@@ -25,6 +25,7 @@ type RecoverySessionAuth = {
     data: { session: unknown | null };
     error: unknown | null;
   }>;
+  signOut(options: { scope: 'local' }): Promise<{ error: unknown | null }>;
 };
 
 type UpdatePasswordAuth = {
@@ -82,22 +83,33 @@ export function classifyRecoveryRequestError(
 export async function requestPasswordReset(
   auth: ResetPasswordAuth,
   email: string,
-  origin: string,
-  timeoutMs = 12000
+  origin: string
 ): Promise<{ status: RecoveryRequestStatus }> {
-  let timeoutId: ReturnType<typeof setTimeout> | undefined;
   try {
-    const timeout = new Promise<never>((_, reject) => {
-      timeoutId = setTimeout(() => reject(new TypeError('Network request timed out')), timeoutMs);
-    });
-    const request = auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+    const { error } = await auth.resetPasswordForEmail(email.trim().toLowerCase(), {
       redirectTo: getRecoveryRedirectUrl(origin),
     });
-    const { error } = await Promise.race([request, timeout]);
     if (error) return { status: classifyRecoveryRequestError(error) };
     return { status: 'accepted' };
   } catch (error) {
     return { status: classifyRecoveryRequestError(error) };
+  }
+}
+
+export async function waitForRequestOutcome<T>(
+  request: Promise<T>,
+  timeoutMs: number
+): Promise<{ timedOut: false; value: T } | { timedOut: true }> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<{ timedOut: true }>((resolve) => {
+    timeoutId = setTimeout(() => resolve({ timedOut: true }), timeoutMs);
+  });
+
+  try {
+    return await Promise.race([
+      request.then((value) => ({ timedOut: false as const, value })),
+      timeout,
+    ]);
   } finally {
     if (timeoutId) clearTimeout(timeoutId);
   }
@@ -149,21 +161,51 @@ export function inspectRecoveryUrl(href: string): RecoveryUrlEvidence {
   }
 }
 
+export function classifyRecoverySessionError(
+  error: unknown
+): 'expired' | 'service-error' {
+  const message = error instanceof Error ? error.message.toLowerCase() : '';
+  if (
+    error instanceof TypeError ||
+    message.includes('failed to fetch') ||
+    message.includes('network request') ||
+    message.includes('networkerror')
+  ) {
+    return 'service-error';
+  }
+
+  if (
+    message.includes('expired') ||
+    message.includes('invalid token') ||
+    message.includes('invalid jwt') ||
+    message.includes('otp') ||
+    message.includes('code verifier') ||
+    message.includes('flow state')
+  ) {
+    return 'expired';
+  }
+
+  return 'service-error';
+}
+
 export async function establishRecoverySession(
   auth: RecoverySessionAuth,
   href: string
 ): Promise<{
-  status: 'ready' | 'expired' | 'invalid' | 'service-error';
+  status: 'ready' | 'expired' | 'invalid' | 'service-error' | 'cleanup-error';
 }> {
   const evidence = inspectRecoveryUrl(href);
   if (evidence.kind !== 'recovery') return { status: evidence.kind };
+
+  let sessionEstablishmentStarted = false;
 
   try {
     if (evidence.hasCode) {
       const code = new URL(href).searchParams.get('code');
       if (!code) return { status: 'invalid' };
       const { error } = await auth.exchangeCodeForSession(code);
-      if (error) return { status: 'expired' };
+      if (error) return { status: classifyRecoverySessionError(error) };
+      sessionEstablishmentStarted = true;
     } else {
       if (!evidence.hasImplicitTokens) return { status: 'invalid' };
       const fragment = new URLSearchParams(new URL(href).hash.slice(1));
@@ -175,13 +217,21 @@ export async function establishRecoverySession(
         access_token: accessToken,
         refresh_token: refreshToken,
       });
-      if (error) return { status: 'expired' };
+      if (error) return { status: classifyRecoverySessionError(error) };
+      sessionEstablishmentStarted = true;
     }
 
     const { data, error } = await auth.getSession();
-    if (error) return { status: 'service-error' };
-    return { status: data.session ? 'ready' : 'invalid' };
+    if (error || !data.session) {
+      const cleared = await clearRecoverySession(auth);
+      if (!cleared) return { status: 'cleanup-error' };
+      return { status: error ? 'service-error' : 'invalid' };
+    }
+    return { status: 'ready' };
   } catch {
+    if (sessionEstablishmentStarted && !(await clearRecoverySession(auth))) {
+      return { status: 'cleanup-error' };
+    }
     return { status: 'service-error' };
   }
 }

@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   clearRecoverySession,
+  classifyRecoverySessionError,
   classifyRecoveryRequestError,
   createSubmissionGuard,
   establishRecoverySession,
@@ -11,22 +12,38 @@ import {
   updateRecoveryPassword,
   validateNewPassword,
   validateRecoveryEmail,
+  waitForRequestOutcome,
 } from '@/lib/auth/password-recovery';
 import { validateSupabasePublicConfig } from '@/lib/auth/supabase-config';
 
 describe('validateSupabasePublicConfig', () => {
   it('accepts a valid Supabase URL and public anon JWT', () => {
+    const anonKey = `header.${Buffer.from(
+      JSON.stringify({ role: 'anon', ref: 'example-ref', iss: 'supabase' })
+    ).toString('base64url')}.signature`;
     const result = validateSupabasePublicConfig({
       NEXT_PUBLIC_SUPABASE_URL: 'https://example-ref.supabase.co',
-      NEXT_PUBLIC_SUPABASE_ANON_KEY:
-        'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiYW5vbiJ9.signature',
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: anonKey,
     });
 
     expect(result).toEqual({
       valid: true,
       url: 'https://example-ref.supabase.co',
-      anonKey: 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiYW5vbiJ9.signature',
+      anonKey,
     });
+  });
+
+  it('rejects a legacy anon key issued for another Supabase project', () => {
+    const anonKey = `header.${Buffer.from(
+      JSON.stringify({ role: 'anon', ref: 'another-ref', iss: 'supabase' })
+    ).toString('base64url')}.signature`;
+
+    const result = validateSupabasePublicConfig({
+      NEXT_PUBLIC_SUPABASE_URL: 'https://example-ref.supabase.co',
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: anonKey,
+    });
+
+    expect(result).toEqual({ valid: false, reason: 'key_project_mismatch' });
   });
 
   it('accepts a Supabase publishable key', () => {
@@ -150,18 +167,27 @@ describe('forgot password helpers', () => {
     ).resolves.toEqual({ status: 'network-error' });
   });
 
-  it('does not leave the request pending indefinitely', async () => {
+  it('times out the UI without releasing the concurrent-submission guard', async () => {
     vi.useFakeTimers();
-    const resetPasswordForEmail = vi.fn(() => new Promise<{ error: null }>(() => undefined));
-    const result = requestPasswordReset(
-      { resetPasswordForEmail },
-      'alex@example.com',
-      'https://devisia.vercel.app',
-      1000
-    );
+    let release!: () => void;
+    const operation = vi.fn(() => new Promise<string>((resolve) => {
+      release = () => resolve('done');
+    }));
+    const guard = createSubmissionGuard();
+    const first = guard.run(operation);
+    const visibleOutcome = waitForRequestOutcome(first, 1000);
 
     await vi.advanceTimersByTimeAsync(1000);
-    await expect(result).resolves.toEqual({ status: 'network-error' });
+    await expect(visibleOutcome).resolves.toEqual({ timedOut: true });
+    await expect(guard.run(operation)).resolves.toEqual({ started: false });
+    expect(operation).toHaveBeenCalledTimes(1);
+
+    release();
+    await expect(first).resolves.toEqual({ started: true, value: 'done' });
+    await expect(guard.run(async () => 'next')).resolves.toEqual({
+      started: true,
+      value: 'next',
+    });
     vi.useRealTimers();
   });
 
@@ -185,6 +211,16 @@ describe('forgot password helpers', () => {
 
 describe('reset password recovery session', () => {
   it.each([
+    [new TypeError('Failed to fetch'), 'service-error'],
+    [new Error('Network request failed'), 'service-error'],
+    [new Error('otp_expired'), 'expired'],
+    [new Error('invalid token'), 'expired'],
+    [new Error('unexpected'), 'service-error'],
+  ] as const)('classifies recovery verification errors', (error, expected) => {
+    expect(classifyRecoverySessionError(error)).toBe(expected);
+  });
+
+  it.each([
     [
       'https://devisia.vercel.app/auth/reset-password#type=recovery&access_token=secret&refresh_token=secret-refresh',
       'recovery',
@@ -207,6 +243,7 @@ describe('reset password recovery session', () => {
         data: { session: { access_token: 'secret', user: { id: 'user-id' } } },
         error: null,
       }),
+      signOut: vi.fn(),
     };
 
     await expect(
@@ -230,6 +267,7 @@ describe('reset password recovery session', () => {
         data: { session: { user: { id: 'user-id' } } },
         error: null,
       }),
+      signOut: vi.fn(),
     };
 
     await expect(
@@ -249,6 +287,7 @@ describe('reset password recovery session', () => {
         data: { session: { user: { id: 'already-signed-in' } } },
         error: null,
       }),
+      signOut: vi.fn(),
     };
 
     await expect(
@@ -264,6 +303,7 @@ describe('reset password recovery session', () => {
       exchangeCodeForSession: vi.fn(),
       setSession: vi.fn(),
       getSession: vi.fn(),
+      signOut: vi.fn(),
     };
 
     await expect(
@@ -280,6 +320,7 @@ describe('reset password recovery session', () => {
       exchangeCodeForSession: vi.fn(),
       setSession: vi.fn(),
       getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
+      signOut: vi.fn().mockResolvedValue({ error: null }),
     };
 
     await expect(
@@ -295,6 +336,7 @@ describe('reset password recovery session', () => {
       exchangeCodeForSession: vi.fn(),
       setSession: vi.fn().mockResolvedValue({ error: new Error('expired') }),
       getSession: vi.fn(),
+      signOut: vi.fn(),
     };
 
     await expect(
@@ -304,6 +346,60 @@ describe('reset password recovery session', () => {
       )
     ).resolves.toEqual({ status: 'expired' });
     expect(auth.getSession).not.toHaveBeenCalled();
+  });
+
+  it('clears a partial session when the post-exchange session check fails', async () => {
+    const auth = {
+      exchangeCodeForSession: vi.fn().mockResolvedValue({ error: null }),
+      setSession: vi.fn(),
+      getSession: vi.fn().mockResolvedValue({
+        data: { session: null },
+        error: new TypeError('Failed to fetch'),
+      }),
+      signOut: vi.fn().mockResolvedValue({ error: null }),
+    };
+
+    await expect(
+      establishRecoverySession(
+        auth,
+        'https://devisia.vercel.app/auth/reset-password?code=pkce-code'
+      )
+    ).resolves.toEqual({ status: 'service-error' });
+    expect(auth.signOut).toHaveBeenCalledWith({ scope: 'local' });
+  });
+
+  it('reports cleanup failure after a partial session is established', async () => {
+    const auth = {
+      exchangeCodeForSession: vi.fn().mockResolvedValue({ error: null }),
+      setSession: vi.fn(),
+      getSession: vi.fn().mockRejectedValue(new TypeError('Failed to fetch')),
+      signOut: vi.fn().mockResolvedValue({ error: new Error('storage unavailable') }),
+    };
+
+    await expect(
+      establishRecoverySession(
+        auth,
+        'https://devisia.vercel.app/auth/reset-password?code=pkce-code'
+      )
+    ).resolves.toEqual({ status: 'cleanup-error' });
+    expect(auth.signOut).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not mislabel a network error as an expired implicit token', async () => {
+    const auth = {
+      exchangeCodeForSession: vi.fn(),
+      setSession: vi.fn().mockResolvedValue({ error: new TypeError('Failed to fetch') }),
+      getSession: vi.fn(),
+      signOut: vi.fn(),
+    };
+
+    await expect(
+      establishRecoverySession(
+        auth,
+        'https://devisia.vercel.app/auth/reset-password#type=recovery&access_token=secret&refresh_token=secret-refresh'
+      )
+    ).resolves.toEqual({ status: 'service-error' });
+    expect(auth.signOut).not.toHaveBeenCalled();
   });
 });
 
