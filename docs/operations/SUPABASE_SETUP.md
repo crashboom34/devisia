@@ -1,15 +1,11 @@
 # Configuration Supabase - Guide Complet
 
-## ✅ Étape 1: Créer le Projet Supabase
+## ✅ Étape 1: Retrouver le Projet Supabase Existant
 
 1. Allez sur [https://supabase.com/dashboard](https://supabase.com/dashboard)
-2. Cliquez **"New project"**
-3. Remplissez:
-   - **Name:** `devisia` (ou votre choix)
-   - **Database Password:** _(notez-le quelque part!)_
-   - **Region:** Europe West (Ireland)
-   - **Pricing Plan:** Free
-4. Cliquez **"Create new project"** (prend ~2 minutes)
+2. Inspectez toutes les organisations auxquelles vous avez accès et recherchez le projet Devisia, y compris sous un ancien nom.
+3. Comparez son Project Ref avec la configuration Vercel, les sauvegardes, les migrations et l’historique du dépôt.
+4. Si le projet est introuvable, **arrêtez-vous avant toute recréation** afin de ne pas rompre le lien avec la base existante.
 
 ---
 
@@ -77,6 +73,26 @@ VALUES ('VOTRE-USER-ID-ICI', 'super_admin');
 ```
 
 4. Rafraîchissez la page, vous avez maintenant accès à `/admin`
+
+---
+
+## ✅ Étape 6: Configurer Password Recovery
+
+Dans **Authentication → URL Configuration** :
+
+- définissez la Site URL sur le domaine Devisia de production ;
+- autorisez `https://devisia.vercel.app/auth/reset-password` ;
+- autorisez les domaines Preview explicitement nécessaires ;
+- autorisez `http://localhost:3000/auth/reset-password` pour le développement local.
+
+Dans **Authentication → Email** :
+
+- vérifiez que le provider e-mail est actif ;
+- vérifiez le template de récupération et sa variable de lien ;
+- vérifiez le SMTP, les quotas et les rate limits avant un test réel contrôlé.
+
+Le client accepte uniquement `NEXT_PUBLIC_SUPABASE_URL` et une clé publique `anon` ou
+`publishable`. N’utilisez jamais une clé `service_role` dans une variable `NEXT_PUBLIC_*`.
 
 ---
 

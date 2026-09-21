@@ -8,7 +8,7 @@ La fonction Edge `generate-estimate` n'est pas à jour et empêche la générati
 ### Méthode 1: Via le Dashboard Supabase
 
 1. Allez sur https://supabase.com/dashboard
-2. Sélectionnez votre projet **fwuwzoxanrmsobwfnbxe**
+2. Sélectionnez le projet Devisia dont le Project Ref a été vérifié avec la configuration Vercel
 3. Menu gauche → **Edge Functions**
 4. Cliquez sur `generate-estimate`
 5. Cliquez sur le bouton **Deploy** ou **Redeploy**

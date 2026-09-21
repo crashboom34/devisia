@@ -2,7 +2,9 @@
 
 ## ✅ Étape 1: Ouvrir le SQL Editor
 
-1. Allez sur votre dashboard Supabase: [https://supabase.com/dashboard/project/przldngfbtgdfblbuxlw](https://supabase.com/dashboard/project/przldngfbtgdfblbuxlw)
+1. Ouvrez le projet Devisia **déjà existant** depuis le [dashboard Supabase](https://supabase.com/dashboard)
+   - Si le projet est introuvable, recherchez d’abord l’organisation, un renommage, les sauvegardes et la configuration Vercel.
+   - Ne recréez pas un projet vide avant d’avoir établi le devenir de la base existante.
 2. Dans le menu de gauche, cliquez sur **SQL Editor**
 
 ## ✅ Étape 2: Exécuter le Schéma Complet
@@ -101,8 +103,8 @@ Une fois que tout fonctionne en local:
 2. Ajoutez ces 2 variables (cochez Production, Preview, Development):
 
 ```
-NEXT_PUBLIC_SUPABASE_URL=https://przldngfbtgdfblbuxlw.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByemxkbmdmYnRnZGZibGJ1eGx3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE0NzE3MzUsImV4cCI6MjA3NzA0NzczNX0.28u4pzLm0h85Aa7i1jrzmKLbhzQmXZROByTtJrqqN98
+NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_PUBLIC_ANON_OR_PUBLISHABLE_KEY
 ```
 
 3. Push votre code:
