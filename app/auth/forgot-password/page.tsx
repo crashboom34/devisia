@@ -89,7 +89,7 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-dark px-4 py-8 sm:py-12">
+    <main className="relative flex min-h-[100svh] items-start justify-center overflow-x-hidden bg-gradient-dark px-4 py-6 sm:items-center sm:py-12">
       <div
         aria-hidden="true"
         className="absolute inset-0 bg-[linear-gradient(to_right,#1FBF7310_1px,transparent_1px),linear-gradient(to_bottom,#1FBF7310_1px,transparent_1px)] bg-[size:4rem_4rem]"
