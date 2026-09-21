@@ -1,18 +1,39 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useId } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Mic, MicOff, Pause, Play, Check, RotateCcw, Edit2, AlertCircle } from 'lucide-react';
+import {
+  RecognitionLifecycle,
+  processRecognitionEvent,
+  type RecognitionEventLike,
+  type RecognitionFailure,
+  type SpeechRecognitionLike,
+} from '@/lib/voice/recognition-lifecycle';
 
 interface VoiceRecorderProps {
   value: string;
   onChange: (text: string) => void;
   placeholder?: string;
+  ariaLabel?: string;
 }
 
-export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRecorderProps) {
+const ERROR_MESSAGES: Record<RecognitionFailure, string> = {
+  'audio-capture': 'Aucun microphone n’est disponible. Vérifiez qu’il est connecté et autorisé.',
+  'language-not-supported': 'La dictée en français n’est pas disponible dans ce navigateur.',
+  network: 'La dictée a été interrompue par un problème réseau. Vérifiez votre connexion puis réessayez.',
+  'not-allowed': 'L’accès au microphone a été refusé. Autorisez-le dans les réglages du navigateur puis réessayez.',
+  'restart-failed': 'La dictée s’est interrompue. Relancez-la pour continuer.',
+  'resume-failed': 'Impossible de reprendre la dictée. Terminez cette session puis recommencez.',
+  'service-not-allowed': 'Le service de dictée est bloqué par les réglages du navigateur ou de l’appareil.',
+  'start-failed': 'Impossible de démarrer la dictée. Vérifiez le microphone puis réessayez.',
+  'start-invalid-state': 'La dictée est déjà en cours. Patientez un instant puis réessayez.',
+  unknown: 'La dictée a rencontré un problème. Réessayez dans quelques instants.',
+};
+
+export default function VoiceRecorder({ value, onChange, placeholder, ariaLabel = 'Texte dicté' }: VoiceRecorderProps) {
   const [isListening, setIsListening] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [transcript, setTranscript] = useState(value);
@@ -23,26 +44,25 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
   const [errorMessage, setErrorMessage] = useState('');
   const [duration, setDuration] = useState(0);
 
-  const recognitionRef = useRef<any>(null);
-  const isListeningRef = useRef(false);
-  const isPausedRef = useRef(false);
-  const isRecognitionActiveRef = useRef(false);
-  const isRestartingRef = useRef(false);
+  const descriptionId = useId();
+  const lifecycleRef = useRef<RecognitionLifecycle | null>(null);
   const finalTextRef = useRef('');
   const lastFinalChunkRef = useRef('');
+  const lastEmittedValueRef = useRef<string | null>(null);
   const onChangeRef = useRef(onChange);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const sessionFinalCountRef = useRef(0);
+  const processedFinalResultsRef = useRef(new Set<string>());
 
   onChangeRef.current = onChange;
 
   useEffect(() => {
     setTranscript(value);
     finalTextRef.current = value;
-  }, [value]);
-
-  useEffect(() => {
-    setIsValidated(!!value);
+    if (lastEmittedValueRef.current === value) {
+      lastEmittedValueRef.current = null;
+      return;
+    }
+    setIsValidated(Boolean(value));
   }, [value]);
 
   useEffect(() => {
@@ -67,7 +87,11 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const speechWindow = window as typeof window & {
+      SpeechRecognition?: new () => SpeechRecognitionLike;
+      webkitSpeechRecognition?: new () => SpeechRecognitionLike;
+    };
+    const SpeechRecognition = speechWindow.SpeechRecognition || speechWindow.webkitSpeechRecognition;
     if (!SpeechRecognition) {
       setIsSupported(false);
       return;
@@ -78,203 +102,74 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
     recognition.interimResults = true;
     recognition.lang = 'fr-FR';
 
-    recognition.onstart = () => {
-      isRecognitionActiveRef.current = true;
-      sessionFinalCountRef.current = 0;
-    };
+    const handleResult = (event: RecognitionEventLike) => {
+      const processed = processRecognitionEvent(
+        event,
+        processedFinalResultsRef.current,
+        lastFinalChunkRef.current,
+      );
+      lastFinalChunkRef.current = processed.lastFinalChunk;
 
-    recognition.onresult = (event: any) => {
-      let sessionFinal = '';
-      let currentInterim = '';
-
-      for (let i = 0; i < event.results.length; i++) {
-        const result = event.results[i];
-        const text = result[0].transcript.trim();
-        if (!text) continue;
-
-        if (result.isFinal) {
-          if (i >= sessionFinalCountRef.current) {
-            const deduped = deduplicateChunk(text, lastFinalChunkRef.current);
-            if (deduped) {
-              sessionFinal += (sessionFinal ? ' ' : '') + deduped;
-              lastFinalChunkRef.current = deduped;
-            }
-            sessionFinalCountRef.current = i + 1;
-          }
-        } else {
-          currentInterim = text;
-        }
-      }
-
-      if (sessionFinal) {
+      if (processed.finalText) {
         const base = finalTextRef.current.trim();
-        const updated = base ? base + ' ' + sessionFinal : sessionFinal;
+        const updated = base ? `${base} ${processed.finalText}` : processed.finalText;
         finalTextRef.current = updated;
         setTranscript(updated);
         setInterimText('');
+        lastEmittedValueRef.current = updated;
         onChangeRef.current(updated);
       }
 
-      if (currentInterim) {
-        setInterimText(currentInterim);
-      } else if (!sessionFinal) {
+      if (processed.interimText) {
+        setInterimText(processed.interimText);
+      } else if (!processed.finalText) {
         setInterimText('');
       }
     };
 
-    recognition.onerror = (event: any) => {
-      isRecognitionActiveRef.current = false;
-
-      if (event.error === 'no-speech') return;
-
-      if (event.error === 'aborted') {
-        if (!isRestartingRef.current) {
-          setIsListening(false);
-          isListeningRef.current = false;
-          isPausedRef.current = false;
-        }
-        return;
-      }
-
-      let message = '';
-      switch (event.error) {
-        case 'not-allowed':
-        case 'permission-denied':
-          message = 'Acces au microphone refuse. Veuillez autoriser l\'acces dans les parametres de votre navigateur.';
-          break;
-        case 'network':
-          message = 'Erreur reseau. Verifiez votre connexion internet.';
-          break;
-        default:
-          message = `Erreur: ${event.error}. Sur mobile, HTTPS est requis pour la reconnaissance vocale.`;
-      }
-
-      setErrorMessage(message);
-      setIsListening(false);
-      isListeningRef.current = false;
-      isPausedRef.current = false;
-    };
-
-    recognition.onend = () => {
-      isRecognitionActiveRef.current = false;
-
-      if (isListeningRef.current && !isPausedRef.current && !isRestartingRef.current) {
-        isRestartingRef.current = true;
-        setTimeout(() => {
-          if (isListeningRef.current && !isPausedRef.current && !isRecognitionActiveRef.current) {
-            try {
-              recognition.start();
-            } catch {
-              setIsListening(false);
-              isListeningRef.current = false;
-              setErrorMessage('Impossible de redemarrer la reconnaissance vocale.');
-            }
-          }
-          isRestartingRef.current = false;
-        }, 250);
-      }
-    };
-
-    recognitionRef.current = recognition;
+    const lifecycle = new RecognitionLifecycle(recognition, {
+      onError: (failure) => setErrorMessage(ERROR_MESSAGES[failure]),
+      onResult: handleResult,
+      onSessionStart: () => processedFinalResultsRef.current.clear(),
+      onStatusChange: ({ isListening: listening, isPaused: paused }) => {
+        setIsListening(listening);
+        setIsPaused(paused);
+        if (!listening || paused) setInterimText('');
+      },
+    });
+    lifecycleRef.current = lifecycle;
 
     return () => {
-      if (recognitionRef.current) {
-        try { recognitionRef.current.stop(); } catch { /* ignore */ }
-      }
+      lifecycle.destroy();
+      lifecycleRef.current = null;
     };
   }, []);
 
-  const deduplicateChunk = (newChunk: string, previousChunk: string): string => {
-    if (!previousChunk || !newChunk) return newChunk;
-    if (newChunk === previousChunk) return '';
-
-    const newWords = newChunk.split(/\s+/);
-    const prevWords = previousChunk.split(/\s+/);
-
-    const cleaned: string[] = [];
-    for (const word of newWords) {
-      if (word !== cleaned[cleaned.length - 1]) {
-        cleaned.push(word);
-      }
-    }
-
-    const overlap = Math.min(prevWords.length, cleaned.length);
-    for (let size = overlap; size >= 3; size--) {
-      const prevTail = prevWords.slice(-size).join(' ').toLowerCase();
-      const newHead = cleaned.slice(0, size).join(' ').toLowerCase();
-      if (prevTail === newHead) {
-        return cleaned.slice(size).join(' ');
-      }
-    }
-
-    return cleaned.join(' ');
-  };
-
   const startListening = () => {
-    if (!recognitionRef.current || isListening || isRecognitionActiveRef.current) return;
+    if (!lifecycleRef.current || isListening) return;
 
     finalTextRef.current = value.trim();
     lastFinalChunkRef.current = '';
-    sessionFinalCountRef.current = 0;
+    processedFinalResultsRef.current.clear();
     setInterimText('');
     setIsValidated(false);
     setIsEditing(false);
     setErrorMessage('');
     setDuration(0);
-    isRestartingRef.current = false;
-
-    try {
-      recognitionRef.current.start();
-      setIsListening(true);
-      isListeningRef.current = true;
-      setIsPaused(false);
-      isPausedRef.current = false;
-    } catch (error: any) {
-      isListeningRef.current = false;
-      isRecognitionActiveRef.current = false;
-      if (error?.name === 'InvalidStateError') {
-        setErrorMessage('La reconnaissance vocale est deja en cours. Veuillez attendre.');
-      } else {
-        setErrorMessage('Impossible de demarrer la reconnaissance vocale. Assurez-vous d\'etre en HTTPS sur mobile.');
-      }
-    }
+    lifecycleRef.current.start();
   };
 
   const pauseListening = () => {
-    if (recognitionRef.current && isListening) {
-      isRestartingRef.current = false;
-      recognitionRef.current.stop();
-      setIsPaused(true);
-      isPausedRef.current = true;
-      setInterimText('');
-    }
+    lifecycleRef.current?.pause();
   };
 
   const resumeListening = () => {
-    if (recognitionRef.current && isPaused && !isRecognitionActiveRef.current) {
-      isRestartingRef.current = false;
-      sessionFinalCountRef.current = 0;
-      try {
-        recognitionRef.current.start();
-        setIsPaused(false);
-        isPausedRef.current = false;
-      } catch {
-        setErrorMessage('Impossible de reprendre la reconnaissance vocale.');
-      }
-    }
+    processedFinalResultsRef.current.clear();
+    lifecycleRef.current?.resume();
   };
 
   const stopListening = () => {
-    if (recognitionRef.current) {
-      isRestartingRef.current = false;
-      try { recognitionRef.current.stop(); } catch { /* ignore */ }
-      setIsListening(false);
-      isListeningRef.current = false;
-      setIsPaused(false);
-      isPausedRef.current = false;
-      isRecognitionActiveRef.current = false;
-      setInterimText('');
-    }
+    lifecycleRef.current?.stop();
   };
 
   const handleValidate = () => {
@@ -295,8 +190,9 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
     setDuration(0);
     finalTextRef.current = '';
     lastFinalChunkRef.current = '';
-    sessionFinalCountRef.current = 0;
+    processedFinalResultsRef.current.clear();
     if (isListening) stopListening();
+    lastEmittedValueRef.current = '';
     onChangeRef.current('');
   };
 
@@ -309,15 +205,22 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
     const finalText = transcript.trim();
     if (finalText) {
       finalTextRef.current = finalText;
+      lastEmittedValueRef.current = finalText;
       onChangeRef.current(finalText);
       setIsValidated(true);
       setIsEditing(false);
     }
   };
 
+  const handleCancelEdit = () => {
+    setTranscript(finalTextRef.current);
+    setIsEditing(false);
+    setIsValidated(Boolean(finalTextRef.current));
+  };
+
   if (!isSupported) {
     return (
-      <Card className="bg-yellow-900/20 border-yellow-700">
+      <Card className="bg-yellow-900/20 border-yellow-700" role="status">
         <CardContent className="pt-6">
           <div className="flex items-start gap-3">
             <AlertCircle className="h-5 w-5 text-yellow-400 flex-shrink-0 mt-0.5" />
@@ -326,7 +229,7 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
                 Reconnaissance vocale non disponible
               </p>
               <p className="text-xs text-yellow-500">
-                Navigateurs compatibles: Chrome/Edge (Android), Safari 14.5+ (iOS). HTTPS requis sur mobile.
+                Utilisez un navigateur compatible ou choisissez la saisie texte pour continuer.
               </p>
             </div>
           </div>
@@ -341,17 +244,12 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
   return (
     <div className="space-y-4">
       {errorMessage && (
-        <Card className="bg-red-900/20 border-red-700">
+        <Card className="bg-red-900/20 border-red-700" role="alert" aria-live="assertive">
           <CardContent className="pt-6">
             <div className="flex items-start gap-3">
               <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm text-red-400">{errorMessage}</p>
-                {errorMessage.includes('HTTPS') && (
-                  <p className="text-xs text-red-500 mt-1">
-                    Pour la dictee vocale sur mobile, HTTPS est obligatoire.
-                  </p>
-                )}
               </div>
             </div>
           </CardContent>
@@ -371,10 +269,13 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
                 rows={8}
                 className="w-full bg-brand-darkLight border-gray-700 text-white placeholder:text-gray-500"
                 placeholder="Modifiez votre texte..."
+                aria-label={ariaLabel}
+                aria-describedby={descriptionId}
               />
               <div className="flex gap-2">
                 <Button
-                  onClick={() => { setIsEditing(false); setIsValidated(true); }}
+                  type="button"
+                  onClick={handleCancelEdit}
                   variant="outline"
                   size="sm"
                   className="border-gray-700 text-gray-300 hover:bg-brand-darkLight"
@@ -382,6 +283,7 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
                   Annuler
                 </Button>
                 <Button
+                  type="button"
                   onClick={handleSaveEdit}
                   size="sm"
                   className="bg-brand-green hover:bg-green-600 text-white"
@@ -403,6 +305,7 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
                   </p>
                   {isValidated && (
                     <Button
+                      type="button"
                       onClick={handleEdit}
                       variant="ghost"
                       size="sm"
@@ -446,8 +349,8 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
                     <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse delay-75" />
                     <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse delay-150" />
                   </div>
-                  <span className="text-xs text-red-400 font-medium">
-                    {isPaused ? 'En pause' : 'Ecoute...'}
+                  <span className="text-xs text-red-400 font-medium" role="status" aria-live="polite">
+                    {isPaused ? 'Dictée en pause' : 'Écoute en cours…'}
                   </span>
                 </div>
               )}
@@ -459,32 +362,32 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
       {!isEditing && (
         <div className="flex flex-wrap gap-3 justify-center">
           {!isListening && !transcript && (
-            <Button onClick={startListening} size="lg" className="bg-red-600 hover:bg-red-700 text-white">
+            <Button type="button" onClick={startListening} size="lg" className="bg-red-600 hover:bg-red-700 text-white" aria-describedby={descriptionId}>
               <Mic className="h-5 w-5 mr-2" />
-              Commencer la Dictee
+              Commencer la dictée
             </Button>
           )}
 
           {isListening && !isPaused && (
             <>
-              <Button onClick={pauseListening} size="lg" variant="outline" className="border-gray-700 text-gray-300 hover:bg-brand-darkLight">
+              <Button type="button" onClick={pauseListening} size="lg" variant="outline" className="border-gray-700 text-gray-300 hover:bg-brand-darkLight">
                 <Pause className="h-5 w-5 mr-2" />
                 Pause
               </Button>
-              <Button onClick={stopListening} size="lg" variant="outline" className="text-red-400 border-red-600 hover:bg-red-900/20">
+              <Button type="button" onClick={stopListening} size="lg" variant="outline" className="text-red-400 border-red-600 hover:bg-red-900/20">
                 <MicOff className="h-5 w-5 mr-2" />
-                Arreter
+                Arrêter
               </Button>
             </>
           )}
 
           {isPaused && (
             <>
-              <Button onClick={resumeListening} size="lg" className="bg-red-600 hover:bg-red-700 text-white">
+              <Button type="button" onClick={resumeListening} size="lg" className="bg-red-600 hover:bg-red-700 text-white">
                 <Play className="h-5 w-5 mr-2" />
                 Reprendre
               </Button>
-              <Button onClick={stopListening} size="lg" variant="outline" className="border-gray-700 text-gray-300 hover:bg-brand-darkLight">
+              <Button type="button" onClick={stopListening} size="lg" variant="outline" className="border-gray-700 text-gray-300 hover:bg-brand-darkLight">
                 <MicOff className="h-5 w-5 mr-2" />
                 Terminer
               </Button>
@@ -493,11 +396,11 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
 
           {transcript && !isListening && !isValidated && (
             <>
-              <Button onClick={handleReset} size="lg" variant="outline" className="border-gray-700 text-gray-300 hover:bg-brand-darkLight">
+              <Button type="button" onClick={handleReset} size="lg" variant="outline" className="border-gray-700 text-gray-300 hover:bg-brand-darkLight">
                 <RotateCcw className="h-5 w-5 mr-2" />
                 Recommencer
               </Button>
-              <Button onClick={handleValidate} size="lg" className="bg-brand-green hover:bg-green-600 text-white">
+              <Button type="button" onClick={handleValidate} size="lg" className="bg-brand-green hover:bg-green-600 text-white">
                 <Check className="h-5 w-5 mr-2" />
                 Valider
               </Button>
@@ -505,20 +408,23 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
           )}
 
           {transcript && isListening && (
-            <Button onClick={handleReset} size="lg" variant="outline">
+            <Button type="button" onClick={handleReset} size="lg" variant="outline">
               <RotateCcw className="h-5 w-5 mr-2" />
               Recommencer
             </Button>
           )}
 
           {isValidated && !isListening && (
-            <Button onClick={handleReset} size="lg" variant="outline">
+            <Button type="button" onClick={handleReset} size="lg" variant="outline">
               <RotateCcw className="h-5 w-5 mr-2" />
               Recommencer
             </Button>
           )}
         </div>
       )}
+      <p id={descriptionId} className="sr-only">
+        La dictée utilise le microphone de votre appareil. Vous pourrez relire et modifier le texte avant de le valider.
+      </p>
     </div>
   );
 }
