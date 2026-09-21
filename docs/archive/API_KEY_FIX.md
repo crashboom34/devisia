@@ -151,7 +151,7 @@ Avec cette correction:
 
 **Redéployez la fonction Edge** `generate-estimate` pour appliquer la correction:
 
-1. Dashboard: https://supabase.com/dashboard/project/fwuwzoxanrmsobwfnbxe/functions
+1. Dashboard : ouvrez le projet Devisia vérifié, puis **Functions**
 2. Cliquez sur `generate-estimate`
 3. Cliquez sur **Deploy**
 

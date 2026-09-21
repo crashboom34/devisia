@@ -1,141 +1,268 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { ArrowLeft, CheckCircle2, FileText, Loader2, Mail } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileText, ArrowLeft, Mail, CheckCircle } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import {
+  createSubmissionGuard,
+  requestPasswordReset,
+  validateRecoveryEmail,
+  waitForRequestOutcome,
+} from '@/lib/auth/password-recovery';
+import { getSupabaseClient, SupabaseConfigurationError } from '@/lib/supabase';
+
+const REQUEST_ERROR =
+  'Impossible d\u2019envoyer la demande pour le moment. Réessayez dans quelques instants.';
 
 export default function ForgotPasswordPage() {
+  const submissionGuard = useRef(createSubmissionGuard()).current;
+  const mounted = useRef(true);
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
+  const [requestPending, setRequestPending] = useState(false);
+  const [fieldError, setFieldError] = useState('');
   const [error, setError] = useState('');
+  const [diagnostic, setDiagnostic] = useState('');
   const [sent, setSent] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/reset-password`,
-      });
-
-      if (error) throw error;
+  const handleRequestStatus = (status: string) => {
+    if (!mounted.current) return;
+    if (status === 'accepted') {
       setSent(true);
-    } catch (err: any) {
-      if (err.message === 'Failed to fetch') {
-        setError('Impossible de se connecter au serveur. Vérifiez votre connexion internet.');
-      } else {
-        setError(err.message || 'Une erreur est survenue');
+      return;
+    }
+
+    setError(REQUEST_ERROR);
+    if (status === 'invalid-configuration') {
+      console.error('Password recovery request failed: invalid Supabase configuration');
+      if (process.env.NODE_ENV === 'development') {
+        setDiagnostic('Supabase configuration missing or invalid.');
       }
-    } finally {
-      setLoading(false);
+    } else if (status === 'network-error') {
+      console.error('Password recovery request failed: network error');
+    } else {
+      console.error('Password recovery request failed: Supabase service error');
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-dark flex items-center justify-center p-4 relative overflow-hidden">
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#1FBF7310_1px,transparent_1px),linear-gradient(to_bottom,#1FBF7310_1px,transparent_1px)] bg-[size:4rem_4rem]" />
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
 
-      <div className="w-full max-w-md relative z-10">
-        <Link href="/auth/login" className="inline-flex items-center gap-2 text-gray-400 hover:text-white mb-8 transition-colors">
-          <ArrowLeft className="h-4 w-4" />
+    const validationError = validateRecoveryEmail(email);
+    if (validationError) {
+      setFieldError(
+        validationError === 'required'
+          ? 'Indiquez votre adresse e-mail.'
+          : 'Saisissez une adresse e-mail valide.'
+      );
+      return;
+    }
+
+    setFieldError('');
+    setError('');
+    setDiagnostic('');
+
+    const guardedRequest = submissionGuard.run(async () => {
+      setLoading(true);
+      try {
+        const client = getSupabaseClient();
+        return await requestPasswordReset(client.auth, email, window.location.origin);
+      } catch (requestError) {
+        if (requestError instanceof SupabaseConfigurationError) {
+          return { status: 'invalid-configuration' as const };
+        }
+        return { status: 'service-error' as const };
+      } finally {
+        if (mounted.current) setLoading(false);
+      }
+    });
+
+    const visibleOutcome = await waitForRequestOutcome(guardedRequest, 12000);
+    if (visibleOutcome.timedOut) {
+      if (!mounted.current) return;
+      setLoading(false);
+      setRequestPending(true);
+      setError(REQUEST_ERROR);
+      console.error('Password recovery request delayed: awaiting Supabase response');
+      void guardedRequest.then((lateResult) => {
+        if (!mounted.current) return;
+        setRequestPending(false);
+        if (lateResult.started) handleRequestStatus(lateResult.value.status);
+      });
+      return;
+    }
+    if (visibleOutcome.value.started) {
+      handleRequestStatus(visibleOutcome.value.value.status);
+    }
+  };
+
+  const startOver = () => {
+    setSent(false);
+    setEmail('');
+    setError('');
+    setDiagnostic('');
+    setFieldError('');
+  };
+
+  return (
+    <main className="relative flex min-h-[100svh] items-start justify-center overflow-x-hidden bg-gradient-dark px-4 py-6 sm:items-center sm:py-12">
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 bg-[linear-gradient(to_right,#1FBF7310_1px,transparent_1px),linear-gradient(to_bottom,#1FBF7310_1px,transparent_1px)] bg-[size:4rem_4rem]"
+      />
+
+      <div className="relative z-10 w-full max-w-md">
+        <Link
+          href="/auth/login"
+          className="mb-6 inline-flex min-h-11 items-center gap-2 rounded-md text-sm text-gray-400 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-green sm:mb-8"
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           Retour à la connexion
         </Link>
 
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center justify-center gap-2 mb-4">
-            <div className="p-2 rounded-lg bg-brand-green">
-              <FileText className="h-8 w-8 text-white" />
-            </div>
-            <span className="text-3xl font-bold text-white">Devisia</span>
+        <div className="mb-6 text-center sm:mb-8">
+          <Link
+            href="/"
+            aria-label="Accueil Devisia"
+            className="inline-flex items-center justify-center gap-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-green"
+          >
+            <span className="rounded-lg bg-brand-green p-2">
+              <FileText className="h-7 w-7 text-white sm:h-8 sm:w-8" aria-hidden="true" />
+            </span>
+            <span className="text-2xl font-bold text-white sm:text-3xl">Devisia</span>
           </Link>
         </div>
 
-        <Card className="bg-brand-darkCard border-gray-800 shadow-2xl">
-          <CardHeader>
+        <Card className="border-gray-800 bg-brand-darkCard shadow-2xl">
+          <CardHeader className="space-y-2">
             <CardTitle className="text-2xl text-white">
-              {sent ? 'Email envoyé' : 'Mot de passe oublié'}
+              {sent ? 'Vérifiez votre boîte mail' : 'Réinitialiser votre mot de passe'}
             </CardTitle>
             <CardDescription className="text-gray-400">
               {sent
-                ? 'Vérifiez votre boîte de réception pour réinitialiser votre mot de passe.'
-                : 'Entrez votre adresse email pour recevoir un lien de réinitialisation.'}
+                ? 'La demande a bien été transmise.'
+                : 'Indiquez l\u2019adresse e-mail associée à votre compte. Nous vous enverrons un lien pour choisir un nouveau mot de passe.'}
             </CardDescription>
           </CardHeader>
+
           <CardContent>
             {sent ? (
-              <div className="space-y-6">
-                <div className="flex flex-col items-center gap-4 py-4">
-                  <div className="p-3 rounded-full bg-brand-green/20">
-                    <CheckCircle className="h-8 w-8 text-brand-green" />
-                  </div>
-                  <div className="text-center space-y-2">
-                    <p className="text-gray-300 text-sm">
-                      Un email a été envoyé à <span className="text-white font-medium">{email}</span>
+              <section className="space-y-6" aria-live="polite">
+                <div className="flex flex-col items-center gap-4 py-2 text-center sm:py-4">
+                  <span className="rounded-full bg-brand-green/20 p-3">
+                    <CheckCircle2 className="h-8 w-8 text-brand-green" aria-hidden="true" />
+                  </span>
+                  <div className="space-y-2">
+                    <p className="text-sm leading-6 text-gray-300">
+                      Si un compte correspond à cette adresse, vous recevrez un lien de
+                      réinitialisation dans quelques instants.
                     </p>
-                    <p className="text-gray-500 text-xs">
-                      Si un compte existe avec cette adresse, vous recevrez un lien de réinitialisation.
-                      Pensez à vérifier vos spams.
+                    <p className="text-xs leading-5 text-gray-500">
+                      Pensez à vérifier vos courriers indésirables. Le lien est temporaire.
                     </p>
                   </div>
-                </div>
-                <Button
-                  onClick={() => { setSent(false); setEmail(''); }}
-                  variant="outline"
-                  className="w-full border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white"
-                >
-                  <Mail className="h-4 w-4 mr-2" />
-                  Renvoyer avec une autre adresse
-                </Button>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="text-gray-300">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="vous@exemple.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="bg-brand-darkLight border-gray-700 text-white placeholder:text-gray-500 focus:border-brand-green focus:ring-brand-green"
-                  />
                 </div>
 
-                {error && (
-                  <div className="bg-red-500/10 border border-red-500/50 text-red-400 p-3 rounded-md text-sm">
-                    {error}
-                  </div>
-                )}
+                <Button
+                  type="button"
+                  onClick={startOver}
+                  variant="secondary"
+                  size="lg"
+                  className="w-full"
+                >
+                  <Mail className="h-4 w-4" aria-hidden="true" />
+                  Utiliser une autre adresse
+                </Button>
+              </section>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-gray-300">
+                    Adresse e-mail
+                  </Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    placeholder="vous@exemple.com"
+                    value={email}
+                    onChange={(event) => {
+                      setEmail(event.target.value);
+                      if (fieldError) setFieldError('');
+                    }}
+                    aria-invalid={Boolean(fieldError)}
+                    aria-describedby={fieldError ? 'email-error' : undefined}
+                    disabled={loading || requestPending}
+                    className="min-h-12 border-gray-700 bg-brand-darkLight text-white placeholder:text-gray-500 focus:border-brand-green focus:ring-brand-green"
+                  />
+                  {fieldError ? (
+                    <p id="email-error" className="text-sm text-red-400">
+                      {fieldError}
+                    </p>
+                  ) : null}
+                </div>
+
+                <div aria-live="polite" aria-atomic="true">
+                  {error ? (
+                    <div
+                      role="alert"
+                      className="rounded-md border border-red-500/50 bg-red-500/10 p-3 text-sm leading-5 text-red-300"
+                    >
+                      <p>{error}</p>
+                      {diagnostic ? <p className="mt-1 text-xs text-red-200">{diagnostic}</p> : null}
+                    </div>
+                  ) : null}
+                </div>
 
                 <Button
                   type="submit"
-                  disabled={loading}
-                  className="w-full bg-brand-green hover:bg-green-600 text-white"
+                  disabled={loading || requestPending}
+                  aria-busy={loading || requestPending}
+                  size="lg"
+                  className="w-full bg-brand-green text-white hover:bg-green-600"
                 >
-                  {loading ? 'Envoi en cours...' : 'Envoyer le lien de réinitialisation'}
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                      Envoi en cours…
+                    </>
+                  ) : requestPending ? (
+                    <>
+                      <Mail className="h-4 w-4" aria-hidden="true" />
+                      Réponse en attente…
+                    </>
+                  ) : (
+                    'Envoyer le lien'
+                  )}
                 </Button>
               </form>
             )}
 
             <div className="mt-6 text-center">
-              <p className="text-sm text-gray-400">
-                Vous vous souvenez ?{' '}
-                <Link href="/auth/login" className="text-brand-green hover:text-green-400 font-medium transition-colors">
-                  Se connecter
-                </Link>
-              </p>
+              <Link
+                href="/auth/login"
+                className="inline-flex min-h-11 items-center justify-center rounded-md px-2 text-sm font-medium text-brand-green transition-colors hover:text-green-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-green"
+              >
+                Retour à la connexion
+              </Link>
             </div>
           </CardContent>
         </Card>
       </div>
-    </div>
+    </main>
   );
 }

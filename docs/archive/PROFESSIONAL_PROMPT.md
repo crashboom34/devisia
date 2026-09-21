@@ -196,7 +196,7 @@ Pour activer ce nouveau prompt professionnel, **redéployez la fonction Edge** `
 
 ### Via le Dashboard Supabase
 
-1. https://supabase.com/dashboard/project/fwuwzoxanrmsobwfnbxe/functions
+1. Ouvrez le projet Devisia vérifié dans le dashboard Supabase, puis **Functions**
 2. Cliquez sur `generate-estimate`
 3. Cliquez sur **Deploy**
 
