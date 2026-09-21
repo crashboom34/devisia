@@ -45,6 +45,9 @@ export default function ResetPasswordPage() {
   const [recoveryState, setRecoveryState] = useState<RecoveryState>('checking');
 
   useEffect(() => {
+    const recoveryHref = initialHref.current;
+    window.history.replaceState({}, document.title, window.location.pathname);
+
     let active = true;
     let settled = false;
     let timedOut = false;
@@ -59,7 +62,6 @@ export default function ResetPasswordPage() {
       recoveryReady = state === 'ready';
       if (timeoutId) window.clearTimeout(timeoutId);
       setRecoveryState(state);
-      window.history.replaceState({}, document.title, window.location.pathname);
     };
 
     let subscription: { unsubscribe: () => void } | undefined;
@@ -90,7 +92,7 @@ export default function ResetPasswordPage() {
         finish('invalid');
       }, 8000);
 
-      void establishRecoverySession(client.auth, initialHref.current).then((result) => {
+      void establishRecoverySession(client.auth, recoveryHref).then((result) => {
         if (
           result.status === 'ready' &&
           (timedOut || !active || (settled && !recoveryReady))

@@ -11,20 +11,15 @@
 
 ## ✅ Étape 2: Récupérer les Credentials
 
-Une fois le projet créé:
+Une fois le projet existant retrouvé et son identité confirmée :
 
 1. Allez dans **Settings** (⚙️) → **API**
-2. Copiez ces deux valeurs:
+2. Copiez directement, sans passer par un ancien document :
+   - la **Project URL** affichée par le dashboard ;
+   - la clé publique **anon** ou **publishable** du même projet.
 
-### **Project URL**
-```
-https://xxxxxxxxxxxxx.supabase.co
-```
-
-### **anon public key**
-```
-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ey...
-```
+Ne copiez aucune valeur d’exemple. Vérifiez que la référence du projet portée par une ancienne
+clé `anon` correspond au sous-domaine de la Project URL.
 
 ---
 
@@ -38,13 +33,13 @@ eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ey...
 
 ## ✅ Étape 4: Configurer les Variables d'Environnement
 
-### **Local (.env)**
+### **Local (.env.local)**
 
-Éditez le fichier `.env` à la racine du projet:
+Créez le fichier local à partir du modèle volontairement vide, puis renseignez uniquement les
+deux valeurs vérifiées dans le dashboard :
 
 ```bash
-NEXT_PUBLIC_SUPABASE_URL=https://xxxxxxxxxxxxx.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ey...
+cp .env.example .env.local
 ```
 
 ### **Vercel (Production)**
@@ -53,8 +48,8 @@ Dans Vercel Dashboard → **Settings** → **Environment Variables**, ajoutez:
 
 | Key | Value | Environment |
 |-----|-------|-------------|
-| `NEXT_PUBLIC_SUPABASE_URL` | `https://xxxxxxxxxxxxx.supabase.co` | ✅ Production, Preview, Development |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...` | ✅ Production, Preview, Development |
+| `NEXT_PUBLIC_SUPABASE_URL` | Project URL vérifiée du projet retrouvé | ✅ Production, Preview, Development |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Clé publique du même projet | ✅ Production, Preview, Development |
 
 ---
 
