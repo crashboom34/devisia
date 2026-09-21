@@ -1,18 +1,42 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { validateSupabasePublicConfig } from '@/lib/auth/supabase-config';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+export const supabaseConfiguration = validateSupabasePublicConfig({
+  NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+});
 
-export const supabase = createClient(
-  supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder-key',
-  {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-    },
+export class SupabaseConfigurationError extends Error {
+  constructor() {
+    super('Supabase public configuration is missing or invalid.');
+    this.name = 'SupabaseConfigurationError';
   }
-);
+}
+
+const configuredClient = supabaseConfiguration.valid
+  ? createClient(supabaseConfiguration.url, supabaseConfiguration.anonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl:
+          typeof window !== 'undefined' &&
+          window.location.pathname !== '/auth/reset-password',
+      },
+    })
+  : null;
+
+const unavailableClient = new Proxy({} as SupabaseClient, {
+  get() {
+    throw new SupabaseConfigurationError();
+  },
+});
+
+export const supabase: SupabaseClient = configuredClient ?? unavailableClient;
+
+export function getSupabaseClient(): SupabaseClient {
+  if (!configuredClient) throw new SupabaseConfigurationError();
+  return configuredClient;
+}
 
 export interface Project {
   id: string;
