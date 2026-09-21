@@ -6,7 +6,7 @@ export type SupabasePublicConfig = {
 
 export type SupabasePublicConfigError = {
   valid: false;
-  reason: 'missing' | 'placeholder' | 'invalid_url' | 'invalid_key';
+  reason: 'missing' | 'placeholder' | 'invalid_url' | 'invalid_key' | 'key_project_mismatch';
   missing?: Array<'NEXT_PUBLIC_SUPABASE_URL' | 'NEXT_PUBLIC_SUPABASE_ANON_KEY'>;
 };
 
@@ -36,26 +36,38 @@ function decodeJwtPayload(key: string): Record<string, unknown> | null {
   }
 }
 
-function isValidProjectUrl(value: string): boolean {
+function getProjectRef(value: string): string | null {
   try {
     const url = new URL(value);
-    return (
+    const valid =
       url.protocol === 'https:' &&
       /^[a-z0-9-]+\.supabase\.co$/i.test(url.hostname) &&
       (url.pathname === '' || url.pathname === '/') &&
       !url.username &&
-      !url.password
-    );
+      !url.password;
+    return valid ? url.hostname.split('.')[0] : null;
   } catch {
-    return false;
+    return null;
   }
 }
 
-function isValidPublicKey(value: string): boolean {
-  if (value.startsWith('sb_publishable_')) return value.length > 20;
+function validatePublicKey(
+  value: string,
+  projectRef: string
+): 'valid' | 'invalid_key' | 'key_project_mismatch' {
+  if (value.startsWith('sb_publishable_')) {
+    return value.length > 20 ? 'valid' : 'invalid_key';
+  }
 
   const payload = decodeJwtPayload(value);
-  return payload?.role === 'anon';
+  if (
+    payload?.role !== 'anon' ||
+    typeof payload.ref !== 'string' ||
+    (payload.iss !== undefined && payload.iss !== 'supabase')
+  ) {
+    return 'invalid_key';
+  }
+  return payload.ref === projectRef ? 'valid' : 'key_project_mismatch';
 }
 
 export function validateSupabasePublicConfig(
@@ -73,9 +85,11 @@ export function validateSupabasePublicConfig(
     return { valid: false, reason: 'placeholder' };
   }
 
-  if (!isValidProjectUrl(url)) return { valid: false, reason: 'invalid_url' };
-  if (!isValidPublicKey(anonKey)) return { valid: false, reason: 'invalid_key' };
+  const projectRef = getProjectRef(url);
+  if (!projectRef) return { valid: false, reason: 'invalid_url' };
+
+  const keyResult = validatePublicKey(anonKey, projectRef);
+  if (keyResult !== 'valid') return { valid: false, reason: keyResult };
 
   return { valid: true, url, anonKey };
 }
-

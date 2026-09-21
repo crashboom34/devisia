@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, CheckCircle2, FileText, Loader2, Mail } from 'lucide-react';
 
@@ -12,6 +12,7 @@ import {
   createSubmissionGuard,
   requestPasswordReset,
   validateRecoveryEmail,
+  waitForRequestOutcome,
 } from '@/lib/auth/password-recovery';
 import { getSupabaseClient, SupabaseConfigurationError } from '@/lib/supabase';
 
@@ -20,12 +21,41 @@ const REQUEST_ERROR =
 
 export default function ForgotPasswordPage() {
   const submissionGuard = useRef(createSubmissionGuard()).current;
+  const mounted = useRef(true);
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
+  const [requestPending, setRequestPending] = useState(false);
   const [fieldError, setFieldError] = useState('');
   const [error, setError] = useState('');
   const [diagnostic, setDiagnostic] = useState('');
   const [sent, setSent] = useState(false);
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+
+  const handleRequestStatus = (status: string) => {
+    if (!mounted.current) return;
+    if (status === 'accepted') {
+      setSent(true);
+      return;
+    }
+
+    setError(REQUEST_ERROR);
+    if (status === 'invalid-configuration') {
+      console.error('Password recovery request failed: invalid Supabase configuration');
+      if (process.env.NODE_ENV === 'development') {
+        setDiagnostic('Supabase configuration missing or invalid.');
+      }
+    } else if (status === 'network-error') {
+      console.error('Password recovery request failed: network error');
+    } else {
+      console.error('Password recovery request failed: Supabase service error');
+    }
+  };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -44,7 +74,7 @@ export default function ForgotPasswordPage() {
     setError('');
     setDiagnostic('');
 
-    const guardedResult = await submissionGuard.run(async () => {
+    const guardedRequest = submissionGuard.run(async () => {
       setLoading(true);
       try {
         const client = getSupabaseClient();
@@ -55,28 +85,26 @@ export default function ForgotPasswordPage() {
         }
         return { status: 'service-error' as const };
       } finally {
-        setLoading(false);
+        if (mounted.current) setLoading(false);
       }
     });
 
-    if (!guardedResult.started) return;
-
-    const { status } = guardedResult.value;
-    if (status === 'accepted') {
-      setSent(true);
+    const visibleOutcome = await waitForRequestOutcome(guardedRequest, 12000);
+    if (visibleOutcome.timedOut) {
+      if (!mounted.current) return;
+      setLoading(false);
+      setRequestPending(true);
+      setError(REQUEST_ERROR);
+      console.error('Password recovery request delayed: awaiting Supabase response');
+      void guardedRequest.then((lateResult) => {
+        if (!mounted.current) return;
+        setRequestPending(false);
+        if (lateResult.started) handleRequestStatus(lateResult.value.status);
+      });
       return;
     }
-
-    setError(REQUEST_ERROR);
-    if (status === 'invalid-configuration') {
-      console.error('Password recovery request failed: invalid Supabase configuration');
-      if (process.env.NODE_ENV === 'development') {
-        setDiagnostic('Supabase configuration missing or invalid.');
-      }
-    } else if (status === 'network-error') {
-      console.error('Password recovery request failed: network error');
-    } else {
-      console.error('Password recovery request failed: Supabase service error');
+    if (visibleOutcome.value.started) {
+      handleRequestStatus(visibleOutcome.value.value.status);
     }
   };
 
@@ -178,7 +206,7 @@ export default function ForgotPasswordPage() {
                     }}
                     aria-invalid={Boolean(fieldError)}
                     aria-describedby={fieldError ? 'email-error' : undefined}
-                    disabled={loading}
+                    disabled={loading || requestPending}
                     className="min-h-12 border-gray-700 bg-brand-darkLight text-white placeholder:text-gray-500 focus:border-brand-green focus:ring-brand-green"
                   />
                   {fieldError ? (
@@ -202,8 +230,8 @@ export default function ForgotPasswordPage() {
 
                 <Button
                   type="submit"
-                  disabled={loading}
-                  aria-busy={loading}
+                  disabled={loading || requestPending}
+                  aria-busy={loading || requestPending}
                   size="lg"
                   className="w-full bg-brand-green text-white hover:bg-green-600"
                 >
@@ -211,6 +239,11 @@ export default function ForgotPasswordPage() {
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
                       Envoi en cours…
+                    </>
+                  ) : requestPending ? (
+                    <>
+                      <Mail className="h-4 w-4" aria-hidden="true" />
+                      Réponse en attente…
                     </>
                   ) : (
                     'Envoyer le lien'

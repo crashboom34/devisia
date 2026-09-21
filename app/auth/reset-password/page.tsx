@@ -23,6 +23,7 @@ type RecoveryState =
   | 'expired'
   | 'invalid'
   | 'error'
+  | 'verification-cleanup-error'
   | 'cleanup-error'
   | 'success';
 
@@ -100,6 +101,11 @@ export default function ResetPasswordPage() {
         if (result.status === 'service-error') {
           console.error('Password recovery link verification failed: Supabase service error');
           finish('error');
+          return;
+        }
+        if (result.status === 'cleanup-error') {
+          console.error('Password recovery verification failed: local session cleanup required');
+          finish('verification-cleanup-error');
           return;
         }
         finish(result.status);
@@ -194,6 +200,10 @@ export default function ResetPasswordPage() {
       title: 'Vérification impossible',
       description: 'Nous ne pouvons pas vérifier ce lien pour le moment.',
     },
+    'verification-cleanup-error': {
+      title: 'Session à fermer',
+      description: 'La vérification a été interrompue et la session sécurisée doit être fermée.',
+    },
     'cleanup-error': {
       title: 'Mot de passe modifié',
       description: 'La session de récupération doit encore être fermée avant de continuer.',
@@ -211,7 +221,9 @@ export default function ResetPasswordPage() {
     try {
       const client = getSupabaseClient();
       if (await clearRecoverySession(client.auth)) {
-        setRecoveryState('success');
+        setRecoveryState((state) =>
+          state === 'verification-cleanup-error' ? 'error' : 'success'
+        );
         return;
       }
       console.error('Password recovery cleanup retry failed: local session remains active');
@@ -364,14 +376,15 @@ export default function ResetPasswordPage() {
               </div>
             ) : null}
 
-            {recoveryState === 'cleanup-error' ? (
+            {['cleanup-error', 'verification-cleanup-error'].includes(recoveryState) ? (
               <div className="flex flex-col items-center gap-5 py-3 text-center">
                 <span className="rounded-full bg-amber-500/15 p-3">
                   <AlertCircle className="h-8 w-8 text-amber-400" aria-hidden="true" />
                 </span>
                 <p className="text-sm leading-6 text-gray-300">
-                  Votre mot de passe a bien été modifié, mais la session sécurisée est encore
-                  active. Réessayez de la fermer avant de vous reconnecter.
+                  {recoveryState === 'cleanup-error'
+                    ? 'Votre mot de passe a bien été modifié, mais la session sécurisée est encore active. Réessayez de la fermer avant de vous reconnecter.'
+                    : 'Aucun changement de mot de passe n’est confirmé. Fermez la session sécurisée, puis demandez un nouveau lien.'}
                 </p>
                 <Button
                   type="button"
