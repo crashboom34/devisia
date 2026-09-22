@@ -2,7 +2,9 @@
 
 ## ✅ Étape 1: Ouvrir le SQL Editor
 
-1. Allez sur votre dashboard Supabase: [https://supabase.com/dashboard/project/przldngfbtgdfblbuxlw](https://supabase.com/dashboard/project/przldngfbtgdfblbuxlw)
+1. Allez sur le projet Supabase historique utilisé par l'application : [https://supabase.com/dashboard/project/fwuwzoxanrmsobwfnbxe](https://supabase.com/dashboard/project/fwuwzoxanrmsobwfnbxe)
+
+> Ne pas utiliser le projet vide nommé `devisia` (`przldngfbtgdfblbuxlw`). La base applicative existante, ses utilisateurs et ses Edge Functions se trouvent dans `fwuwzoxanrmsobwfnbxe`.
 2. Dans le menu de gauche, cliquez sur **SQL Editor**
 
 ## ✅ Étape 2: Exécuter le Schéma Complet
@@ -101,7 +103,7 @@ Une fois que tout fonctionne en local:
 2. Ajoutez ces 2 variables (cochez Production, Preview, Development):
 
 ```
-NEXT_PUBLIC_SUPABASE_URL=https://przldngfbtgdfblbuxlw.supabase.co
+NEXT_PUBLIC_SUPABASE_URL=https://fwuwzoxanrmsobwfnbxe.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByemxkbmdmYnRnZGZibGJ1eGx3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE0NzE3MzUsImV4cCI6MjA3NzA0NzczNX0.28u4pzLm0h85Aa7i1jrzmKLbhzQmXZROByTtJrqqN98
 ```
 
