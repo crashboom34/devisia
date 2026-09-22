@@ -104,24 +104,19 @@ Deno.serve(async (req: Request) => {
       if (template) templateData = template;
     }
 
-    const { data: configData } = await supabase
-      .from("system_config")
-      .select("value")
-      .eq("key", "openrouter_api_key")
-      .maybeSingle();
-
-    let openrouterApiKey: string | undefined;
-    if (configData?.value) {
-      const raw = configData.value;
-      openrouterApiKey = typeof raw === "string" ? raw : String(raw);
+    let openrouterApiKey = Deno.env.get("OPENROUTER_API_KEY");
+    if (!openrouterApiKey) {
+      const { data: configData } = await supabase
+        .from("system_config")
+        .select("value")
+        .eq("key", "openrouter_api_key")
+        .maybeSingle();
+      const storedValue = configData?.value;
+      openrouterApiKey = typeof storedValue === "string" ? storedValue : undefined;
     }
     if (!openrouterApiKey) {
-      openrouterApiKey = Deno.env.get("OPENROUTER_API_KEY");
-    }
-    if (!openrouterApiKey) {
-      throw new Error(
-        "Cle API OpenRouter non configuree. Allez dans Admin > Configuration pour ajouter votre cle API OpenRouter."
-      );
+      console.error("[generate-estimate] OpenRouter secret is not configured");
+      throw new Error("Le service de génération est temporairement indisponible.");
     }
 
     await enforceMonthlyLimit(supabase, user.id);
