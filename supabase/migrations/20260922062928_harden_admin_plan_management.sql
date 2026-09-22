@@ -26,6 +26,10 @@ CREATE INDEX IF NOT EXISTS idx_estimates_user_id ON estimates(user_id);
 ALTER TABLE api_usage_logs
   ADD COLUMN IF NOT EXISTS model_used text;
 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_subscriptions_one_active_per_user
+  ON user_subscriptions(user_id)
+  WHERE status = 'active';
+
 CREATE OR REPLACE FUNCTION switch_admin_plan(p_user_id uuid, p_tier_name text)
 RETURNS jsonb
 SECURITY DEFINER
@@ -52,23 +56,17 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'error', 'Tier not found');
   END IF;
 
-  IF EXISTS (
-    SELECT 1 FROM user_subscriptions
-    WHERE user_id = auth.uid() AND status = 'active'
-  ) THEN
-    UPDATE user_subscriptions
-    SET tier_id = v_tier_id,
-        updated_at = now(),
-        current_period_start = now(),
-        current_period_end = now() + interval '365 days'
-    WHERE user_id = auth.uid() AND status = 'active';
-  ELSE
-    INSERT INTO user_subscriptions (
-      user_id, tier_id, status, current_period_start, current_period_end
-    ) VALUES (
-      auth.uid(), v_tier_id, 'active', now(), now() + interval '365 days'
-    );
-  END IF;
+  INSERT INTO user_subscriptions (
+    user_id, tier_id, status, current_period_start, current_period_end
+  ) VALUES (
+    auth.uid(), v_tier_id, 'active', now(), now() + interval '365 days'
+  )
+  ON CONFLICT (user_id) WHERE status = 'active'
+  DO UPDATE SET
+    tier_id = EXCLUDED.tier_id,
+    updated_at = now(),
+    current_period_start = EXCLUDED.current_period_start,
+    current_period_end = EXCLUDED.current_period_end;
 
   SELECT am.display_name INTO v_model_name
   FROM subscription_tiers st
