@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,7 +27,8 @@ interface Client {
   status?: 'active' | 'inactive';
 }
 
-export default function ClientDetailPage({ params }: { params: { clientId: string } }) {
+export default function ClientDetailPage() {
+  const params = useParams<{ clientId: string }>();
   const { user, loading: authLoading } = useAuthGuard();
   const [client, setClient] = useState<Client | null>(null);
   const [loading, setLoading] = useState(true);
