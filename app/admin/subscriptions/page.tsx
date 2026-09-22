@@ -12,13 +12,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Plus, Edit, Shield, CreditCard, Sparkles, AlertCircle, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Shield, CreditCard, Sparkles, AlertCircle, RotateCcw, Loader2, Save, CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CANONICAL_MAPPING } from '@/lib/tier-model';
 import { PLAN_LABELS } from '@/lib/plan-labels';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
+import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
 
 interface AIModel {
   id: string;
@@ -61,6 +63,10 @@ export default function AdminSubscriptionsPage() {
   const [aiModels, setAIModels] = useState<AIModel[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTier, setEditingTier] = useState<SubscriptionTier | null>(null);
+  const [modelDrafts, setModelDrafts] = useState<Record<string, string>>({});
+  const [savingTierId, setSavingTierId] = useState<string | null>(null);
+  const [loadingData, setLoadingData] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -80,9 +86,21 @@ export default function AdminSubscriptionsPage() {
 
   useEffect(() => {
     if (loading) return;
-    Promise.all([loadTiers(), loadAIModels()]);
+    void loadPageData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading]);
+
+  const loadPageData = async () => {
+    setLoadingData(true);
+    setLoadError(null);
+    try {
+      await Promise.all([loadTiers(), loadAIModels()]);
+    } catch {
+      setLoadError('Impossible de charger les offres et les modèles IA.');
+    } finally {
+      setLoadingData(false);
+    }
+  };
 
   const loadTiers = async () => {
     const { data, error } = await supabase
@@ -92,8 +110,11 @@ export default function AdminSubscriptionsPage() {
 
     if (error) {
       console.error('Error loading tiers:', error);
+      throw error;
     } else {
-      setTiers(data || []);
+      const nextTiers = data || [];
+      setTiers(nextTiers);
+      setModelDrafts(Object.fromEntries(nextTiers.map((tier) => [tier.id, tier.ai_model_id || ''])));
     }
   };
 
@@ -106,9 +127,32 @@ export default function AdminSubscriptionsPage() {
 
     if (error) {
       console.error('Error loading AI models:', error);
+      throw error;
     } else {
       setAIModels(data || []);
     }
+  };
+
+  const handleModelAssignment = async (tier: TierWithModel) => {
+    const modelId = modelDrafts[tier.id];
+    if (!modelId || modelId === tier.ai_model_id || savingTierId) return;
+
+    setSavingTierId(tier.id);
+    const { data, error } = await supabase.rpc('set_subscription_tier_model', {
+      p_tier_id: tier.id,
+      p_model_id: modelId,
+    });
+
+    if (error || !data || data.success !== true) {
+      console.error('AI model assignment failed');
+      toast.error(data?.error || 'Impossible d’enregistrer le modèle IA.');
+      setSavingTierId(null);
+      return;
+    }
+
+    toast.success(`${tier.display_name} utilise maintenant ${data.model_name}`);
+    await loadTiers();
+    setSavingTierId(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -182,22 +226,38 @@ export default function AdminSubscriptionsPage() {
   };
 
   const applyDefaultMapping = async () => {
-    for (const entry of CANONICAL_MAPPING) {
-      const { data: model } = await supabase
+    if (savingTierId) return;
+    setSavingTierId('canonical');
+    try {
+      for (const entry of CANONICAL_MAPPING) {
+        const tier = tiers.find((item) => item.name === entry.tier);
+        if (!tier) throw new Error(`Offre ${entry.tier} introuvable`);
+
+        const { data: model, error: modelError } = await supabase
         .from('ai_models')
         .select('id')
         .eq('model_id', entry.modelId)
         .eq('is_active', true)
         .maybeSingle();
 
-      if (!model) continue;
+        if (modelError || !model) throw new Error(`Modèle ${entry.label} introuvable`);
 
-      await supabase
-        .from('subscription_tiers')
-        .update({ ai_model_id: model.id })
-        .eq('name', entry.tier);
+        const { data, error } = await supabase.rpc('set_subscription_tier_model', {
+          p_tier_id: tier.id,
+          p_model_id: model.id,
+        });
+        if (error || !data || data.success !== true) {
+          throw new Error(data?.error || `Échec pour l’offre ${entry.tier}`);
+        }
+      }
+      await loadTiers();
+      toast.success('Configuration recommandée appliquée');
+    } catch (error) {
+      console.error('Recommended mapping failed');
+      toast.error(error instanceof Error ? error.message : 'Impossible d’appliquer la configuration.');
+    } finally {
+      setSavingTierId(null);
     }
-    await loadTiers();
   };
 
   const resetForm = () => {
@@ -219,10 +279,13 @@ export default function AdminSubscriptionsPage() {
     setEditingTier(null);
   };
 
-  if (loading) {
+  if (loading || loadingData) {
     return (
       <div className="min-h-screen bg-[#020617] flex items-center justify-center">
-        <div className="text-white">Loading...</div>
+        <div className="flex items-center gap-3 text-slate-200" role="status">
+          <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
+          Chargement des offres…
+        </div>
       </div>
     );
   }
@@ -236,12 +299,12 @@ export default function AdminSubscriptionsPage() {
             <div className="p-2.5 rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-600 shadow-lg shadow-emerald-500/20">
               <Shield className="h-6 w-6 text-white" />
             </div>
-            <span className="text-xl sm:text-2xl font-bold text-white tracking-tight">Admin - Subscriptions</span>
+            <span className="text-xl sm:text-2xl font-bold text-white tracking-tight">Administration des offres</span>
           </div>
           <Link href="/admin">
             <Button variant="ghost" className="text-slate-300 hover:text-white">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
+              Retour
             </Button>
           </Link>
         </div>
@@ -249,19 +312,113 @@ export default function AdminSubscriptionsPage() {
 
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-7xl">
         <PageHeader
-          title="Subscription Tier Management"
-          subtitle="Configure subscription plans and their AI model assignments"
+          title="Offres et modèles IA"
+          subtitle="Configurez les formules et le modèle utilisé pour les prochains devis"
           showBackButton={false}
         />
 
         <Alert className="mb-6 border-cyan-500/30 bg-cyan-500/10">
           <AlertCircle className="h-4 w-4 text-cyan-400" />
           <AlertDescription className="text-slate-300">
-            <strong className="text-cyan-400">Administrator Control:</strong> Only super administrators can assign AI models to subscription tiers.
-            Users <strong>cannot</strong> manually select models - assignment is automatic based on their subscription.
-            Users only see generic labels like "Advanced AI Intelligence" without technical details.
+            <strong className="text-cyan-400">Contrôle administrateur :</strong> les utilisateurs ne choisissent pas directement leur modèle.
+            L’affectation ci-dessous est appliquée automatiquement selon leur offre, sans exposer les détails techniques dans leur espace.
           </AlertDescription>
         </Alert>
+
+        {loadError ? (
+          <Alert className="mb-6 border-red-500/30 bg-red-500/10" role="alert">
+            <AlertCircle className="h-4 w-4 text-red-400" />
+            <AlertDescription className="flex flex-col gap-3 text-red-100 sm:flex-row sm:items-center sm:justify-between">
+              <span>{loadError}</span>
+              <Button type="button" variant="outline" size="sm" onClick={() => void loadPageData()}>
+                Réessayer
+              </Button>
+            </AlertDescription>
+          </Alert>
+        ) : null}
+
+        <Card className="mb-6 border-slate-700/60 bg-slate-900/70 shadow-xl">
+          <CardHeader>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-white">
+                  <Sparkles className="h-5 w-5 text-cyan-400" aria-hidden="true" />
+                  Offres &amp; modèles IA
+                </CardTitle>
+                <CardDescription className="mt-1 text-slate-400">
+                  Choisissez le modèle utilisé pour les futurs devis de chaque offre.
+                </CardDescription>
+              </div>
+              <Badge variant="outline" className="w-fit border-emerald-500/40 text-emerald-300">
+                <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+                Source de vérité : Supabase
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 lg:grid-cols-3">
+              {tiers.map((tier) => {
+                const draftModelId = modelDrafts[tier.id] || '';
+                const selectedModel = aiModels.find((model) => model.id === draftModelId);
+                const isDirty = draftModelId !== (tier.ai_model_id || '');
+                const isSaving = savingTierId === tier.id;
+
+                return (
+                  <section key={tier.id} className="rounded-xl border border-slate-700/70 bg-slate-950/60 p-4">
+                    <div className="mb-4 flex items-start justify-between gap-3">
+                      <div>
+                        <h2 className="font-semibold text-white">{tier.display_name}</h2>
+                        <p className="mt-1 text-xs text-slate-500">
+                          {tier.max_projects_per_month >= 999999 ? 'Devis illimités' : `${tier.max_projects_per_month} devis/mois`}
+                        </p>
+                      </div>
+                      <Badge variant={tier.is_active ? 'default' : 'secondary'}>
+                        {tier.is_active ? 'Active' : 'Inactive'}
+                      </Badge>
+                    </div>
+
+                    <Label htmlFor={`model-${tier.id}`} className="text-sm text-slate-300">
+                      Modèle IA
+                    </Label>
+                    <Select
+                      value={draftModelId}
+                      onValueChange={(value) => setModelDrafts((current) => ({ ...current, [tier.id]: value }))}
+                      disabled={Boolean(savingTierId)}
+                    >
+                      <SelectTrigger id={`model-${tier.id}`} className="mt-2 min-h-11 border-slate-700 bg-slate-900 text-white">
+                        <SelectValue placeholder="Choisir un modèle" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {aiModels.map((model) => (
+                          <SelectItem key={model.id} value={model.id}>
+                            {model.display_name} · {model.provider}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <p className="mt-2 min-h-10 text-xs text-slate-500">
+                      {selectedModel ? `${selectedModel.model_id} · ${selectedModel.max_tokens.toLocaleString('fr-FR')} tokens` : 'Aucun modèle actif sélectionné'}
+                    </p>
+
+                    <Button
+                      type="button"
+                      className="mt-3 min-h-11 w-full"
+                      disabled={!isDirty || Boolean(savingTierId)}
+                      onClick={() => void handleModelAssignment(tier)}
+                    >
+                      {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" /> : <Save className="mr-2 h-4 w-4" aria-hidden="true" />}
+                      {isSaving ? 'Enregistrement…' : isDirty ? 'Enregistrer ce modèle' : 'Configuration enregistrée'}
+                    </Button>
+                  </section>
+                );
+              })}
+            </div>
+            <p className="mt-4 text-xs text-slate-500" aria-live="polite">
+              Le changement s’applique aux prochaines générations. Les devis existants ne sont pas modifiés.
+            </p>
+          </CardContent>
+        </Card>
 
         <Card className="bg-gradient-to-br from-slate-800/90 to-slate-800/50 border border-slate-700/50 shadow-2xl mb-6">
           <CardHeader>
@@ -269,20 +426,21 @@ export default function AdminSubscriptionsPage() {
               <div>
                 <CardTitle className="text-white flex items-center gap-2">
                   <Sparkles className="h-5 w-5 text-cyan-400" />
-                  Mapping Plan → Modele IA (Canonique)
+                  Configuration recommandée
                 </CardTitle>
                 <CardDescription className="text-slate-400">
-                  Reference officielle — applique automatiquement a chaque generation de devis
+                  Valeurs de référence Devisia, restaurables en un clic
                 </CardDescription>
               </div>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={applyDefaultMapping}
+                disabled={Boolean(savingTierId)}
                 className="border-slate-600 text-slate-300 hover:text-white hover:bg-slate-700"
               >
-                <RotateCcw className="h-4 w-4 mr-2" />
-                Reappliquer mapping par defaut
+                {savingTierId === 'canonical' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RotateCcw className="h-4 w-4 mr-2" />}
+                Appliquer la configuration recommandée
               </Button>
             </div>
           </CardHeader>
@@ -313,10 +471,10 @@ export default function AdminSubscriptionsPage() {
               <div>
                 <CardTitle className="text-white flex items-center gap-2">
                   <CreditCard className="h-5 w-5 text-cyan-400" />
-                  Subscription Tiers
+                  Paramètres avancés des offres
                 </CardTitle>
                 <CardDescription className="text-slate-400">
-                  Manage pricing plans and AI model mappings
+                  Prix, limites, disponibilité et autres réglages
                 </CardDescription>
               </div>
               <Dialog open={dialogOpen} onOpenChange={(open) => {
@@ -326,7 +484,7 @@ export default function AdminSubscriptionsPage() {
                 <DialogTrigger asChild>
                   <Button className="bg-gradient-to-r from-cyan-600 to-cyan-700 hover:from-cyan-700 hover:to-cyan-800 text-white shadow-lg shadow-cyan-600/20">
                     <Plus className="h-4 w-4 mr-2" />
-                    Add Tier
+                    Ajouter une offre
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="bg-slate-900 border-slate-700 text-white max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -508,7 +666,7 @@ export default function AdminSubscriptionsPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="rounded-lg border border-slate-700/50 overflow-hidden">
+            <div className="overflow-x-auto rounded-lg border border-slate-700/50">
               <Table>
                 <TableHeader>
                   <TableRow className="border-slate-700/50 hover:bg-slate-800/50">
@@ -575,6 +733,7 @@ export default function AdminSubscriptionsPage() {
                         <Switch
                           checked={tier.is_active}
                           onCheckedChange={() => handleToggleActive(tier)}
+                          aria-label={`${tier.is_active ? 'Désactiver' : 'Activer'} l’offre ${tier.display_name}`}
                         />
                       </TableCell>
                       <TableCell className="text-right">
@@ -583,6 +742,7 @@ export default function AdminSubscriptionsPage() {
                           size="sm"
                           onClick={() => handleEdit(tier)}
                           className="text-slate-300 hover:text-white hover:bg-slate-700"
+                          aria-label={`Modifier l’offre ${tier.display_name}`}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>

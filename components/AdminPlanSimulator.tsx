@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Shield, FileText, Users, Crown, Eye, Zap, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { getPlanSwitchError, isSuccessfulPlanSwitch } from '@/lib/admin-plan';
+import { toast } from 'sonner';
 
 const PLANS = [
   {
@@ -46,11 +48,16 @@ interface AdminPlanSimulatorProps {
 }
 
 export default function AdminPlanSimulator({ userId }: AdminPlanSimulatorProps) {
-  const [currentMode, setCurrentMode] = useState<string>(() => {
-    if (typeof window === 'undefined') return 'unlimited';
-    return localStorage.getItem('admin_current_mode') || 'unlimited';
-  });
+  const [currentMode, setCurrentMode] = useState<string>('unlimited');
   const [switching, setSwitching] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const storedMode = localStorage.getItem('admin_current_mode');
+    if (storedMode && PLANS.some((plan) => plan.id === storedMode)) {
+      setCurrentMode(storedMode);
+    }
+  }, []);
 
   const switchMode = async (modeId: string) => {
     if (switching) return;
@@ -75,18 +82,22 @@ export default function AdminPlanSimulator({ userId }: AdminPlanSimulatorProps) 
           p_tier_name: plan.tierName,
         });
 
-        if (error) {
-          console.error('Error switching plan:', error);
-        }
+        if (error) throw error;
+        if (!isSuccessfulPlanSwitch(data)) throw new Error(getPlanSwitchError(data));
+      } else {
+        throw new Error('Session administrateur introuvable.');
       }
     } catch (err) {
-      console.error('Error switching plan:', err);
+      console.error('Admin plan switch failed');
+      toast.error(err instanceof Error ? err.message : 'Impossible de changer de formule.');
+      setSwitching(false);
+      return;
     }
 
     setCurrentMode(modeId);
     localStorage.setItem('admin_current_mode', modeId);
+    toast.success(`Simulation ${plan.name} activée`);
     setSwitching(false);
-    window.location.reload();
   };
 
   const currentPlan = PLANS.find((p) => p.id === currentMode) || PLANS[0];
@@ -118,9 +129,11 @@ export default function AdminPlanSimulator({ userId }: AdminPlanSimulatorProps) 
             const isActive = currentMode === plan.id;
             return (
               <button
+                type="button"
                 key={plan.id}
                 onClick={() => switchMode(plan.id)}
                 disabled={switching}
+                aria-pressed={isActive}
                 className={`relative group rounded-lg border-2 p-4 text-left transition-all ${
                   isActive
                     ? `${plan.color} border-transparent text-white shadow-lg`
