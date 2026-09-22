@@ -4,11 +4,9 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileText, ArrowLeft, Shield, Database, TrendingUp, Users, Eye } from 'lucide-react';
+import { FileText, ArrowLeft, Shield, Database, TrendingUp, Users, Sparkles, Settings, Activity, ChevronRight, CircleCheck } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
-import AdminPlanPreview from '@/components/AdminPlanPreview';
 
 export default function AdminDashboard() {
   const { loading } = useAuthGuard({ requireAdmin: true });
@@ -84,7 +82,19 @@ export default function AdminDashboard() {
       </header>
 
       <main className="container mx-auto px-4 py-8 max-w-7xl">
-        <h1 className="text-3xl font-bold text-foreground mb-8">Dashboard Administrateur</h1>
+        <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-sm font-medium text-primary">Centre de contrôle</p>
+            <h1 className="mt-1 text-3xl font-bold text-foreground">Administration Devisia</h1>
+            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+              Surveillez l’activité, pilotez les offres et choisissez le modèle IA utilisé par chaque formule.
+            </p>
+          </div>
+          <div className="flex w-fit items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-sm text-emerald-700 dark:text-emerald-300">
+            <CircleCheck className="h-4 w-4" aria-hidden="true" />
+            Accès administrateur vérifié
+          </div>
+        </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
           <Card className="hover:shadow-md transition-shadow">
@@ -132,86 +142,68 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
-        <Tabs defaultValue="models" className="space-y-4">
-          <TabsList className="flex-wrap">
-            <TabsTrigger value="models">Modeles IA</TabsTrigger>
-            <TabsTrigger value="config">Configuration</TabsTrigger>
-            <TabsTrigger value="subscriptions">Abonnements</TabsTrigger>
-            <TabsTrigger value="usage">Utilisation</TabsTrigger>
-            <TabsTrigger value="preview" className="gap-1.5">
-              <Eye className="h-3.5 w-3.5" />
-              Preview Plans
-            </TabsTrigger>
-          </TabsList>
+        <section aria-labelledby="admin-actions-title">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <h2 id="admin-actions-title" className="text-xl font-semibold text-foreground">Actions principales</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Les réglages les plus utiles, accessibles sans détour.</p>
+            </div>
+          </div>
 
-          <TabsContent value="models">
-            <Card>
-              <CardHeader>
-                <CardTitle>Modeles IA Disponibles</CardTitle>
-                <CardDescription>
-                  Gerez les modeles IA disponibles pour les utilisateurs
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Link href="/admin/models">
-                  <Button>Gerer les modeles</Button>
-                </Link>
-              </CardContent>
-            </Card>
-          </TabsContent>
+          <div className="grid gap-4 md:grid-cols-2">
+            <Link href="/admin/subscriptions" className="group rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+              <Card className="h-full border-primary/25 bg-gradient-to-br from-primary/10 via-card to-card transition-all group-hover:-translate-y-0.5 group-hover:border-primary/50 group-hover:shadow-lg">
+                <CardHeader>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="rounded-lg bg-primary/15 p-2.5 text-primary"><Sparkles className="h-5 w-5" aria-hidden="true" /></div>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-1" aria-hidden="true" />
+                  </div>
+                  <CardTitle className="pt-2">Offres &amp; modèles IA</CardTitle>
+                  <CardDescription>Changez en quelques secondes le modèle utilisé par Starter, Business et Pro.</CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
 
-          <TabsContent value="config">
-            <Card>
-              <CardHeader>
-                <CardTitle>Configuration Systeme</CardTitle>
-                <CardDescription>
-                  Configurez les cles API et parametres systeme
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Link href="/admin/config">
-                  <Button>Configuration systeme</Button>
-                </Link>
-              </CardContent>
-            </Card>
-          </TabsContent>
+            <Link href="/admin/models" className="group rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+              <Card className="h-full transition-all group-hover:-translate-y-0.5 group-hover:border-primary/40 group-hover:shadow-lg">
+                <CardHeader>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="rounded-lg bg-muted p-2.5 text-foreground"><Database className="h-5 w-5" aria-hidden="true" /></div>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-1" aria-hidden="true" />
+                  </div>
+                  <CardTitle className="pt-2">Catalogue des modèles</CardTitle>
+                  <CardDescription>Activez, documentez et contrôlez les modèles proposés dans les offres.</CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
 
-          <TabsContent value="subscriptions">
-            <Card>
-              <CardHeader>
-                <CardTitle>Gestion des Abonnements</CardTitle>
-                <CardDescription>
-                  Gerez les tiers d&apos;abonnement et les souscriptions
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Link href="/admin/subscriptions">
-                  <Button>Gerer les abonnements</Button>
-                </Link>
-              </CardContent>
-            </Card>
-          </TabsContent>
+            <Link href="/admin/usage" className="group rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+              <Card className="h-full transition-all group-hover:-translate-y-0.5 group-hover:border-primary/40 group-hover:shadow-lg">
+                <CardHeader>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="rounded-lg bg-muted p-2.5 text-foreground"><Activity className="h-5 w-5" aria-hidden="true" /></div>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-1" aria-hidden="true" />
+                  </div>
+                  <CardTitle className="pt-2">Utilisation &amp; coûts</CardTitle>
+                  <CardDescription>Analysez les appels, les erreurs, les volumes de tokens et les coûts.</CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
 
-          <TabsContent value="usage">
-            <Card>
-              <CardHeader>
-                <CardTitle>Logs d&apos;Utilisation</CardTitle>
-                <CardDescription>
-                  Consultez les logs d&apos;utilisation des APIs
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Link href="/admin/usage">
-                  <Button>Voir les logs</Button>
-                </Link>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="preview">
-            <AdminPlanPreview />
-          </TabsContent>
-        </Tabs>
+            <Link href="/admin/config" className="group rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+              <Card className="h-full transition-all group-hover:-translate-y-0.5 group-hover:border-primary/40 group-hover:shadow-lg">
+                <CardHeader>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="rounded-lg bg-muted p-2.5 text-foreground"><Settings className="h-5 w-5" aria-hidden="true" /></div>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-1" aria-hidden="true" />
+                  </div>
+                  <CardTitle className="pt-2">Configuration système</CardTitle>
+                  <CardDescription>Consultez les réglages applicatifs réservés aux super-administrateurs.</CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
+          </div>
+        </section>
       </main>
     </div>
   );
