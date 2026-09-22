@@ -5,11 +5,12 @@ export const dynamicParams = true;
 export const revalidate = 0;
 
 interface PageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
-export default function ProjectDetailPage({ params }: PageProps) {
-  return <ProjectDetailClient projectId={params.id} />;
+export default async function ProjectDetailPage({ params }: PageProps) {
+  const { id } = await params;
+  return <ProjectDetailClient projectId={id} />;
 }
