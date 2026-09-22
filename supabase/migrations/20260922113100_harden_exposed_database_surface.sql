@@ -262,7 +262,24 @@ BEGIN
 END;
 $$;
 
-ALTER FUNCTION public.is_admin() SET search_path = public, pg_temp;
+DO $$
+BEGIN
+  -- Historical environments contain either the original uuid signature
+  -- (whose argument has a default) or the later zero-argument replacement.
+  IF to_regprocedure('public.is_admin(uuid)') IS NOT NULL THEN
+    ALTER FUNCTION public.is_admin(uuid) SET search_path = public, pg_temp;
+    REVOKE EXECUTE ON FUNCTION public.is_admin(uuid) FROM PUBLIC, anon;
+    GRANT EXECUTE ON FUNCTION public.is_admin(uuid) TO authenticated, service_role;
+  END IF;
+
+  IF to_regprocedure('public.is_admin()') IS NOT NULL THEN
+    ALTER FUNCTION public.is_admin() SET search_path = public, pg_temp;
+    REVOKE EXECUTE ON FUNCTION public.is_admin() FROM PUBLIC, anon;
+    GRANT EXECUTE ON FUNCTION public.is_admin() TO authenticated, service_role;
+  END IF;
+END;
+$$;
+
 ALTER FUNCTION public.is_super_admin() SET search_path = public, pg_temp;
 ALTER FUNCTION public.handle_new_user() SET search_path = public, pg_temp;
 ALTER FUNCTION public.ensure_single_default_model() SET search_path = public, pg_temp;
@@ -274,7 +291,6 @@ REVOKE EXECUTE ON FUNCTION public.set_active_estimate(uuid, uuid) FROM PUBLIC, a
 REVOKE EXECUTE ON FUNCTION public.get_user_model(uuid) FROM PUBLIC, anon;
 REVOKE EXECUTE ON FUNCTION public.get_user_ai_model(uuid) FROM PUBLIC, anon;
 REVOKE EXECUTE ON FUNCTION public.check_project_limit(uuid) FROM PUBLIC, anon;
-REVOKE EXECUTE ON FUNCTION public.is_admin() FROM PUBLIC, anon;
 REVOKE EXECUTE ON FUNCTION public.is_super_admin() FROM PUBLIC, anon;
 REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authenticated;
 REVOKE EXECUTE ON FUNCTION public.ensure_single_default_model() FROM PUBLIC, anon, authenticated;
@@ -286,7 +302,6 @@ GRANT EXECUTE ON FUNCTION public.set_active_estimate(uuid, uuid) TO authenticate
 GRANT EXECUTE ON FUNCTION public.get_user_model(uuid) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.get_user_ai_model(uuid) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.check_project_limit(uuid) TO authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.is_admin() TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.is_super_admin() TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role;
 
