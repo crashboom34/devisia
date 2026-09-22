@@ -168,6 +168,8 @@ export function useAuthGuard(options: UseAuthGuardOptions = {}): AuthGuardState 
     void checkInitialUser();
     return () => {
       cancelled = true;
+      // Deliberately invalidate whichever async authorization request is current at cleanup time.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       ++requestIdRef.current;
       if (authChangeTimer) clearTimeout(authChangeTimer);
       subscription.unsubscribe();
