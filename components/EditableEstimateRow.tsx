@@ -45,7 +45,7 @@ export default function EditableEstimateRow({
   const margin = viewMode === 'internal' ? calculateMargin(item) : null;
 
   const handleChange = (field: keyof EstimateItem, value: string) => {
-    const numericValue = ['quantity', 'unit_price_ht', 'tva_percent'].includes(field)
+    const numericValue = ['quantity', 'unit_price_ht', 'tva_percent', 'materials_cost', 'labor_cost'].includes(field)
       ? parseFloat(value) || 0
       : value;
     onItemChange(categoryIndex, itemIndex, field, numericValue);
@@ -153,6 +153,12 @@ export default function EditableEstimateRow({
       </td>
       {viewMode === 'internal' && margin && (
         <>
+          <td className="p-3 text-right text-sm text-gray-300">
+            {isEditing ? <Input type="number" value={item.materials_cost ?? 0} onChange={(e) => handleChange('materials_cost', e.target.value)} className="h-8 w-24 bg-brand-darkLight border-gray-700 text-white" min="0" step="0.01" /> : formatCurrency(item.materials_cost ?? 0)}
+          </td>
+          <td className="p-3 text-right text-sm text-gray-300">
+            {isEditing ? <Input type="number" value={item.labor_cost ?? 0} onChange={(e) => handleChange('labor_cost', e.target.value)} className="h-8 w-24 bg-brand-darkLight border-gray-700 text-white" min="0" step="0.01" /> : formatCurrency(item.labor_cost ?? 0)}
+          </td>
           <td className="p-3 text-right text-brand-green font-semibold text-sm">
             {formatCurrency(margin.margin)}
           </td>

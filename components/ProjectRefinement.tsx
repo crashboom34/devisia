@@ -17,12 +17,16 @@ export default function ProjectRefinement({ projectId, onEstimateCreated, onStat
   const [working, setWorking] = useState<'questions' | 'estimate' | null>(null);
   const [error, setError] = useState('');
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [complexity, setComplexity] = useState<1 | 2 | 3 | null>(null);
   const started = useRef(false);
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data, error: readError } = await supabase.from('project_refinements').select('*')
-      .eq('project_id', projectId).maybeSingle();
+    const [{ data, error: readError }, { data: classification }] = await Promise.all([
+      supabase.from('project_refinements').select('*').eq('project_id', projectId).maybeSingle(),
+      supabase.from('quote_classifications').select('complexity').eq('project_id', projectId).maybeSingle(),
+    ]);
+    if ([1, 2, 3].includes(Number(classification?.complexity))) setComplexity(Number(classification!.complexity) as 1 | 2 | 3);
     if (readError) setError('Le dossier d’affinage est indisponible. Vérifiez que sa mise à jour a été installée.');
     else { setState(data as RefinementState | null); if (data) onStateChanged?.(data.version); setError(''); }
     setLoading(false);
@@ -53,6 +57,7 @@ export default function ProjectRefinement({ projectId, onEstimateCreated, onStat
         ...(nextAnswers ? { answers: nextAnswers } : {}),
       });
       setState(result.refinement);
+      if ([1, 2, 3].includes(Number(result.complexity))) setComplexity(Number(result.complexity) as 1 | 2 | 3);
       onStateChanged?.(result.refinement.version);
       setAnswers({});
     } catch (cause) {
@@ -99,6 +104,7 @@ export default function ProjectRefinement({ projectId, onEstimateCreated, onStat
         <div className="mt-4 flex flex-wrap gap-2 text-xs">
           <span className="rounded-full border border-slate-700 px-3 py-1.5 text-slate-300">{answered.length} réponse{answered.length > 1 ? 's' : ''} enregistrée{answered.length > 1 ? 's' : ''}</span>
           <span className="rounded-full border border-slate-700 px-3 py-1.5 text-slate-300">{open.length} question{open.length > 1 ? 's' : ''} ouverte{open.length > 1 ? 's' : ''}</span>
+          {complexity && <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1.5 text-cyan-200">Analyse automatique · niveau {complexity}/3</span>}
         </div>
       </div>
 

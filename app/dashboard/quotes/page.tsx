@@ -20,7 +20,7 @@ interface Estimate {
   scenario_type: string;
   total_ttc: number;
   created_at: string;
-  status: string;
+  quote_status: string;
   projects?: {
     title: string;
   };
@@ -79,7 +79,7 @@ export default function QuotesPage() {
     }
 
     if (statusFilter !== 'all') {
-      filtered = filtered.filter(est => est.status === statusFilter);
+      filtered = filtered.filter(est => est.quote_status === statusFilter);
     }
 
     setFilteredEstimates(filtered);
@@ -88,7 +88,7 @@ export default function QuotesPage() {
   const calculateStats = () => {
     const total = estimates.length;
     const totalValue = estimates.reduce((sum, est) => sum + (est.total_ttc || 0), 0);
-    const approved = estimates.filter(e => e.status === 'approved');
+    const approved = estimates.filter(e => e.quote_status === 'accepted');
     const approvedValue = approved.reduce((sum, est) => sum + (est.total_ttc || 0), 0);
     const conversionRate = total > 0 ? ((approved.length / total) * 100).toFixed(0) : 0;
 
@@ -97,7 +97,7 @@ export default function QuotesPage() {
       totalValue,
       approvedValue,
       approvedCount: approved.length,
-      expiredCount: estimates.filter(e => e.status === 'expired').length,
+      expiredCount: estimates.filter(e => e.quote_status === 'expired').length,
       conversionRate,
     };
   };
@@ -106,7 +106,7 @@ export default function QuotesPage() {
 
   const getStatusStyle = (status: string) => {
     const styles: Record<string, string> = {
-      approved: 'bg-emerald-500/10 text-emerald-400',
+      accepted: 'bg-emerald-500/10 text-emerald-400',
       rejected: 'bg-red-500/10 text-red-400',
       sent: 'bg-cyan-500/10 text-cyan-400',
     };
@@ -141,6 +141,11 @@ export default function QuotesPage() {
           searchPlaceholder="Rechercher..."
           statusFilter={statusFilter}
           onStatusChange={setStatusFilter}
+          statusOptions={[
+            { value: 'draft', label: 'Brouillon' }, { value: 'sent', label: 'Envoyé' },
+            { value: 'accepted', label: 'Accepté' }, { value: 'rejected', label: 'Rejeté' },
+            { value: 'expired', label: 'Expiré' },
+          ]}
           onRefresh={loadEstimates}
         />
 
@@ -173,8 +178,8 @@ export default function QuotesPage() {
                           <p className="font-medium text-sm text-white truncate">{estimate.projects?.title || 'N/A'}</p>
                           <p className="text-[10px] text-slate-500 mt-0.5">#{estimate.id.slice(0, 8)}</p>
                         </div>
-                        <span className={`inline-flex px-2 py-0.5 text-[10px] font-medium rounded-full ${getStatusStyle(estimate.status)}`}>
-                          {estimate.status || 'draft'}
+                        <span className={`inline-flex px-2 py-0.5 text-[10px] font-medium rounded-full ${getStatusStyle(estimate.quote_status)}`}>
+                          {estimate.quote_status || 'draft'}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
@@ -227,7 +232,7 @@ export default function QuotesPage() {
                           <td className="px-6 py-3.5 whitespace-nowrap"><span className="text-sm text-slate-400">{new Date(new Date(estimate.created_at).getTime() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')}</span></td>
                           <td className="px-6 py-3.5 whitespace-nowrap text-right"><span className="text-sm font-semibold text-white">{estimate.total_ttc?.toFixed(2) || '0.00'} EUR</span></td>
                           <td className="px-6 py-3.5 whitespace-nowrap text-center">
-                            <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusStyle(estimate.status)}`}>{estimate.status || 'draft'}</span>
+                            <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusStyle(estimate.quote_status)}`}>{estimate.quote_status || 'draft'}</span>
                           </td>
                           <td className="px-6 py-3.5 whitespace-nowrap text-right">
                             <div className="flex items-center justify-end gap-1">

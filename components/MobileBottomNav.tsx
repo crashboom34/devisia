@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { FileText, Receipt, Users, FilePlus, LayoutDashboard } from 'lucide-react';
+import { FileText, BriefcaseBusiness, UsersRound, FilePlus, LayoutDashboard } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const tabs = [
@@ -27,16 +27,16 @@ const tabs = [
     icon: FileText,
   },
   {
-    id: 'invoices',
-    label: 'Factures',
-    href: '/dashboard/invoices',
-    icon: Receipt,
+    id: 'jobs',
+    label: 'Chantiers',
+    href: '/dashboard/jobs',
+    icon: BriefcaseBusiness,
   },
   {
-    id: 'clients',
-    label: 'Clients',
-    href: '/dashboard/clients',
-    icon: Users,
+    id: 'team',
+    label: 'Équipe',
+    href: '/dashboard/team',
+    icon: UsersRound,
   },
 ];
 

@@ -1,7 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.58.0";
 import { BTP_SPECIALISTS, buildRefinedDescription } from "../_shared/btp-refinement.ts";
-import { selectPlanModel } from "../_shared/plan-model.ts";
+import { selectAiRoute, type Complexity } from "../_shared/ai-router.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -33,6 +33,12 @@ function validateTvaRate(rate: number): number {
   );
 }
 
+function validateInternalCost(value: unknown): number {
+  const amount = Number(value ?? 0);
+  if (!Number.isFinite(amount) || amount < 0 || amount > 10_000_000) throw new Error("Coût interne invalide");
+  return Math.round(amount * 100) / 100;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 200, headers: corsHeaders });
@@ -42,6 +48,7 @@ Deno.serve(async (req: Request) => {
   let supabase: any;
   let userId: string | null = null;
   let projectId: string | null = null;
+  let organizationId: string | null = null;
   let usedModelName = "unknown";
 
   try {
@@ -70,10 +77,24 @@ Deno.serve(async (req: Request) => {
     }
 
     const { data: project, error: projectError } = await supabase.from("projects")
-      .select("id, user_id, description, title, client_name")
-      .eq("id", projectId).eq("user_id", user.id).maybeSingle();
+      .select("id, user_id, organization_id, description, title, client_name")
+      .eq("id", projectId).maybeSingle();
     if (projectError) throw projectError;
     if (!project) throw new Error("Projet introuvable ou accès refusé");
+    const { data: membership, error: membershipError } = await supabase.from("organization_members")
+      .select("role").eq("organization_id", project.organization_id).eq("user_id", user.id).maybeSingle();
+    if (membershipError) throw membershipError;
+    if (!membership) throw new Error("Projet introuvable ou accès refusé");
+    organizationId = project.organization_id;
+
+    const { data: classification } = await supabase.from("quote_classifications")
+      .select("complexity").eq("project_id", projectId).maybeSingle();
+    const complexity = ([1, 2, 3].includes(Number(classification?.complexity))
+      ? Number(classification.complexity)
+      : 1) as Complexity;
+    const route = await selectAiRoute(supabase, user.id, {
+      taskType: "quote_generation", complexity, adminTier,
+    });
 
     const refined = body.refinementVersion !== undefined;
     let refinement: any = null;
@@ -90,9 +111,8 @@ Deno.serve(async (req: Request) => {
     if (projectDescription === "__TEST_MODEL__") {
       const isDev = !Deno.env.get("DENO_DEPLOYMENT_ID");
       if (isDev) {
-        const { model: testModel } = await selectPlanModel(supabase, user.id, adminTier);
         return new Response(
-          JSON.stringify({ test: true, model_id: testModel.model_id }),
+          JSON.stringify({ test: true, model_id: route.models[0].model_id, tier: route.tier, complexity }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -112,32 +132,14 @@ Deno.serve(async (req: Request) => {
       if (template) templateData = template;
     }
 
-    const { data: configData } = await supabase
-      .from("system_config")
-      .select("value")
-      .eq("key", "openrouter_api_key")
-      .maybeSingle();
-
-    let openrouterApiKey: string | undefined;
-    if (configData?.value) {
-      const raw = configData.value;
-      openrouterApiKey = typeof raw === "string" ? raw : String(raw);
-    }
+    const openrouterApiKey = Deno.env.get("OPENROUTER_API_KEY")?.trim();
     if (!openrouterApiKey) {
-      openrouterApiKey = Deno.env.get("OPENROUTER_API_KEY");
-    }
-    if (!openrouterApiKey) {
-      throw new Error(
-        "Cle API OpenRouter non configuree. Allez dans Admin > Configuration pour ajouter votre cle API OpenRouter."
-      );
+      throw new Error("Service IA momentanément indisponible");
     }
 
     await enforceMonthlyLimit(supabase, user.id);
 
-    const { model, resolvedTier } = await selectPlanModel(supabase, user.id, adminTier);
-
-    console.log(`[generate-estimate] Tier resolved: ${resolvedTier}`);
-    console.log(`[generate-estimate] Model selected: ${model.display_name} (${model.model_id})`);
+    console.log(`[generate-estimate] Tier resolved: ${route.tier}, complexity: ${complexity}`);
 
     let templateContext = "";
     if (templateData) {
@@ -149,13 +151,17 @@ Deno.serve(async (req: Request) => {
       : buildPrompt(projectDescription!, scenarioType, coefficient, templateContext);
 
     let estimateData: any = null;
-    let usedModel = model;
+    let usedModel = route.models[0];
+    let fallbackUsed = false;
     let tokensInput = 0;
     let tokensOutput = 0;
     let lastError: string | null = null;
 
-    for (const currentModel of [model]) {
-      const result = await callOpenRouter(currentModel, openrouterApiKey, supabaseUrl, prompt, apiTemperature, refined);
+    for (const [modelIndex, currentModel] of route.models.entries()) {
+      const result = await callOpenRouter(
+        currentModel, openrouterApiKey, supabaseUrl, prompt, apiTemperature, refined,
+        route.maxOutputTokens, route.reasoningEffort,
+      );
       if (result.error) {
         lastError = result.error;
         if (result.isRateLimit) continue;
@@ -174,18 +180,20 @@ Deno.serve(async (req: Request) => {
       estimateData = parsed.data;
       usedModel = currentModel;
       usedModelName = currentModel.display_name;
+      fallbackUsed = modelIndex > 0;
       break;
     }
 
     if (!estimateData) {
       const durationMs = Date.now() - startTime;
       await logUsage(supabase, {
-        userId: user.id, projectId,
+        userId: user.id, projectId, organizationId,
         provider: usedModel?.provider || "openrouter",
         modelUsed: usedModelName, modelId: usedModel?.id || null,
         endpoint: "generate-estimate",
         tokensInput: 0, tokensOutput: 0, cost: 0, durationMs,
         status: "error", errorMessage: lastError || "All models failed",
+        taskType: route.taskType, planName: route.tier, fallbackUsed: false, promptVersion: "quote-generation-v1",
       });
       throw new Error(`All models failed. Last error: ${lastError}`);
     }
@@ -207,6 +215,7 @@ Deno.serve(async (req: Request) => {
       .from("estimates")
       .insert({
         user_id: user.id,
+        organization_id: project.organization_id,
         project_id: projectId,
         scenario_type: scenarioType,
         estimate_kind: refined ? "preliminary" : "quote",
@@ -247,13 +256,14 @@ Deno.serve(async (req: Request) => {
     );
 
     await logUsage(supabase, {
-      userId: user.id, projectId,
+      userId: user.id, projectId, organizationId,
       provider: usedModel.provider || "openrouter",
       modelUsed: usedModel.display_name, modelId: usedModel.id,
       endpoint: "generate-estimate",
       tokensInput, tokensOutput,
       cost: Math.round(cost * 1000000) / 1000000,
       durationMs, status: "success", errorMessage: null,
+      taskType: route.taskType, planName: route.tier, fallbackUsed, promptVersion: "quote-generation-v1",
     });
 
     console.log(`[generate-estimate] Done. Tokens: ${tokensInput}→${tokensOutput}, cost: $${cost.toFixed(6)}, duration: ${durationMs}ms`);
@@ -273,11 +283,12 @@ Deno.serve(async (req: Request) => {
     if (supabase && userId) {
       const durationMs = Date.now() - startTime;
       await logUsage(supabase, {
-        userId, projectId,
+        userId, projectId, organizationId,
         provider: "openrouter", modelUsed: usedModelName, modelId: null,
         endpoint: "generate-estimate",
         tokensInput: 0, tokensOutput: 0, cost: 0, durationMs,
         status: "error", errorMessage,
+        taskType: "quote_generation", planName: null, fallbackUsed: false, promptVersion: "quote-generation-v1",
       }).catch(() => {});
     }
 
@@ -343,7 +354,9 @@ async function callOpenRouter(
   supabaseUrl: string,
   prompt: string,
   temperature: number,
-  refined = false
+  refined = false,
+  maxOutputTokens = 6000,
+  reasoningEffort = "low",
 ): Promise<{ content: string; tokensInput: number; tokensOutput: number; error?: string; isRateLimit?: boolean }> {
   try {
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -366,15 +379,16 @@ async function callOpenRouter(
           { role: "user", content: prompt },
         ],
         temperature,
-        max_tokens: 6000,
+        max_tokens: maxOutputTokens,
+        reasoning: reasoningEffort === "none" ? undefined : { effort: reasoningEffort },
       }),
     });
 
     if (!response.ok) {
-      const text = await response.text();
+      await response.text();
       return {
         content: "", tokensInput: 0, tokensOutput: 0,
-        error: `HTTP ${response.status}: ${text}`,
+        error: `HTTP ${response.status}`,
         isRateLimit: response.status === 429,
       };
     }
@@ -435,8 +449,8 @@ function validateAndRecalculate(estimateData: any, scenarioType: string, coeffic
             tva_percent: tvaPercent,
             tva_amount: tvaAmount,
             amount_ttc: amountTTC,
-            materials_cost: Math.max(0, Number(item.materials_cost) || 0),
-            labor_cost: Math.max(0, Number(item.labor_cost) || 0),
+            materials_cost: validateInternalCost(item.materials_cost),
+            labor_cost: validateInternalCost(item.labor_cost),
           };
         });
 
@@ -503,6 +517,8 @@ function validatePreliminary(data: any) {
         description: typeof item.description === 'string' ? item.description.slice(0, 1000) : '',
         quantity: qty, unit: typeof item.unit === 'string' ? item.unit.slice(0, 20) : 'u',
         unit_price_ht: Math.round(price * 100) / 100, amount_ht: cents / 100,
+        materials_cost: validateInternalCost(item.materials_cost),
+        labor_cost: validateInternalCost(item.labor_cost),
         tva_percent: null, tva_amount: null, amount_ttc: null,
       };
     });
@@ -526,7 +542,8 @@ Regroupe les coûts de préparation, protection, manutention et nettoyage dans l
 N'inclus ni mission de plans d'architecte ni dépôt d'autorisation sans demande explicite. Sépare une éventuelle étude structure et signale son attribution à confirmer.
 Travertin : intégrer colle fibrée et traitement hydrofuge lorsqu'il est prévu. Placo : fourniture, pose, bandes, impression et deux couches de peinture si le projet les demande.
 N'invente pas de source fournisseur ni de coefficient régional daté. Note les hypothèses de prix et conditions de chantier non vérifiées. Pas de TVA ni TTC : le taux reste à vérifier.
-Retourne UNIQUEMENT un JSON {"categories":[{"name":"lot de travaux","description":"inclusions et limites","items":[{"poste":"ouvrage","description":"inclusions techniques","quantity":1,"unit":"forfait","unit_price_ht":100.00}]}],"assumptions":["hypothèse à vérifier"]}.
+Retourne UNIQUEMENT un JSON {"categories":[{"name":"lot de travaux","description":"inclusions et limites","items":[{"poste":"ouvrage","description":"inclusions techniques","quantity":1,"unit":"forfait","unit_price_ht":100.00,"materials_cost":40.00,"labor_cost":25.00}]}],"assumptions":["hypothèse à vérifier"]}.
+materials_cost et labor_cost sont des coûts internes HT totaux du poste, jamais des montants à afficher au client. Ne les invente pas si le dossier ne permet pas une estimation raisonnable : utilise 0 et ajoute une hypothèse à vérifier.
 Choisis seulement les lots nécessaires au projet. Ne remplace jamais des postes absents par un forfait fictif.
 CONTEXTE DU PROJET :\n${description}`;
 }
@@ -575,6 +592,8 @@ Reponds UNIQUEMENT en JSON valide:
           "quantity": 100,
           "unit": "m2",
           "unit_price_ht": 50.00,
+          "materials_cost": 25.00,
+          "labor_cost": 12.00,
           "tva_percent": 20
         }
       ]
@@ -590,6 +609,7 @@ REPONDS UNIQUEMENT EN JSON VALIDE.`;
 interface UsageLogParams {
   userId: string;
   projectId: string | null;
+  organizationId: string | null;
   provider: string;
   modelUsed: string;
   modelId: string | null;
@@ -600,6 +620,10 @@ interface UsageLogParams {
   durationMs: number;
   status: string;
   errorMessage: string | null;
+  taskType: string;
+  planName: string | null;
+  fallbackUsed: boolean;
+  promptVersion: string;
 }
 
 async function logUsage(supabase: any, params: UsageLogParams) {
@@ -607,6 +631,7 @@ async function logUsage(supabase: any, params: UsageLogParams) {
     await supabase.from("api_usage_logs").insert({
       user_id: params.userId,
       project_id: params.projectId,
+      organization_id: params.organizationId,
       provider: params.provider,
       model_used: params.modelUsed,
       model_id: params.modelId,
@@ -617,6 +642,10 @@ async function logUsage(supabase: any, params: UsageLogParams) {
       duration_ms: params.durationMs,
       status: params.status,
       error_message: params.errorMessage,
+      task_type: params.taskType,
+      plan_name: params.planName,
+      fallback_used: params.fallbackUsed,
+      prompt_version: params.promptVersion,
     });
   } catch (e) {
     console.error("[generate-estimate] Failed to log usage:", e);

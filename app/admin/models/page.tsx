@@ -184,12 +184,11 @@ export default function AdminModelsPage() {
             <div className="flex items-start gap-3">
               <Info className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
               <div>
-                <h3 className="font-semibold mb-2">Gestion Centralisée des Clés API</h3>
+                <h3 className="font-semibold mb-2">Routage IA centralisé</h3>
                 <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• Les clés API sont gérées via <Link href="/admin/config" className="text-blue-600 hover:underline font-medium">Configuration Système</Link> (catégorie: api_keys)</li>
-                  <li>• Les utilisateurs sélectionnent uniquement le modèle qu'ils souhaitent utiliser</li>
-                  <li>• Tous les appels API utilisent les clés configurées par les admins</li>
-                  <li>• Sécurisé: Les clés ne sont jamais exposées côté client</li>
+                  <li>• Les secrets OpenRouter sont gérés uniquement dans Supabase Edge Function Secrets.</li>
+                  <li>• Les modèles et politiques de routage restent configurables sans exposer la clé.</li>
+                  <li>• Le plan et la complexité déterminent le modèle primaire et son fallback borné.</li>
                 </ul>
               </div>
             </div>

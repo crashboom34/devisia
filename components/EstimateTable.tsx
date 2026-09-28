@@ -2,11 +2,13 @@
 /* eslint-disable react/no-unescaped-entities */
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Eye, EyeOff, Download, ChevronDown, ChevronUp, Edit2, Save, X, Trash2, History } from 'lucide-react';
+import { Eye, EyeOff, Download, ChevronDown, ChevronUp, Edit2, Save, X, Trash2, History, BriefcaseBusiness } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import EditableEstimateRow from './EditableEstimateRow';
 import { toast } from 'sonner';
@@ -40,6 +42,7 @@ interface EstimateData {
   discount_percent?: number;
   model_used?: string;
   scenario_justification?: string;
+  quote_status?: 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired';
 }
 
 interface EstimateTableProps {
@@ -47,14 +50,31 @@ interface EstimateTableProps {
   projectTitle?: string;
   projectDescription?: string;
   onRegenerate?: () => void;
+  canCreateJob?: boolean;
 }
 
-export default function EstimateTable({ estimate, projectTitle, projectDescription, onRegenerate }: EstimateTableProps) {
+export default function EstimateTable({ estimate, projectTitle, projectDescription, onRegenerate, canCreateJob = false }: EstimateTableProps) {
+  const router = useRouter();
   const [viewMode, setViewMode] = useState<ViewMode>('detailed');
   const [expandedCategories, setExpandedCategories] = useState<Set<number>>(new Set([0]));
   const [isEditing, setIsEditing] = useState(false);
   const [editedEstimate, setEditedEstimate] = useState<EstimateData>(estimate);
   const [isSaving, setIsSaving] = useState(false);
+  const [isAccepting, setIsAccepting] = useState(false);
+
+  const handleAcceptQuote = async () => {
+    setIsAccepting(true);
+    try {
+      const { data, error } = await supabase.rpc('accept_estimate_and_create_job', { p_estimate_id: estimate.id });
+      if (error) throw error;
+      toast.success('Devis accepté. Le budget initial du chantier est figé.');
+      router.push(`/dashboard/jobs/${data}`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Impossible de créer le chantier');
+    } finally {
+      setIsAccepting(false);
+    }
+  };
 
   const toggleCategory = (index: number) => {
     const newExpanded = new Set(expandedCategories);
@@ -97,7 +117,19 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
     return new Date(dateString).toLocaleDateString('fr-FR');
   };
 
-  const totalMargin = () => calculateTotalMargin(estimate.categories);
+  const marginInput = (item: EstimateItem): Pick<EstimateItem, 'cost_price' | 'sell_price'> => {
+    const hasInternalCosts = Number.isFinite(item.materials_cost) || Number.isFinite(item.labor_cost);
+    return {
+      cost_price: item.cost_price ?? (hasInternalCosts ? (item.materials_cost ?? 0) + (item.labor_cost ?? 0) : undefined),
+      sell_price: item.sell_price ?? (hasInternalCosts ? item.amount_ht : undefined),
+    };
+  };
+
+  const displayMargin = (item: EstimateItem) => calculateMargin(marginInput(item));
+  const totalMargin = () => calculateTotalMargin(editedEstimate.categories.map((category) => ({
+    ...category,
+    items: category.items.map((item) => ({ ...item, ...marginInput(item) })),
+  })));
 
   const handleDeleteItem = (categoryIndex: number, itemIndex: number) => {
     const newCategories = [...editedEstimate.categories];
@@ -201,6 +233,24 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
           </div>
 
           <div className="flex flex-wrap gap-2">
+            {estimate.quote_status !== 'accepted' && canCreateJob && (
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleAcceptQuote}
+                disabled={isAccepting || isEditing}
+                className="text-xs sm:text-sm"
+              >
+                <BriefcaseBusiness className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+                {isAccepting ? 'Création…' : 'Accepter et créer le chantier'}
+              </Button>
+            )}
+            {estimate.quote_status !== 'accepted' && !canCreateJob && (
+              <Badge className="bg-amber-500/10 text-amber-300 border-amber-500/30">Chantiers · offre Business</Badge>
+            )}
+            {estimate.quote_status === 'accepted' && (
+              <Badge className="bg-emerald-500/10 text-emerald-300 border-emerald-500/30">Chantier créé</Badge>
+            )}
             {!isEditing ? (
               <>
                 <Button
@@ -323,6 +373,8 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
                           <th className="text-right p-3 font-semibold text-sm text-gray-300">Montant TTC</th>
                           {viewMode === 'internal' && (
                             <>
+                              <th className="text-right p-3 font-semibold text-sm text-gray-300">Matériaux</th>
+                              <th className="text-right p-3 font-semibold text-sm text-gray-300">Main-d’œuvre</th>
                               <th className="text-right p-3 font-semibold text-sm text-gray-300">Marge €</th>
                               <th className="text-right p-3 font-semibold text-sm text-gray-300">Marge %</th>
                             </>
@@ -342,7 +394,7 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
                             onItemChange={handleItemChange}
                             onDelete={handleDeleteItem}
                             formatCurrency={formatCurrency}
-                            calculateMargin={calculateMargin}
+                            calculateMargin={displayMargin}
                           />
                         ))}
                       </tbody>
@@ -352,7 +404,7 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
                   {/* Mobile Card View */}
                   <div className="lg:hidden space-y-2">
                     {category.items.map((item, itemIndex) => {
-                      const margin = viewMode === 'internal' ? calculateMargin(item) : null;
+                      const margin = viewMode === 'internal' ? displayMargin(item) : null;
                       return (
                         <div
                           key={itemIndex}
@@ -404,6 +456,14 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
 
                           {viewMode === 'internal' && margin && (
                             <div className="text-xs pt-2 border-t grid grid-cols-2 gap-2">
+                              <div>
+                                <span className="text-gray-500">Matériaux:</span>
+                                {isEditing ? <Input type="number" min="0" step="0.01" value={item.materials_cost ?? 0} onChange={(event) => handleItemChange(catIndex, itemIndex, 'materials_cost', Number(event.target.value) || 0)} className="mt-1 h-8 bg-brand-dark border-gray-700 text-white" /> : <span className="ml-1 text-gray-300">{formatCurrency(item.materials_cost ?? 0)}</span>}
+                              </div>
+                              <div>
+                                <span className="text-gray-500">Main-d’œuvre:</span>
+                                {isEditing ? <Input type="number" min="0" step="0.01" value={item.labor_cost ?? 0} onChange={(event) => handleItemChange(catIndex, itemIndex, 'labor_cost', Number(event.target.value) || 0)} className="mt-1 h-8 bg-brand-dark border-gray-700 text-white" /> : <span className="ml-1 text-gray-300">{formatCurrency(item.labor_cost ?? 0)}</span>}
+                              </div>
                               <div>
                                 <span className="text-gray-500">Marge:</span>
                                 <span className="ml-1 font-semibold text-green-700">

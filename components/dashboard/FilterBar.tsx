@@ -17,6 +17,7 @@ interface FilterBarProps {
   onStatusChange?: (value: string) => void;
   onRefresh?: () => void;
   additionalActions?: React.ReactNode;
+  statusOptions?: Array<{ value: string; label: string }>;
 }
 
 export function FilterBar({
@@ -27,6 +28,10 @@ export function FilterBar({
   onStatusChange,
   onRefresh,
   additionalActions,
+  statusOptions = [
+    { value: 'draft', label: 'Brouillon' }, { value: 'sent', label: 'Envoyé' },
+    { value: 'approved', label: 'Approuvé' }, { value: 'rejected', label: 'Rejeté' },
+  ],
 }: FilterBarProps) {
   return (
     <div className="space-y-2.5 sm:space-y-0 sm:flex sm:flex-row sm:gap-3 mb-4 lg:mb-6 p-3 lg:p-4 bg-slate-900/30 rounded-xl border border-slate-800/50">
@@ -52,18 +57,11 @@ export function FilterBar({
               <SelectItem value="all" className="text-white hover:bg-slate-800 focus:bg-slate-800">
                 Tous
               </SelectItem>
-              <SelectItem value="draft" className="text-white hover:bg-slate-800 focus:bg-slate-800">
-                Brouillon
-              </SelectItem>
-              <SelectItem value="sent" className="text-white hover:bg-slate-800 focus:bg-slate-800">
-                Envoye
-              </SelectItem>
-              <SelectItem value="approved" className="text-white hover:bg-slate-800 focus:bg-slate-800">
-                Approuve
-              </SelectItem>
-              <SelectItem value="rejected" className="text-white hover:bg-slate-800 focus:bg-slate-800">
-                Rejete
-              </SelectItem>
+              {statusOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value} className="text-white hover:bg-slate-800 focus:bg-slate-800">
+                  {option.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         )}

@@ -11,9 +11,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { ArrowLeft, Plus, Edit, Key, Info, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Key, Info } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
+import { toast } from 'sonner';
 
 interface SystemConfig {
   id: string;
@@ -35,7 +36,7 @@ export default function AdminConfigPage() {
     key: '',
     value: '',
     description: '',
-    category: 'api_keys',
+    category: 'general',
     is_encrypted: false,
   });
 
@@ -48,6 +49,7 @@ export default function AdminConfigPage() {
     const { data, error } = await supabase
       .from('system_config')
       .select('*')
+      .neq('category', 'api_keys')
       .order('category', { ascending: true });
 
     if (error) {
@@ -59,6 +61,10 @@ export default function AdminConfigPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (formData.category === 'api_keys' || /(api.?key|secret|token|password)/i.test(formData.key)) {
+      toast.error('Les secrets doivent être gérés dans Supabase Edge Function Secrets.');
+      return;
+    }
 
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -111,7 +117,7 @@ export default function AdminConfigPage() {
       key: '',
       value: '',
       description: '',
-      category: 'api_keys',
+      category: 'general',
       is_encrypted: false,
     });
   };
@@ -160,36 +166,8 @@ export default function AdminConfigPage() {
             <div className="flex items-start gap-3">
               <Info className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
               <div>
-                <h3 className="font-semibold mb-2 text-blue-900">Comment ajouter une clé API OpenRouter</h3>
-                <div className="space-y-3 text-sm text-muted-foreground">
-                  <div>
-                    <p className="font-medium mb-1">1. Obtenir votre clé API</p>
-                    <a
-                      href="https://openrouter.ai/keys"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline flex items-center gap-1"
-                    >
-                      Créer une clé sur OpenRouter
-                      <ExternalLink className="h-3 w-3" />
-                    </a>
-                  </div>
-                  <div>
-                    <p className="font-medium mb-1">2. Ajouter la configuration</p>
-                    <ul className="ml-4 space-y-1">
-                      <li>• Cliquez sur "Ajouter une configuration" ci-dessous</li>
-                      <li>• <strong>Clé:</strong> <code className="bg-muted px-1 rounded">openrouter_api_key</code></li>
-                      <li>• <strong>Valeur:</strong> Collez votre clé API (commence par sk-or-...)</li>
-                      <li>• <strong>Catégorie:</strong> api_keys</li>
-                      <li>• <strong>Chiffré:</strong> Activé (recommandé)</li>
-                    </ul>
-                  </div>
-                  <div className="pt-2 border-t border-blue-200">
-                    <p className="text-xs text-muted-foreground">
-                      Note: Les clés API système sont utilisées par les Edge Functions backend. Elles ne sont jamais exposées au client.
-                    </p>
-                  </div>
-                </div>
+                <h3 className="font-semibold mb-2 text-blue-900">Secrets séparés de la configuration</h3>
+                <p className="text-sm text-muted-foreground">Les clés OpenRouter et autres secrets sont gérés uniquement dans <strong>Supabase Edge Function Secrets</strong>. Cette page n’accepte que des paramètres non sensibles.</p>
               </div>
             </div>
           </CardContent>
@@ -292,7 +270,6 @@ export default function AdminConfigPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="api_keys">API Keys</SelectItem>
                     <SelectItem value="models">Models</SelectItem>
                     <SelectItem value="limits">Limits</SelectItem>
                     <SelectItem value="features">Features</SelectItem>
@@ -307,7 +284,7 @@ export default function AdminConfigPage() {
                   id="key"
                   value={formData.key}
                   onChange={(e) => setFormData({ ...formData, key: e.target.value })}
-                  placeholder="ex: openrouter_api_key"
+                  placeholder="ex: default_validity_days"
                   required
                   disabled={!!editingConfig}
                 />

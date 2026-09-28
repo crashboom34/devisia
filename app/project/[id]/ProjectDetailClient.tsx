@@ -36,6 +36,7 @@ import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { toast } from 'sonner';
 import ProjectRefinement from '@/components/ProjectRefinement';
 import PreliminaryEstimateCard from '@/components/PreliminaryEstimateCard';
+import { getUserEntitlements, hasEntitlement } from '@/lib/entitlements';
 
 const EstimateTable = dynamic(() => import('@/components/EstimateTable'), {
   loading: () => <div className="animate-pulse h-64 bg-gray-800 rounded-lg" />,
@@ -70,6 +71,7 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDeletingEstimate, setIsDeletingEstimate] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [canCreateJob, setCanCreateJob] = useState(false);
 
   useEffect(() => {
     if (authLoading || !user) return;
@@ -101,6 +103,8 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
       if (estimatesData) {
         setEstimates(estimatesData);
       }
+      const access = await getUserEntitlements(userId);
+      setCanCreateJob(hasEntitlement(access.entitlements, 'job_management'));
       const { data: refinement } = await supabase.from('project_refinements').select('version')
         .eq('project_id', projectId).maybeSingle();
       setRefinementVersion(refinement?.version);
@@ -484,10 +488,12 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
                               discount_percent: estimate.discount_percent,
                               model_used: estimate.model_used,
                               scenario_justification: estimate.scenario_justification,
+                              quote_status: estimate.quote_status,
                             }}
                             projectTitle={project.title}
                             projectDescription={project.description}
                             onRegenerate={() => user && loadProject(user.id)}
+                            canCreateJob={canCreateJob}
                           />}
                         </div>
                       )}
