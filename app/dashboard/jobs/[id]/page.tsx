@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { supabase } from '@/lib/supabase';
-import { calculateJobProfitability, estimatedCostAtCompletion, type ActualCostLine, type PlannedCostLine, type TimeCostLine } from '@/lib/job-costing';
+import { calculateJobProfitability, estimatedCostAtCompletion, validateDailyMinutes, type ActualCostLine, type PlannedCostLine, type TimeCostLine } from '@/lib/job-costing';
 import { formatCurrencyEUR } from '@/lib/pricing/engine';
 
 type CostCategory = ActualCostLine['category'];
@@ -107,14 +107,15 @@ export default function JobDetailPage() {
     const employee = employees.find((item) => item.id === employeeId);
     const minutes = Math.round(Number(hours.replace(',', '.')) * 60);
     const hourly = employee?.direct_hourly_cost_cents ?? (employee?.employer_monthly_cost_cents ? Math.round(employee.employer_monthly_cost_cents / 151.67) : null);
-    if (!employee || !hourly || !Number.isSafeInteger(minutes) || minutes < 1 || minutes > 1440) return toast.error('Salarié, durée ou coût horaire invalide');
-    const { error } = await supabase.from('time_entries').insert({
+    try { validateDailyMinutes(0, minutes); } catch { return toast.error('Salarié, durée ou coût horaire invalide'); }
+    if (!employee || !hourly) return toast.error('Salarié, durée ou coût horaire invalide');
+    const { error } = await supabase.from('time_entries').upsert({
       organization_id: job.organization_id, job_id: job.id, employee_id: employee.id,
       work_date: new Date().toISOString().slice(0, 10), minutes, hourly_cost_cents_snapshot: hourly,
       source: 'manual', created_by: user.id,
-    });
+    }, { onConflict: 'employee_id,job_id,work_date' });
     if (error) return toast.error(error.message);
-    setHours(''); await load(); toast.success('Temps enregistré avec son coût horaire figé');
+    setHours(''); await load(); toast.success('Temps du jour enregistré avec son coût horaire figé');
   };
 
   if (loading) return <DashboardLayout><div className="py-20 text-center text-slate-400">Chargement…</div></DashboardLayout>;

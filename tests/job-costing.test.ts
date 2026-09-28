@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calculateJobProfitability, estimatedCostAtCompletion, laborCostCents } from '../lib/job-costing';
+import { calculateJobProfitability, estimatedCostAtCompletion, laborCostCents, validateDailyMinutes } from '../lib/job-costing';
 
 describe('job costing', () => {
   it('agrège prévision et réel par catégorie', () => {
@@ -36,5 +36,15 @@ describe('job costing', () => {
   it('projette explicitement à partir de l’avancement', () => {
     expect(estimatedCostAtCompletion(1_485_000, 70)).toBe(2_121_429);
     expect(estimatedCostAtCompletion(1_485_000, 0)).toBeNull();
+  });
+
+  it('accepte une journée ventilée entre plusieurs chantiers jusqu’à 24 heures', () => {
+    expect(validateDailyMinutes(420, 180)).toBe(600);
+    expect(validateDailyMinutes(600, 840)).toBe(1440);
+  });
+
+  it('refuse une allocation quotidienne supérieure à 24 heures', () => {
+    expect(() => validateDailyMinutes(900, 600)).toThrow(/24 heures/);
+    expect(() => validateDailyMinutes(0, 0)).toThrow(/Durée saisie/);
   });
 });

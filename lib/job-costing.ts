@@ -47,6 +47,18 @@ export function laborCostCents(minutes: number, hourlyCostCents: MoneyCents): Mo
   return Math.round((minutes * validCents(hourlyCostCents)) / 60);
 }
 
+export function validateDailyMinutes(existingMinutes: number, nextMinutes: number): number {
+  if (!Number.isSafeInteger(existingMinutes) || existingMinutes < 0 || existingMinutes > 1440) {
+    throw new Error('Durée existante invalide');
+  }
+  if (!Number.isSafeInteger(nextMinutes) || nextMinutes < 1 || nextMinutes > 1440) {
+    throw new Error('Durée saisie invalide');
+  }
+  const total = existingMinutes + nextMinutes;
+  if (total > 1440) throw new Error('Une journée ne peut pas dépasser 24 heures');
+  return total;
+}
+
 export function plannedLineCostCents(line: PlannedCostLine): MoneyCents {
   if (line.category === 'material') return multiplyCents(validCents(line.unitCostCents), line.quantity ?? 1);
   if (line.category === 'labor') return laborCostCents(line.plannedMinutes ?? 0, validCents(line.hourlyCostCents));
