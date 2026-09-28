@@ -21,7 +21,7 @@ const PLANS = [
     name: 'Starter (Simulation)',
     icon: FileText,
     color: 'bg-emerald-600',
-    description: 'GPT-4.1 Mini - 10 projets/mois',
+    description: '10 projets/mois',
   },
   {
     id: 'business',
@@ -29,7 +29,7 @@ const PLANS = [
     name: 'Business (Simulation)',
     icon: Users,
     color: 'bg-sky-600',
-    description: 'Mistral Large 2 - 30 projets/mois',
+    description: '30 projets/mois',
   },
   {
     id: 'pro',
@@ -37,7 +37,7 @@ const PLANS = [
     name: 'Pro (Simulation)',
     icon: Crown,
     color: 'bg-amber-600',
-    description: 'GPT-4.1 - Projets illimites',
+    description: 'Projets illimités',
   },
 ];
 

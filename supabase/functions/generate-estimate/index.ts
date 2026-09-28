@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.58.0";
 import { BTP_SPECIALISTS, buildRefinedDescription } from "../_shared/btp-refinement.ts";
+import { selectPlanModel } from "../_shared/plan-model.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -25,18 +26,6 @@ const PRICING_COEFFICIENTS: Record<string, number> = {
 };
 
 const ALLOWED_TVA_RATES = [0, 5.5, 10, 20];
-
-const TIER_TO_MODEL_ID: Record<string, string> = {
-  starter:  "mistralai/mistral-large-2512",
-  business: "mistralai/mistral-large-2512",
-  pro:      "openai/gpt-4.1",
-  unlimited: "openai/gpt-4.1",
-};
-
-export function resolveTierModel(tierName: string): string {
-  const normalized = (tierName || "").toLowerCase().trim();
-  return TIER_TO_MODEL_ID[normalized] ?? TIER_TO_MODEL_ID["starter"];
-}
 
 function validateTvaRate(rate: number): number {
   return ALLOWED_TVA_RATES.reduce((prev, curr) =>
@@ -101,10 +90,9 @@ Deno.serve(async (req: Request) => {
     if (projectDescription === "__TEST_MODEL__") {
       const isDev = !Deno.env.get("DENO_DEPLOYMENT_ID");
       if (isDev) {
-        const testTier = adminTier || "starter";
-        const testModelId = resolveTierModel(testTier);
+        const { model: testModel } = await selectPlanModel(supabase, user.id, adminTier);
         return new Response(
-          JSON.stringify({ test: true, tier: testTier, model_id: testModelId }),
+          JSON.stringify({ test: true, model_id: testModel.model_id }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -146,13 +134,10 @@ Deno.serve(async (req: Request) => {
 
     await enforceMonthlyLimit(supabase, user.id);
 
-    const { model, resolvedTier } = await selectModel(supabase, user.id, adminTier);
+    const { model, resolvedTier } = await selectPlanModel(supabase, user.id, adminTier);
 
     console.log(`[generate-estimate] Tier resolved: ${resolvedTier}`);
     console.log(`[generate-estimate] Model selected: ${model.display_name} (${model.model_id})`);
-
-    const fallbackModels = await getFallbackModels(supabase, model.id);
-    const modelsToTry = [model, ...fallbackModels];
 
     let templateContext = "";
     if (templateData) {
@@ -169,7 +154,7 @@ Deno.serve(async (req: Request) => {
     let tokensOutput = 0;
     let lastError: string | null = null;
 
-    for (const currentModel of modelsToTry) {
+    for (const currentModel of [model]) {
       const result = await callOpenRouter(currentModel, openrouterApiKey, supabaseUrl, prompt, apiTemperature, refined);
       if (result.error) {
         lastError = result.error;
@@ -273,14 +258,10 @@ Deno.serve(async (req: Request) => {
 
     console.log(`[generate-estimate] Done. Tokens: ${tokensInput}→${tokensOutput}, cost: $${cost.toFixed(6)}, duration: ${durationMs}ms`);
 
-    const usedFallback = usedModel.id !== model.id;
     return new Response(
       JSON.stringify({
         success: true,
         estimate,
-        ...(usedFallback && {
-          warning: `Modele de remplacement: ${usedModel.display_name} (prefere: ${model.display_name})`,
-        }),
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
@@ -354,89 +335,6 @@ async function enforceMonthlyLimit(supabase: any, userId: string) {
       `Limite mensuelle atteinte (${used}/${maxPerMonth} devis). Passez au plan supérieur pour continuer.`
     );
   }
-}
-
-async function selectModel(supabase: any, userId: string, adminTier?: string): Promise<{ model: any; resolvedTier: string }> {
-  const tierMap: Record<string, string> = {
-    unlimited: "pro", pro: "pro", business: "business", starter: "starter",
-  };
-
-  if (adminTier) {
-    const { data: adminData } = await supabase
-      .from("admin_users")
-      .select("id")
-      .eq("user_id", userId)
-      .maybeSingle();
-
-    if (adminData) {
-      const tierName = tierMap[adminTier] ?? "starter";
-      const targetModelId = resolveTierModel(tierName);
-
-      const { data: model } = await supabase
-        .from("ai_models")
-        .select("*")
-        .eq("model_id", targetModelId)
-        .eq("is_active", true)
-        .maybeSingle();
-
-      if (model) {
-        return { model, resolvedTier: `admin-override:${tierName}` };
-      }
-    }
-  }
-
-  const { data: rpcResult } = await supabase.rpc("get_user_ai_model", { p_user_id: userId });
-  if (rpcResult && rpcResult.length > 0) {
-    const { data: model } = await supabase
-      .from("ai_models")
-      .select("*")
-      .eq("id", rpcResult[0].model_id)
-      .maybeSingle();
-
-    if (model) {
-      return { model, resolvedTier: "subscription" };
-    }
-  }
-
-  const { data: starterTier } = await supabase
-    .from("subscription_tiers")
-    .select("ai_model_id, name")
-    .eq("name", "starter")
-    .eq("is_active", true)
-    .maybeSingle();
-
-  if (starterTier?.ai_model_id) {
-    const { data: model } = await supabase
-      .from("ai_models")
-      .select("*")
-      .eq("id", starterTier.ai_model_id)
-      .maybeSingle();
-
-    if (model) return { model, resolvedTier: "fallback:starter-tier" };
-  }
-
-  const { data: cheapestModel } = await supabase
-    .from("ai_models")
-    .select("*")
-    .eq("is_active", true)
-    .order("cost_per_1k_tokens_input", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  if (!cheapestModel) throw new Error("No active AI models configured");
-  return { model: cheapestModel, resolvedTier: "fallback:cheapest" };
-}
-
-async function getFallbackModels(supabase: any, excludeId: string) {
-  const { data } = await supabase
-    .from("ai_models")
-    .select("*")
-    .eq("is_active", true)
-    .lte("cost_per_1k_tokens_input", 0.001)
-    .neq("id", excludeId)
-    .order("cost_per_1k_tokens_input", { ascending: true })
-    .limit(5);
-  return data || [];
 }
 
 async function callOpenRouter(

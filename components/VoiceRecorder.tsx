@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Mic, MicOff, Pause, Play, Check, RotateCcw, Edit2, AlertCircle } from 'lucide-react';
+import { collectSpeechResults } from '@/lib/voice-transcript';
 
 interface VoiceRecorderProps {
   value: string;
@@ -15,6 +16,7 @@ interface VoiceRecorderProps {
 export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRecorderProps) {
   const [isListening, setIsListening] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [isResuming, setIsResuming] = useState(false);
   const [transcript, setTranscript] = useState(value);
   const [interimText, setInterimText] = useState('');
   const [isSupported, setIsSupported] = useState(true);
@@ -28,8 +30,11 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
   const isPausedRef = useRef(false);
   const isRecognitionActiveRef = useRef(false);
   const isRestartingRef = useRef(false);
+  const resumeRequestedRef = useRef(false);
+  const ignoreResultsRef = useRef(false);
+  const restartTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scheduleStartRef = useRef<((delay: number) => void) | null>(null);
   const finalTextRef = useRef('');
-  const lastFinalChunkRef = useRef('');
   const onChangeRef = useRef(onChange);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const sessionFinalCountRef = useRef(0);
@@ -78,33 +83,47 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
     recognition.interimResults = true;
     recognition.lang = 'fr-FR';
 
+    const scheduleStart = (delay: number) => {
+      if (restartTimerRef.current) clearTimeout(restartTimerRef.current);
+      isRestartingRef.current = true;
+      restartTimerRef.current = setTimeout(() => {
+        restartTimerRef.current = null;
+        if (isListeningRef.current && (!isPausedRef.current || resumeRequestedRef.current) && !isRecognitionActiveRef.current) {
+          try {
+            recognition.start();
+          } catch {
+            isListeningRef.current = false;
+            resumeRequestedRef.current = false;
+            setIsListening(false);
+            setIsPaused(false);
+            setIsResuming(false);
+            setErrorMessage('Impossible de reprendre la dictée. Réessayez avec le bouton micro.');
+          }
+        }
+        isRestartingRef.current = false;
+      }, delay);
+    };
+    scheduleStartRef.current = scheduleStart;
+
     recognition.onstart = () => {
       isRecognitionActiveRef.current = true;
       sessionFinalCountRef.current = 0;
+      if (!isListeningRef.current || (isPausedRef.current && !resumeRequestedRef.current)) {
+        recognition.stop();
+        return;
+      }
+      if (resumeRequestedRef.current) {
+        resumeRequestedRef.current = false;
+        isPausedRef.current = false;
+        setIsPaused(false);
+        setIsResuming(false);
+      }
     };
 
     recognition.onresult = (event: any) => {
-      let sessionFinal = '';
-      let currentInterim = '';
-
-      for (let i = 0; i < event.results.length; i++) {
-        const result = event.results[i];
-        const text = result[0].transcript.trim();
-        if (!text) continue;
-
-        if (result.isFinal) {
-          if (i >= sessionFinalCountRef.current) {
-            const deduped = deduplicateChunk(text, lastFinalChunkRef.current);
-            if (deduped) {
-              sessionFinal += (sessionFinal ? ' ' : '') + deduped;
-              lastFinalChunkRef.current = deduped;
-            }
-            sessionFinalCountRef.current = i + 1;
-          }
-        } else {
-          currentInterim = text;
-        }
-      }
+      if (ignoreResultsRef.current) return;
+      const { final: sessionFinal, interim: currentInterim, processed } = collectSpeechResults(event.results, sessionFinalCountRef.current);
+      sessionFinalCountRef.current = processed;
 
       if (sessionFinal) {
         const base = finalTextRef.current.trim();
@@ -115,11 +134,7 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
         onChangeRef.current(updated);
       }
 
-      if (currentInterim) {
-        setInterimText(currentInterim);
-      } else if (!sessionFinal) {
-        setInterimText('');
-      }
+      setInterimText(isPausedRef.current ? '' : currentInterim);
     };
 
     recognition.onerror = (event: any) => {
@@ -128,11 +143,9 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
       if (event.error === 'no-speech') return;
 
       if (event.error === 'aborted') {
-        if (!isRestartingRef.current) {
-          setIsListening(false);
-          isListeningRef.current = false;
-          isPausedRef.current = false;
-        }
+        if (isPausedRef.current || !isListeningRef.current || isRestartingRef.current) return;
+        setIsListening(false);
+        isListeningRef.current = false;
         return;
       }
 
@@ -153,68 +166,39 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
       setIsListening(false);
       isListeningRef.current = false;
       isPausedRef.current = false;
+      resumeRequestedRef.current = false;
+      setIsPaused(false);
+      setIsResuming(false);
     };
 
     recognition.onend = () => {
       isRecognitionActiveRef.current = false;
 
-      if (isListeningRef.current && !isPausedRef.current && !isRestartingRef.current) {
-        isRestartingRef.current = true;
-        setTimeout(() => {
-          if (isListeningRef.current && !isPausedRef.current && !isRecognitionActiveRef.current) {
-            try {
-              recognition.start();
-            } catch {
-              setIsListening(false);
-              isListeningRef.current = false;
-              setErrorMessage('Impossible de redemarrer la reconnaissance vocale.');
-            }
-          }
-          isRestartingRef.current = false;
-        }, 250);
+      if (isListeningRef.current && resumeRequestedRef.current) {
+        scheduleStart(200);
+      } else if (isListeningRef.current && !isPausedRef.current && !isRestartingRef.current) {
+        scheduleStart(250);
       }
     };
 
     recognitionRef.current = recognition;
 
     return () => {
+      isListeningRef.current = false;
+      resumeRequestedRef.current = false;
+      ignoreResultsRef.current = true;
+      if (restartTimerRef.current) clearTimeout(restartTimerRef.current);
+      scheduleStartRef.current = null;
       if (recognitionRef.current) {
         try { recognitionRef.current.stop(); } catch { /* ignore */ }
       }
     };
   }, []);
 
-  const deduplicateChunk = (newChunk: string, previousChunk: string): string => {
-    if (!previousChunk || !newChunk) return newChunk;
-    if (newChunk === previousChunk) return '';
-
-    const newWords = newChunk.split(/\s+/);
-    const prevWords = previousChunk.split(/\s+/);
-
-    const cleaned: string[] = [];
-    for (const word of newWords) {
-      if (word !== cleaned[cleaned.length - 1]) {
-        cleaned.push(word);
-      }
-    }
-
-    const overlap = Math.min(prevWords.length, cleaned.length);
-    for (let size = overlap; size >= 3; size--) {
-      const prevTail = prevWords.slice(-size).join(' ').toLowerCase();
-      const newHead = cleaned.slice(0, size).join(' ').toLowerCase();
-      if (prevTail === newHead) {
-        return cleaned.slice(size).join(' ');
-      }
-    }
-
-    return cleaned.join(' ');
-  };
-
   const startListening = () => {
     if (!recognitionRef.current || isListening || isRecognitionActiveRef.current) return;
 
     finalTextRef.current = value.trim();
-    lastFinalChunkRef.current = '';
     sessionFinalCountRef.current = 0;
     setInterimText('');
     setIsValidated(false);
@@ -222,13 +206,15 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
     setErrorMessage('');
     setDuration(0);
     isRestartingRef.current = false;
+    ignoreResultsRef.current = false;
+    isListeningRef.current = true;
+    isPausedRef.current = false;
 
     try {
       recognitionRef.current.start();
       setIsListening(true);
-      isListeningRef.current = true;
       setIsPaused(false);
-      isPausedRef.current = false;
+      setIsResuming(false);
     } catch (error: any) {
       isListeningRef.current = false;
       isRecognitionActiveRef.current = false;
@@ -242,37 +228,37 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
 
   const pauseListening = () => {
     if (recognitionRef.current && isListening) {
+      if (restartTimerRef.current) clearTimeout(restartTimerRef.current);
+      restartTimerRef.current = null;
       isRestartingRef.current = false;
-      recognitionRef.current.stop();
       setIsPaused(true);
       isPausedRef.current = true;
       setInterimText('');
+      if (isRecognitionActiveRef.current) recognitionRef.current.stop();
     }
   };
 
   const resumeListening = () => {
-    if (recognitionRef.current && isPaused && !isRecognitionActiveRef.current) {
-      isRestartingRef.current = false;
-      sessionFinalCountRef.current = 0;
-      try {
-        recognitionRef.current.start();
-        setIsPaused(false);
-        isPausedRef.current = false;
-      } catch {
-        setErrorMessage('Impossible de reprendre la reconnaissance vocale.');
-      }
+    if (recognitionRef.current && isPaused && !resumeRequestedRef.current) {
+      resumeRequestedRef.current = true;
+      setIsResuming(true);
+      setErrorMessage('');
+      if (!isRecognitionActiveRef.current) scheduleStartRef.current?.(200);
     }
   };
 
   const stopListening = () => {
     if (recognitionRef.current) {
+      if (restartTimerRef.current) clearTimeout(restartTimerRef.current);
+      restartTimerRef.current = null;
       isRestartingRef.current = false;
+      resumeRequestedRef.current = false;
       try { recognitionRef.current.stop(); } catch { /* ignore */ }
       setIsListening(false);
       isListeningRef.current = false;
       setIsPaused(false);
       isPausedRef.current = false;
-      isRecognitionActiveRef.current = false;
+      setIsResuming(false);
       setInterimText('');
     }
   };
@@ -288,15 +274,15 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
   };
 
   const handleReset = () => {
+    ignoreResultsRef.current = true;
+    if (isListening) stopListening();
     setTranscript('');
     setInterimText('');
     setIsValidated(false);
     setIsEditing(false);
     setDuration(0);
     finalTextRef.current = '';
-    lastFinalChunkRef.current = '';
     sessionFinalCountRef.current = 0;
-    if (isListening) stopListening();
     onChangeRef.current('');
   };
 
@@ -374,6 +360,7 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
               />
               <div className="flex gap-2">
                 <Button
+                  type="button"
                   onClick={() => { setIsEditing(false); setIsValidated(true); }}
                   variant="outline"
                   size="sm"
@@ -382,6 +369,7 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
                   Annuler
                 </Button>
                 <Button
+                  type="button"
                   onClick={handleSaveEdit}
                   size="sm"
                   className="bg-brand-green hover:bg-green-600 text-white"
@@ -403,6 +391,7 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
                   </p>
                   {isValidated && (
                     <Button
+                      type="button"
                       onClick={handleEdit}
                       variant="ghost"
                       size="sm"
@@ -441,13 +430,13 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
               </div>
               {isListening && (
                 <div className="flex items-center gap-2">
-                  <div className="flex space-x-1">
+                  {!isPaused && <div className="flex space-x-1" aria-hidden="true">
                     <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
                     <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse delay-75" />
                     <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse delay-150" />
-                  </div>
-                  <span className="text-xs text-red-400 font-medium">
-                    {isPaused ? 'En pause' : 'Ecoute...'}
+                  </div>}
+                  <span role="status" className="text-xs text-red-400 font-medium">
+                    {isResuming ? 'Reprise du micro…' : isPaused ? 'En pause, micro arrêté' : 'À l’écoute…'}
                   </span>
                 </div>
               )}
@@ -458,20 +447,20 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
 
       {!isEditing && (
         <div className="flex flex-wrap gap-3 justify-center">
-          {!isListening && !transcript && (
-            <Button onClick={startListening} size="lg" className="bg-red-600 hover:bg-red-700 text-white">
+          {!isListening && (
+            <Button type="button" onClick={startListening} size="lg" className="bg-red-600 hover:bg-red-700 text-white">
               <Mic className="h-5 w-5 mr-2" />
-              Commencer la Dictee
+              {transcript ? 'Continuer la dictée' : 'Commencer la dictée'}
             </Button>
           )}
 
           {isListening && !isPaused && (
             <>
-              <Button onClick={pauseListening} size="lg" variant="outline" className="border-gray-700 text-gray-300 hover:bg-brand-darkLight">
+              <Button type="button" onClick={pauseListening} size="lg" variant="outline" className="border-gray-700 text-gray-300 hover:bg-brand-darkLight">
                 <Pause className="h-5 w-5 mr-2" />
                 Pause
               </Button>
-              <Button onClick={stopListening} size="lg" variant="outline" className="text-red-400 border-red-600 hover:bg-red-900/20">
+              <Button type="button" onClick={stopListening} size="lg" variant="outline" className="text-red-400 border-red-600 hover:bg-red-900/20">
                 <MicOff className="h-5 w-5 mr-2" />
                 Arreter
               </Button>
@@ -480,11 +469,11 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
 
           {isPaused && (
             <>
-              <Button onClick={resumeListening} size="lg" className="bg-red-600 hover:bg-red-700 text-white">
+              <Button type="button" onClick={resumeListening} disabled={isResuming} size="lg" className="bg-red-600 hover:bg-red-700 text-white">
                 <Play className="h-5 w-5 mr-2" />
-                Reprendre
+                {isResuming ? 'Reprise…' : 'Reprendre'}
               </Button>
-              <Button onClick={stopListening} size="lg" variant="outline" className="border-gray-700 text-gray-300 hover:bg-brand-darkLight">
+              <Button type="button" onClick={stopListening} size="lg" variant="outline" className="border-gray-700 text-gray-300 hover:bg-brand-darkLight">
                 <MicOff className="h-5 w-5 mr-2" />
                 Terminer
               </Button>
@@ -493,11 +482,11 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
 
           {transcript && !isListening && !isValidated && (
             <>
-              <Button onClick={handleReset} size="lg" variant="outline" className="border-gray-700 text-gray-300 hover:bg-brand-darkLight">
+              <Button type="button" onClick={handleReset} size="lg" variant="outline" className="border-gray-700 text-gray-300 hover:bg-brand-darkLight">
                 <RotateCcw className="h-5 w-5 mr-2" />
                 Recommencer
               </Button>
-              <Button onClick={handleValidate} size="lg" className="bg-brand-green hover:bg-green-600 text-white">
+              <Button type="button" onClick={handleValidate} size="lg" className="bg-brand-green hover:bg-green-600 text-white">
                 <Check className="h-5 w-5 mr-2" />
                 Valider
               </Button>
@@ -505,14 +494,14 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
           )}
 
           {transcript && isListening && (
-            <Button onClick={handleReset} size="lg" variant="outline">
+            <Button type="button" onClick={handleReset} size="lg" variant="outline">
               <RotateCcw className="h-5 w-5 mr-2" />
               Recommencer
             </Button>
           )}
 
           {isValidated && !isListening && (
-            <Button onClick={handleReset} size="lg" variant="outline">
+            <Button type="button" onClick={handleReset} size="lg" variant="outline">
               <RotateCcw className="h-5 w-5 mr-2" />
               Recommencer
             </Button>

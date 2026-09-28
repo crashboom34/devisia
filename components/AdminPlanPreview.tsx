@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Eye, Cpu, FileText, Users, Crown, Check, Zap } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 const PLANS = [
   {
@@ -15,11 +16,10 @@ const PLANS = [
     icon: FileText,
     color: 'bg-emerald-500',
     borderColor: 'border-emerald-500/30',
-    aiModel: 'GPT-4.1 Mini',
     maxProjects: 10,
     maxClients: 20,
     features: [
-      'Devis IA avec GPT-4.1 Mini',
+      'Devis IA inclus',
       'Logo, mentions legales et TVA',
       'Historique des devis',
       'Support par email',
@@ -33,11 +33,10 @@ const PLANS = [
     icon: Users,
     color: 'bg-sky-500',
     borderColor: 'border-sky-500/30',
-    aiModel: 'Mistral Large 2',
     maxProjects: 30,
     maxClients: 60,
     features: [
-      'Devis IA avec Mistral Large 2',
+      'Devis IA inclus',
       'Gestion complete des clients',
       'Exports PDF illimites',
       'Transformation devis en factures',
@@ -51,11 +50,10 @@ const PLANS = [
     icon: Crown,
     color: 'bg-amber-500',
     borderColor: 'border-amber-500/30',
-    aiModel: 'GPT-4.1',
     maxProjects: -1,
     maxClients: -1,
     features: [
-      'Devis IA avec GPT-4.1 Premium',
+      'Devis IA inclus',
       'Devis et clients illimites',
       'Collaboration d\'equipe',
       'Support prioritaire',
@@ -65,6 +63,13 @@ const PLANS = [
 
 export default function AdminPlanPreview() {
   const [activePlan, setActivePlan] = useState<string | null>(null);
+  const [modelNames, setModelNames] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    supabase.from('admin_subscription_tier_models').select('name, ai_model_name').then(({ data }) => {
+      if (data) setModelNames(Object.fromEntries(data.map((tier: { name: string; ai_model_name: string }) => [tier.name, tier.ai_model_name])));
+    });
+  }, []);
 
   const selectedPlan = PLANS.find((p) => p.id === activePlan);
 
@@ -113,7 +118,7 @@ export default function AdminPlanPreview() {
               </div>
               <Badge variant="secondary" className="gap-1">
                 <Cpu className="h-3 w-3" />
-                {selectedPlan.aiModel}
+                {modelNames[selectedPlan.id] || 'Modèle à configurer'}
               </Badge>
             </div>
 

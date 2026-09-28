@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ArrowLeft, Plus, Edit, Trash2, Key, Info } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
+import { toast } from 'sonner';
 
 interface AIModel {
   id: string;
@@ -74,6 +75,8 @@ export default function AdminModelsPage() {
 
       if (error) {
         console.error('Error updating model:', error);
+        toast.error(error.message);
+        return;
       }
     } else {
       const { error } = await supabase
@@ -82,6 +85,8 @@ export default function AdminModelsPage() {
 
       if (error) {
         console.error('Error creating model:', error);
+        toast.error(error.message);
+        return;
       }
     }
 
@@ -213,7 +218,7 @@ export default function AdminModelsPage() {
                       {editingModel ? 'Modifier le modèle' : 'Ajouter un modèle'}
                     </DialogTitle>
                     <DialogDescription>
-                      Configurez les paramètres du modèle IA
+                      Configurez le modèle. Seuls les modèles OpenRouter actifs peuvent être affectés aux plans.
                     </DialogDescription>
                   </DialogHeader>
                   <form onSubmit={handleSubmit} className="space-y-4">
