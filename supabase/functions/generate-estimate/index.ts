@@ -25,7 +25,7 @@ const PRICING_COEFFICIENTS: Record<string, number> = {
 const ALLOWED_TVA_RATES = [0, 5.5, 10, 20];
 
 const TIER_TO_MODEL_ID: Record<string, string> = {
-  starter:  "mistralai/mistral-large-2512",
+  starter:  "openai/gpt-4.1-mini",
   business: "mistralai/mistral-large-2512",
   pro:      "openai/gpt-4.1",
   unlimited: "openai/gpt-4.1",

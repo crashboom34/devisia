@@ -1,12 +1,12 @@
 export const TIER_TO_MODEL_ID: Record<string, string> = {
-  starter:   "mistralai/mistral-large-2512",
+  starter:   "openai/gpt-4.1-mini",
   business:  "mistralai/mistral-large-2512",
   pro:       "openai/gpt-4.1",
   unlimited: "openai/gpt-4.1",
 };
 
 export const TIER_TO_MODEL_LABEL: Record<string, string> = {
-  starter:   "Mistral Large 3 (OpenRouter)",
+  starter:   "GPT-4.1 Mini (OpenRouter)",
   business:  "Mistral Large 3 (OpenRouter)",
   pro:       "GPT-4.1 (OpenRouter)",
   unlimited: "GPT-4.1 (OpenRouter)",
@@ -23,7 +23,7 @@ export function resolveTierModelLabel(tierName: string): string {
 }
 
 export const CANONICAL_MAPPING = [
-  { tier: "starter",  modelId: "mistralai/mistral-large-2512", label: "Mistral Large 3 (OpenRouter)" },
+  { tier: "starter",  modelId: "openai/gpt-4.1-mini",          label: "GPT-4.1 Mini (OpenRouter)" },
   { tier: "business", modelId: "mistralai/mistral-large-2512", label: "Mistral Large 3 (OpenRouter)" },
   { tier: "pro",      modelId: "openai/gpt-4.1",               label: "GPT-4.1 (OpenRouter)" },
 ] as const;
