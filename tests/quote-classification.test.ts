@@ -22,4 +22,3 @@ describe('quote classification', () => {
     expect(() => validateQuoteClassification(value)).toThrow();
   });
 });
-

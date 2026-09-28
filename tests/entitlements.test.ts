@@ -13,4 +13,3 @@ describe('entitlements', () => {
     expect(hasEntitlement(starter, 'job_profitability')).toBe(false);
   });
 });
-

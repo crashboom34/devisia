@@ -613,4 +613,3 @@ $$;
 
 revoke all on function public.accept_estimate_and_create_job(uuid) from public, anon;
 grant execute on function public.accept_estimate_and_create_job(uuid) to authenticated;
-

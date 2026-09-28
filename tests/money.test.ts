@@ -18,4 +18,3 @@ describe('money cents', () => {
     expect(() => multiplyCents(100, Number.POSITIVE_INFINITY)).toThrow();
   });
 });
-

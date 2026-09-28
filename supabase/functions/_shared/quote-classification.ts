@@ -70,4 +70,3 @@ export const QUOTE_CLASSIFICATION_SCHEMA = {
     },
   },
 } as const;
-

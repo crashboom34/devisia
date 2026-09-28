@@ -6,7 +6,6 @@ export interface AiRouteRequest {
   complexity: Complexity;
   adminTier?: string;
 }
-
 export interface AiRoute {
   tier: string;
   taskType: AiTaskType;

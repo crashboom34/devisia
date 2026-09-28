@@ -10,7 +10,6 @@ export interface Entitlement { feature_key: FeatureKey; enabled: boolean; limits
 export function hasEntitlement(entitlements: Entitlement[], feature: FeatureKey): boolean {
   return entitlements.some((item) => item.feature_key === feature && item.enabled);
 }
-
 export async function getUserEntitlements(userId: string): Promise<{ tier: string; entitlements: Entitlement[] }> {
   const { data: subscription, error: subscriptionError } = await supabase
     .from('user_subscriptions').select('tier_id').eq('user_id', userId).eq('status', 'active').maybeSingle();

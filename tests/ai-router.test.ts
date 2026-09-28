@@ -50,4 +50,3 @@ describe('AI router', () => {
     expect(route.models[0].model_id).toBe('openai/gpt-5.6-luna');
   });
 });
-

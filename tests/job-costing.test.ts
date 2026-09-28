@@ -38,4 +38,3 @@ describe('job costing', () => {
     expect(estimatedCostAtCompletion(1_485_000, 0)).toBeNull();
   });
 });
-

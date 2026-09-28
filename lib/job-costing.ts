@@ -10,7 +10,6 @@ export interface PlannedCostLine {
   hourlyCostCents?: MoneyCents;
   otherCostCents?: MoneyCents;
 }
-
 export interface ActualCostLine {
   category: Exclude<CostCategory, 'labor'>;
   amountHtCents: MoneyCents;

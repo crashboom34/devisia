@@ -4,7 +4,6 @@ function assertSafeInteger(value: number, label: string): number {
   if (!Number.isSafeInteger(value)) throw new Error(`${label} doit être un entier sûr`);
   return value;
 }
-
 export function eurosToCents(value: number): MoneyCents {
   if (!Number.isFinite(value)) throw new Error('Montant non fini');
   return assertSafeInteger(Math.round((value + Number.EPSILON) * 100), 'Montant');
