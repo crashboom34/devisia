@@ -231,7 +231,7 @@ Deno.serve(async (req: Request) => {
           assumptions: Array.isArray(estimateData.assumptions) ? estimateData.assumptions.filter((s: unknown) => typeof s === "string").slice(0, 12) : [],
           missing: refinement.questions.filter((q: any) => q.status === "OPEN" || q.answer === "Je ne sais pas").map((q: any) => q.text),
         } : {},
-        total_amount: refined ? null : validated.totalTTC,
+        total_amount: refined ? 0 : validated.totalTTC,
         line_items: validated.lineItems,
         categories: validated.categories,
         estimate_number: refined ? `EST-${Date.now()}` : estimateData.estimate_number || `DEVIS-${Date.now()}`,

@@ -1,4 +1,6 @@
 -- Draft refinement is separate from estimates: no quote is created by answering questions.
+-- The live Devisia database predates the repository's consolidated base schema.
+alter table public.estimates add column if not exists estimate_data jsonb not null default '{}'::jsonb;
 alter table public.estimates add column if not exists estimate_kind text not null default 'quote'
   check (estimate_kind in ('quote', 'preliminary'));
 

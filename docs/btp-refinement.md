@@ -11,7 +11,7 @@ Les dix domaines documentaires de `BTP_SPECIALISTS` structurent la recherche de 
 
 ## Mise en service
 
-Appliquer `supabase/migrations/20260928090000_project_refinement.sql` **sur le projet Supabase associé à cette application**. Déployer ensuite `refine-project`, `generate-estimate` et `finalize-estimate`, puis le frontend. Vérifier la clé OpenRouter et les modèles actifs du projet cible. Ne pas réutiliser les identifiants d'une autre instance Supabase.
+Appliquer `supabase/migrations/20260928085853_project_refinement.sql` **sur le projet Supabase associé à cette application**. En production, l'application utilise `fwuwzoxanrmsobwfnbxe` (nom technique `bolt-native-database-59078314`) ; vérifier ce lien avec le déploiement Vercel avant chaque mise en service. Déployer ensuite `refine-project`, `generate-estimate`, `finalize-estimate` et `regenerate-estimate`, puis le frontend. Vérifier la clé OpenRouter et les modèles actifs du projet cible.
 
 La migration ajoute `estimate_kind` aux devis existants avec la valeur `quote`, deux tables de dossier avec lecture réservée au propriétaire, et une fonction SQL de sauvegarde versionnée accessible seulement au rôle serveur. Les anciennes estimations et leur éditeur restent accessibles.
 
