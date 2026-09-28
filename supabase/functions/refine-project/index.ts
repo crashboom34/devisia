@@ -4,6 +4,7 @@ import {
   BTP_SPECIALISTS, COMMERCIAL_PREFERENCES, applyAnswers, fallbackQuestions,
   normalizeQuestions, type AnswerInput, type RefinementQuestion, type RefinementState,
 } from '../_shared/btp-refinement.ts';
+import { selectPlanModel } from '../_shared/plan-model.ts';
 
 const headers = {
   'Access-Control-Allow-Origin': '*',
@@ -18,7 +19,7 @@ function response(body: unknown, status = 200) {
 
 async function generateQuestions(
   supabase: ReturnType<typeof createClient>, project: { title: string; description: string },
-  state: RefinementState, supabaseUrl: string,
+  state: RefinementState, supabaseUrl: string, userId: string,
 ): Promise<{ questions: RefinementQuestion[]; source: 'assistant' | 'rules' }> {
   const previous = state.questions;
   if (previous.length >= 18) return { questions: [], source: 'rules' };
@@ -26,8 +27,7 @@ async function generateQuestions(
   try {
     const { data: config } = await supabase.from('system_config').select('value').eq('key', 'openrouter_api_key').maybeSingle();
     const apiKey = String(config?.value || Deno.env.get('OPENROUTER_API_KEY') || '').trim();
-    const { data: model } = await supabase.from('ai_models').select('model_id')
-      .eq('is_active', true).order('cost_per_1k_tokens_input', { ascending: true }).limit(1).maybeSingle();
+    const { model } = await selectPlanModel(supabase, userId);
     if (apiKey && model?.model_id) {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 18000);
@@ -105,7 +105,7 @@ Deno.serve(async (req) => {
     const open = state.questions.filter((q) => q.status === 'OPEN');
     let source: 'assistant' | 'rules' | 'existing' = 'existing';
     if (!open.length) {
-      const generated = await generateQuestions(supabase, project, state, url);
+      const generated = await generateQuestions(supabase, project, state, url, user.id);
       state.questions = [...state.questions, ...generated.questions];
       source = generated.source;
     }

@@ -181,11 +181,11 @@ export async function checkProjectLimit(userId: string): Promise<ProjectLimitInf
 export function getAICapabilityLabel(tierLevel: number): string {
   switch (tierLevel) {
     case 1:
-      return 'GPT-4.1 Mini AI';
+      return 'IA du plan Starter';
     case 2:
-      return 'Mistral Large 2 AI';
+      return 'IA du plan Business';
     case 3:
-      return 'GPT-4.1 Premium AI';
+      return 'IA du plan Pro';
     default:
       return 'AI-Powered';
   }
@@ -197,11 +197,11 @@ export function getAICapabilityLabel(tierLevel: number): string {
 export function getAICapabilityDescription(tierLevel: number): string {
   switch (tierLevel) {
     case 1:
-      return 'GPT-4.1 Mini - Fast and precise estimates at lower cost';
+      return 'Génération de devis avec le modèle du plan Starter';
     case 2:
-      return 'Mistral Large 2 - Advanced reasoning for complex projects';
+      return 'Génération de devis avec le modèle du plan Business';
     case 3:
-      return 'GPT-4.1 - Maximum accuracy and comprehensive analysis';
+      return 'Génération de devis avec le modèle du plan Pro';
     default:
       return 'AI-powered construction estimates';
   }
@@ -274,9 +274,9 @@ export function getUpgradeSuggestion(tierLevel: number): string | null {
   switch (tierLevel) {
     case 0:
     case 1:
-      return 'Upgrade to Business for Mistral Large 2 AI and more projects';
+      return 'Passez à Business pour augmenter vos limites de projets';
     case 2:
-      return 'Upgrade to Pro for GPT-4.1 Premium AI and unlimited projects';
+      return 'Passez à Pro pour davantage de projets et le support prioritaire';
     case 3:
       return null; // Already on highest tier
     default:

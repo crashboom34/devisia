@@ -12,13 +12,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Plus, Edit, Shield, CreditCard, Sparkles, AlertCircle, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Shield, CreditCard, Sparkles, AlertCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { CANONICAL_MAPPING } from '@/lib/tier-model';
 import { PLAN_LABELS } from '@/lib/plan-labels';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
+import { toast } from 'sonner';
 
 interface AIModel {
   id: string;
@@ -59,6 +59,7 @@ export default function AdminSubscriptionsPage() {
   const { loading } = useAuthGuard({ requireAdmin: true });
   const [tiers, setTiers] = useState<TierWithModel[]>([]);
   const [aiModels, setAIModels] = useState<AIModel[]>([]);
+  const [savingModelTierId, setSavingModelTierId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTier, setEditingTier] = useState<SubscriptionTier | null>(null);
 
@@ -102,6 +103,7 @@ export default function AdminSubscriptionsPage() {
       .from('ai_models')
       .select('*')
       .eq('is_active', true)
+      .eq('provider', 'openrouter')
       .order('display_name', { ascending: true });
 
     if (error) {
@@ -181,23 +183,20 @@ export default function AdminSubscriptionsPage() {
     }
   };
 
-  const applyDefaultMapping = async () => {
-    for (const entry of CANONICAL_MAPPING) {
-      const { data: model } = await supabase
-        .from('ai_models')
-        .select('id')
-        .eq('model_id', entry.modelId)
-        .eq('is_active', true)
-        .maybeSingle();
-
-      if (!model) continue;
-
-      await supabase
-        .from('subscription_tiers')
-        .update({ ai_model_id: model.id })
-        .eq('name', entry.tier);
+  const assignModel = async (tier: TierWithModel, modelId: string) => {
+    if (savingModelTierId || !aiModels.some((model) => model.id === modelId)) return;
+    setSavingModelTierId(tier.id);
+    try {
+      const { error } = await supabase.from('subscription_tiers')
+        .update({ ai_model_id: modelId }).eq('id', tier.id).select('id').single();
+      if (error) throw error;
+      await loadTiers();
+      toast.success(`Modèle du plan ${tier.display_name} mis à jour`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Impossible de modifier le modèle du plan');
+    } finally {
+      setSavingModelTierId(null);
     }
-    await loadTiers();
   };
 
   const resetForm = () => {
@@ -257,9 +256,7 @@ export default function AdminSubscriptionsPage() {
         <Alert className="mb-6 border-cyan-500/30 bg-cyan-500/10">
           <AlertCircle className="h-4 w-4 text-cyan-400" />
           <AlertDescription className="text-slate-300">
-            <strong className="text-cyan-400">Administrator Control:</strong> Only super administrators can assign AI models to subscription tiers.
-            Users <strong>cannot</strong> manually select models - assignment is automatic based on their subscription.
-            Users only see generic labels like "Advanced AI Intelligence" without technical details.
+            Choisissez un modèle OpenRouter différent pour chaque plan. Le nouveau choix s’applique aux prochaines analyses et générations ; les devis déjà créés conservent leur modèle.
           </AlertDescription>
         </Alert>
 
@@ -269,38 +266,34 @@ export default function AdminSubscriptionsPage() {
               <div>
                 <CardTitle className="text-white flex items-center gap-2">
                   <Sparkles className="h-5 w-5 text-cyan-400" />
-                  Mapping Plan → Modele IA (Canonique)
+                  Modèle IA par abonnement
                 </CardTitle>
                 <CardDescription className="text-slate-400">
-                  Reference officielle — applique automatiquement a chaque generation de devis
+                  Configuration actuelle utilisée lors de chaque génération et des questions de chantier.
                 </CardDescription>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={applyDefaultMapping}
-                className="border-slate-600 text-slate-300 hover:text-white hover:bg-slate-700"
-              >
-                <RotateCcw className="h-4 w-4 mr-2" />
-                Reappliquer mapping par defaut
-              </Button>
+              <Link href="/admin/models" className="text-sm text-cyan-300 hover:text-cyan-200">Gérer les modèles OpenRouter</Link>
             </div>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {CANONICAL_MAPPING.map((entry) => (
+              {tiers.filter((tier) => ['starter', 'business', 'pro'].includes(tier.name)).map((entry) => (
                 <div
-                  key={entry.tier}
+                  key={entry.id}
                   className="rounded-lg border border-slate-700/50 bg-slate-900/40 p-4"
                 >
                   <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Plan</div>
-                  <div className="text-lg font-semibold text-white capitalize mb-3">{entry.tier}</div>
+                  <div className="text-lg font-semibold text-white capitalize mb-3">{entry.name}</div>
                   <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Modele IA</div>
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-cyan-400 flex-shrink-0" />
-                    <span className="text-sm text-cyan-300">{entry.label}</span>
-                  </div>
-                  <div className="text-xs text-slate-600 mt-1 font-mono">{entry.modelId}</div>
+                  <Select value={entry.ai_model_id || undefined} onValueChange={(value) => assignModel(entry, value)} disabled={!!savingModelTierId}>
+                    <SelectTrigger aria-label={`Modèle IA du plan ${entry.name}`} className="border-slate-600 bg-slate-800 text-white">
+                      <SelectValue placeholder="Sélectionner un modèle" />
+                    </SelectTrigger>
+                    <SelectContent className="border-slate-700 bg-slate-800">
+                      {aiModels.map((model) => <SelectItem key={model.id} value={model.id} className="text-white">{model.display_name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <div className="mt-2 text-xs text-slate-500 font-mono break-all">{entry.ai_model_identifier || 'Aucun modèle affecté'}</div>
                 </div>
               ))}
             </div>

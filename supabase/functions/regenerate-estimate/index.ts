@@ -27,7 +27,7 @@ Deno.serve(async (req: Request) => {
       throw new Error('Unauthorized');
     }
 
-    const { estimateId, modelId, projectDescription, adminTier } = await req.json();
+    const { estimateId, projectDescription, adminTier } = await req.json();
 
     // Récupérer l'ancien devis
     const { data: oldEstimate, error: fetchError } = await supabase
@@ -44,28 +44,10 @@ Deno.serve(async (req: Request) => {
       throw new Error('Une estimation préliminaire se recalcule depuis le dossier de chantier.');
     }
 
-    // Récupérer le modèle sélectionné
-    const { data: model, error: modelError } = await supabase
-      .from('ai_models')
-      .select('*')
-      .eq('id', modelId)
-      .eq('is_active', true)
-      .single();
-
-    if (modelError || !model) {
-      throw new Error('Model not found');
-    }
-
-    // Désactiver l'ancien devis
-    await supabase
-      .from('estimates')
-      .update({ is_active: false })
-      .eq('id', estimateId);
-
     // Incrémenter le compteur de régénération
     const regenerationCount = (oldEstimate.regeneration_count || 0) + 1;
 
-    // Appeler la fonction de génération avec le nouveau modèle
+    // La génération résout toujours le modèle du plan en base.
     // IMPORTANT: Passer le token utilisateur, pas la clé service
     const generateUrl = `${supabaseUrl}/functions/v1/generate-estimate`;
     const generateResponse = await fetch(generateUrl, {
@@ -78,7 +60,6 @@ Deno.serve(async (req: Request) => {
         projectId: oldEstimate.project_id,
         projectDescription: projectDescription,
         scenarioType: oldEstimate.scenario_type,
-        modelId: modelId,
         adminTier: adminTier || undefined,
       }),
     });
@@ -105,6 +86,11 @@ Deno.serve(async (req: Request) => {
     if (updateError) {
       throw updateError;
     }
+
+    // Conserver l'ancien devis actif si la génération échoue.
+    const { error: deactivateError } = await supabase.from('estimates')
+      .update({ is_active: false }).eq('id', estimateId).eq('user_id', user.id);
+    if (deactivateError) throw deactivateError;
 
     return new Response(
       JSON.stringify({
