@@ -56,6 +56,7 @@ export default function QuotesPage() {
           )
         `)
         .eq('user_id', user.id)
+        .eq('estimate_kind', 'quote')
         .order('created_at', { ascending: false });
 
       if (error) throw error;

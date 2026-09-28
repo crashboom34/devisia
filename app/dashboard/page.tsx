@@ -39,7 +39,7 @@ export default function DashboardPage() {
       isUserAdmin(userId),
       checkProjectLimit(userId),
       supabase.from('projects').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
-      supabase.from('estimates').select('id, scenario_type').eq('user_id', userId),
+      supabase.from('estimates').select('id, scenario_type').eq('user_id', userId).eq('estimate_kind', 'quote'),
     ]);
 
     setIsAdmin(adminStatus);
@@ -64,7 +64,7 @@ export default function DashboardPage() {
     setLoading(true);
     const [projectsResult, estimatesResult, limits] = await Promise.all([
       supabase.from('projects').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
-      supabase.from('estimates').select('id, scenario_type').eq('user_id', user.id),
+      supabase.from('estimates').select('id, scenario_type').eq('user_id', user.id).eq('estimate_kind', 'quote'),
       checkProjectLimit(user.id),
     ]);
 
