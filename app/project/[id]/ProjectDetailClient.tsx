@@ -1,13 +1,13 @@
 'use client';
 /* eslint-disable react/no-unescaped-entities, react-hooks/exhaustive-deps */
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, FileText, Loader2, Pencil, Trash2, ChevronDown, ChevronUp, Sparkles, Camera } from 'lucide-react';
+import { ArrowLeft, FileText, Loader2, Pencil, Trash2, ChevronDown, ChevronUp, Sparkles, Camera, ClipboardList } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,6 +34,8 @@ import UserMenu from '@/components/UserMenu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { toast } from 'sonner';
+import ProjectRefinement from '@/components/ProjectRefinement';
+import PreliminaryEstimateCard from '@/components/PreliminaryEstimateCard';
 
 const EstimateTable = dynamic(() => import('@/components/EstimateTable'), {
   loading: () => <div className="animate-pulse h-64 bg-gray-800 rounded-lg" />,
@@ -53,9 +55,12 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
   const { user, loading: authLoading } = useAuthGuard();
   const [project, setProject] = useState<Project | null>(null);
   const [estimates, setEstimates] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState('cadrage');
+  const [refinementVersion, setRefinementVersion] = useState<number | undefined>();
+  const onRefinementChanged = useCallback((version: number) => setRefinementVersion(version), []);
   const [loading, setLoading] = useState(true);
   const [expandedEstimate, setExpandedEstimate] = useState<string | null>(null);
-  const [expandedScenarios, setExpandedScenarios] = useState<Set<string>>(new Set(['eco']));
+  const [expandedScenarios, setExpandedScenarios] = useState<Set<string>>(new Set(['eco', 'standard']));
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showDeleteEstimateDialog, setShowDeleteEstimateDialog] = useState(false);
   const [estimateToDelete, setEstimateToDelete] = useState<string | null>(null);
@@ -96,6 +101,9 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
       if (estimatesData) {
         setEstimates(estimatesData);
       }
+      const { data: refinement } = await supabase.from('project_refinements').select('version')
+        .eq('project_id', projectId).maybeSingle();
+      setRefinementVersion(refinement?.version);
     } catch (err) {
       console.error('Error loading project:', err);
       router.push('/dashboard');
@@ -288,21 +296,31 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           <div className="lg:col-span-2 space-y-4 sm:space-y-6">
-            <Tabs defaultValue="infos" className="w-full">
-              <TabsList className="grid w-full grid-cols-3 bg-brand-darkCard border-gray-800">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-4 bg-brand-darkCard border-gray-800">
+                <TabsTrigger value="cadrage" className="text-xs sm:text-sm data-[state=active]:bg-brand-green data-[state=active]:text-white">
+                  <ClipboardList className="hidden h-4 w-4 mr-2 sm:inline" />Affiner
+                </TabsTrigger>
                 <TabsTrigger value="infos" className="data-[state=active]:bg-brand-green data-[state=active]:text-white">
-                  <FileText className="h-4 w-4 mr-2" />
+                  <FileText className="hidden h-4 w-4 mr-2 sm:inline" />
                   Infos
                 </TabsTrigger>
                 <TabsTrigger value="devis" className="data-[state=active]:bg-brand-green data-[state=active]:text-white">
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Devis
+                  <Sparkles className="hidden h-4 w-4 mr-2 sm:inline" />
+                  Chiffrages
                 </TabsTrigger>
                 <TabsTrigger value="photos" className="data-[state=active]:bg-brand-green data-[state=active]:text-white">
-                  <Camera className="h-4 w-4 mr-2" />
+                  <Camera className="hidden h-4 w-4 mr-2 sm:inline" />
                   Photos
                 </TabsTrigger>
               </TabsList>
+
+              <TabsContent value="cadrage" className="mt-4">
+                <ProjectRefinement projectId={projectId} onEstimateCreated={() => {
+                  if (user) void loadProject(user.id);
+                  setActiveTab('devis');
+                }} onStateChanged={onRefinementChanged} />
+              </TabsContent>
 
               <TabsContent value="infos" className="space-y-4">
                 <Card className="bg-brand-darkCard border-gray-800">
@@ -352,16 +370,14 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
                   <Card className="bg-brand-green/10 border-brand-green/30">
                     <CardContent className="py-8 text-center">
                       <Sparkles className="h-12 w-12 mx-auto mb-4 text-brand-green" />
-                      <h3 className="font-semibold mb-2 text-white">Aucun devis généré</h3>
+                      <h3 className="font-semibold mb-2 text-white">Aucun chiffrage pour ce projet</h3>
                       <p className="text-sm text-gray-300 mb-4">
-                        Générez vos premiers devis avec l'IA pour ce projet
+                        Précisez les travaux puis demandez une estimation lorsque vous serez prêt.
                       </p>
-                      <Link href="/project/new">
-                        <Button className="bg-brand-green hover:bg-green-600 text-white">
+                        <Button onClick={() => setActiveTab('cadrage')} className="bg-brand-green hover:bg-green-600 text-white">
                           <Sparkles className="h-4 w-4 mr-2" />
-                          Générer des Devis
+                          Affiner ce chantier
                         </Button>
-                      </Link>
                     </CardContent>
                   </Card>
                 )}
@@ -372,19 +388,20 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
             {estimates.length === 0 ? (
               <Card className="bg-brand-darkCard border-gray-800">
                 <CardHeader>
-                  <CardTitle className="text-white">Devis Générés</CardTitle>
-                  <CardDescription className="text-gray-400">Aucun devis disponible</CardDescription>
+                  <CardTitle className="text-white">Chiffrages</CardTitle>
+                  <CardDescription className="text-gray-400">Aucun chiffrage disponible</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="text-center py-8">
-                    <p className="text-gray-400 mb-4">Aucun devis généré pour l'instant</p>
+                    <p className="text-gray-400 mb-4">Les réponses du dossier servent à préparer votre premier chiffrage.</p>
+                    <Button onClick={() => setActiveTab('cadrage')} variant="outline" className="border-cyan-600 text-cyan-200">Préciser le chantier</Button>
                   </div>
                 </CardContent>
               </Card>
             ) : (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold text-white">Devis Générés</h2>
+                  <h2 className="text-xl font-semibold text-white">Estimations et devis</h2>
                   <Button
                     variant="outline"
                     size="sm"
@@ -414,10 +431,10 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
                             {getScenarioLabel(estimate.scenario_type)}
                           </div>
                           <span className="font-bold text-lg text-white">
-                            {(estimate.total_ttc || estimate.total_amount || 0).toLocaleString('fr-FR', {
+                            {(estimate.estimate_kind === 'preliminary' ? estimate.total_ht : estimate.total_ttc || estimate.total_amount || 0).toLocaleString('fr-FR', {
                               style: 'currency',
                               currency: 'EUR'
-                            })}
+                            })} {estimate.estimate_kind === 'preliminary' && <span className="text-xs text-amber-300">HT · préliminaire</span>}
                           </span>
                           {estimate.model_used && (
                             <span className="text-xs text-gray-500 hidden sm:inline">
@@ -447,7 +464,7 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
 
                       {isExpanded && (
                         <div className="border-t border-gray-800">
-                          <EstimateTable
+                          {estimate.estimate_kind === 'preliminary' ? <PreliminaryEstimateCard estimate={estimate} currentVersion={refinementVersion} projectDescription={project.description} onFinalized={() => user && loadProject(user.id)} /> : <EstimateTable
                             estimate={{
                               id: estimate.id,
                               scenario_type: estimate.scenario_type,
@@ -471,7 +488,7 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
                             projectTitle={project.title}
                             projectDescription={project.description}
                             onRegenerate={() => user && loadProject(user.id)}
-                          />
+                          />}
                         </div>
                       )}
                     </div>
@@ -516,10 +533,9 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
               <CardContent className="pt-4 sm:pt-6">
                 <h3 className="font-semibold mb-2 text-brand-green text-sm sm:text-base">Prochaines Étapes</h3>
                 <ol className="text-xs sm:text-sm text-gray-300 space-y-1 sm:space-y-2">
-                  <li>1. Sélectionnez votre modèle IA préféré</li>
-                  <li>2. Générez des devis selon vos besoins</li>
-                  <li>3. Comparez les différents scénarios</li>
-                  <li>4. Exportez vos devis</li>
+                  <li>1. Décrivez les travaux et répondez aux questions utiles.</li>
+                  <li>2. Demandez une estimation préliminaire si vous le souhaitez.</li>
+                  <li>3. Vérifiez les prix, la structure et la TVA avant un devis.</li>
                 </ol>
               </CardContent>
             </Card>

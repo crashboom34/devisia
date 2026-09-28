@@ -40,6 +40,9 @@ Deno.serve(async (req: Request) => {
     if (fetchError || !oldEstimate) {
       throw new Error('Estimate not found or unauthorized');
     }
+    if (oldEstimate.estimate_kind === 'preliminary') {
+      throw new Error('Une estimation préliminaire se recalcule depuis le dossier de chantier.');
+    }
 
     // Récupérer le modèle sélectionné
     const { data: model, error: modelError } = await supabase
