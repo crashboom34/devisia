@@ -142,9 +142,9 @@ export function calculateJobProfitability(
     byCategory,
   };
 }
+
 export function estimatedCostAtCompletion(actualCostCents: MoneyCents, progressPercent: number): MoneyCents | null {
   validCents(actualCostCents);
   if (!Number.isFinite(progressPercent) || progressPercent <= 0 || progressPercent > 100) return null;
   return safeResult(Math.round(actualCostCents / (progressPercent / 100)));
 }
-
