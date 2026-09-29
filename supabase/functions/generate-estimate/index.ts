@@ -2,6 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.58.0";
 import { BTP_SPECIALISTS, buildRefinedDescription } from "../_shared/btp-refinement.ts";
 import { selectAiRoute, type Complexity } from "../_shared/ai-router.ts";
+import { toSafeGenerateEstimateError } from "../_shared/generate-estimate-error.ts";
 import {
   PRELIMINARY_ESTIMATE_RESPONSE_FORMAT,
   shouldRetryWithoutStructuredOutput,
@@ -283,8 +284,8 @@ Deno.serve(async (req: Request) => {
     );
 
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error("[generate-estimate] Error:", errorMessage);
+    const safeError = toSafeGenerateEstimateError(error);
+    console.error("[generate-estimate] Error:", safeError.logMessage);
 
     if (supabase && userId) {
       const durationMs = Date.now() - startTime;
@@ -293,14 +294,14 @@ Deno.serve(async (req: Request) => {
         provider: "openrouter", modelUsed: usedModelName, modelId: usedModelId,
         endpoint: "generate-estimate",
         tokensInput, tokensOutput, cost: 0, durationMs,
-        status: "error", errorMessage,
+        status: "error", errorMessage: safeError.logMessage,
         taskType: "quote_generation", planName: resolvedTier, fallbackUsed: fallbackUsedForLog, promptVersion: "quote-generation-v1",
       }).catch(() => {});
     }
 
     return new Response(
-      JSON.stringify({ error: errorMessage }),
-      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ error: safeError.publicMessage }),
+      { status: safeError.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });

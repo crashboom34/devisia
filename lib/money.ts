@@ -30,4 +30,3 @@ export function percentageCents(amountCents: MoneyCents, basisPoints: number): M
 export function formatCents(value: MoneyCents): string {
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(centsToEuros(value));
 }
-

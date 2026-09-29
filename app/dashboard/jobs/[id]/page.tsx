@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { getUserEntitlements, hasEntitlement } from '@/lib/entitlements';
 import { supabase } from '@/lib/supabase';
-import { resolveHourlyCostSnapshot, validateDailyMinutes, type ActualCostLine, type CostCategory as JobCostCategory, type PlannedCostLine, type TimeCostLine } from '@/lib/job-costing';
+import { prepareTimeEntryWrite, validateDailyMinutes, type ActualCostLine, type CostCategory as JobCostCategory, type PlannedCostLine, type TimeCostLine } from '@/lib/job-costing';
 import { calculateJobIntelligence, type ChangeOrderStatus } from '@/lib/job-intelligence';
 import { formatCurrencyEUR } from '@/lib/pricing/engine';
 
@@ -187,16 +187,22 @@ export default function JobDetailPage() {
     if (!employee || currentHourly === null) return toast.error('Salarié, durée ou coût horaire invalide');
     const workDate = new Date().toISOString().slice(0, 10);
     const existingResult = await supabase.from('time_entries')
-      .select('hourly_cost_cents_snapshot')
+      .select('id, hourly_cost_cents_snapshot')
       .eq('employee_id', employee.id).eq('job_id', job.id).eq('work_date', workDate)
       .maybeSingle();
     if (existingResult.error) return toast.error(existingResult.error.message);
-    const hourly = resolveHourlyCostSnapshot(existingResult.data?.hourly_cost_cents_snapshot, currentHourly);
-    const { error } = await supabase.from('time_entries').upsert({
-      organization_id: job.organization_id, job_id: job.id, employee_id: employee.id,
-      work_date: workDate, minutes, hourly_cost_cents_snapshot: hourly,
-      source: 'manual', created_by: user.id,
-    }, { onConflict: 'employee_id,job_id,work_date' });
+    const write = prepareTimeEntryWrite(existingResult.data ? {
+      id: existingResult.data.id,
+      hourlyCostCentsSnapshot: existingResult.data.hourly_cost_cents_snapshot,
+    } : null, currentHourly);
+    const mutation = write.existingId
+      ? await supabase.from('time_entries').update({ minutes, source: 'manual' }).eq('id', write.existingId)
+      : await supabase.from('time_entries').insert({
+          organization_id: job.organization_id, job_id: job.id, employee_id: employee.id,
+          work_date: workDate, minutes, hourly_cost_cents_snapshot: write.hourlyCostCentsSnapshot,
+          source: 'manual', created_by: user.id,
+        });
+    const { error } = mutation;
     if (error) return toast.error(error.message);
     setHours(''); await load(); toast.success('Temps du jour mis à jour avec son coût horaire historique');
   };

@@ -64,6 +64,19 @@ export function resolveHourlyCostSnapshot(
   return validCents(currentHourlyCostCents);
 }
 
+export function prepareTimeEntryWrite(
+  existing: { id: string; hourlyCostCentsSnapshot: MoneyCents } | null | undefined,
+  currentHourlyCostCents: MoneyCents,
+): { existingId: string | null; hourlyCostCentsSnapshot: MoneyCents } {
+  return {
+    existingId: existing?.id ?? null,
+    hourlyCostCentsSnapshot: resolveHourlyCostSnapshot(
+      existing?.hourlyCostCentsSnapshot,
+      currentHourlyCostCents,
+    ),
+  };
+}
+
 export function validateDailyMinutes(existingMinutes: number, nextMinutes: number): number {
   if (!Number.isSafeInteger(existingMinutes) || existingMinutes < 0 || existingMinutes > 1440) {
     throw new Error('Durée existante invalide');
@@ -96,30 +109,39 @@ export function calculateJobProfitability(
   validCents(soldCents);
   const byCategory = Object.fromEntries(categories.map((category) => [category, { plannedCents: 0, actualCents: 0, varianceCents: 0 }])) as JobProfitability['byCategory'];
 
-  for (const line of planned) byCategory[line.category].plannedCents += plannedLineCostCents(line);
-  for (const line of actual) byCategory[line.category].actualCents += validCents(line.amountHtCents);
-  for (const entry of time) byCategory.labor.actualCents += laborCostCents(entry.minutes, entry.hourlyCostCentsSnapshot);
+  for (const line of planned) {
+    const category = byCategory[line.category];
+    category.plannedCents = safeResult(category.plannedCents + plannedLineCostCents(line));
+  }
+  for (const line of actual) {
+    const category = byCategory[line.category];
+    category.actualCents = safeResult(category.actualCents + validCents(line.amountHtCents));
+  }
+  for (const entry of time) {
+    byCategory.labor.actualCents = safeResult(
+      byCategory.labor.actualCents + laborCostCents(entry.minutes, entry.hourlyCostCentsSnapshot),
+    );
+  }
 
   let plannedCostCents = 0;
   let actualCostCents = 0;
   for (const category of categories) {
     const value = byCategory[category];
-    value.varianceCents = value.actualCents - value.plannedCents;
-    plannedCostCents += value.plannedCents;
-    actualCostCents += value.actualCents;
+    value.varianceCents = safeResult(value.actualCents - value.plannedCents);
+    plannedCostCents = safeResult(plannedCostCents + value.plannedCents);
+    actualCostCents = safeResult(actualCostCents + value.actualCents);
   }
-  const plannedMarginCents = soldCents - plannedCostCents;
-  const currentMarginCents = soldCents - actualCostCents;
+  const plannedMarginCents = safeResult(soldCents - plannedCostCents);
+  const currentMarginCents = safeResult(soldCents - actualCostCents);
   return {
     soldCents, plannedCostCents, actualCostCents,
     plannedMarginCents, currentMarginCents,
     plannedMarginRate: marginRate(soldCents, plannedMarginCents),
     currentMarginRate: marginRate(soldCents, currentMarginCents),
-    varianceCents: actualCostCents - plannedCostCents,
+    varianceCents: safeResult(actualCostCents - plannedCostCents),
     byCategory,
   };
 }
-
 export function estimatedCostAtCompletion(actualCostCents: MoneyCents, progressPercent: number): MoneyCents | null {
   validCents(actualCostCents);
   if (!Number.isFinite(progressPercent) || progressPercent <= 0 || progressPercent > 100) return null;

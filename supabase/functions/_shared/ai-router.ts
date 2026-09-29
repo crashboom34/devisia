@@ -84,4 +84,3 @@ export async function selectAiRoute(supabase: any, userId: string, request: AiRo
     policyId: policy.id,
   };
 }
-

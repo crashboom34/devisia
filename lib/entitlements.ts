@@ -26,4 +26,3 @@ export async function getUserEntitlements(userId: string): Promise<{ tier: strin
   if (error) throw error;
   return { tier: tier.name, entitlements: (data || []) as Entitlement[] };
 }
-
