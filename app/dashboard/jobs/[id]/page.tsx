@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { getUserEntitlements, hasEntitlement } from '@/lib/entitlements';
 import { supabase } from '@/lib/supabase';
-import { validateDailyMinutes, type ActualCostLine, type CostCategory as JobCostCategory, type PlannedCostLine, type TimeCostLine } from '@/lib/job-costing';
+import { resolveHourlyCostSnapshot, validateDailyMinutes, type ActualCostLine, type CostCategory as JobCostCategory, type PlannedCostLine, type TimeCostLine } from '@/lib/job-costing';
 import { calculateJobIntelligence, type ChangeOrderStatus } from '@/lib/job-intelligence';
 import { formatCurrencyEUR } from '@/lib/pricing/engine';
 
@@ -182,16 +182,23 @@ export default function JobDetailPage() {
     if (!job || !user) return;
     const employee = employees.find((item) => item.id === employeeId);
     const minutes = Math.round(Number(hours.replace(',', '.')) * 60);
-    const hourly = employee?.direct_hourly_cost_cents ?? (employee?.employer_monthly_cost_cents ? Math.round(employee.employer_monthly_cost_cents / 151.67) : null);
+    const currentHourly = employee?.direct_hourly_cost_cents ?? (employee?.employer_monthly_cost_cents ? Math.round(employee.employer_monthly_cost_cents / 151.67) : null);
     try { validateDailyMinutes(0, minutes); } catch { return toast.error('Salarié, durée ou coût horaire invalide'); }
-    if (!employee || !hourly) return toast.error('Salarié, durée ou coût horaire invalide');
+    if (!employee || currentHourly === null) return toast.error('Salarié, durée ou coût horaire invalide');
+    const workDate = new Date().toISOString().slice(0, 10);
+    const existingResult = await supabase.from('time_entries')
+      .select('hourly_cost_cents_snapshot')
+      .eq('employee_id', employee.id).eq('job_id', job.id).eq('work_date', workDate)
+      .maybeSingle();
+    if (existingResult.error) return toast.error(existingResult.error.message);
+    const hourly = resolveHourlyCostSnapshot(existingResult.data?.hourly_cost_cents_snapshot, currentHourly);
     const { error } = await supabase.from('time_entries').upsert({
       organization_id: job.organization_id, job_id: job.id, employee_id: employee.id,
-      work_date: new Date().toISOString().slice(0, 10), minutes, hourly_cost_cents_snapshot: hourly,
+      work_date: workDate, minutes, hourly_cost_cents_snapshot: hourly,
       source: 'manual', created_by: user.id,
     }, { onConflict: 'employee_id,job_id,work_date' });
     if (error) return toast.error(error.message);
-    setHours(''); await load(); toast.success('Temps du jour enregistré avec son coût horaire figé');
+    setHours(''); await load(); toast.success('Temps du jour mis à jour avec son coût horaire historique');
   };
 
   const addChangeOrder = async (event: FormEvent) => {
@@ -278,7 +285,7 @@ export default function JobDetailPage() {
             <CardHeader><CardTitle className="text-white text-base">Ajouter du temps</CardTitle></CardHeader>
             <CardContent>{employees.length ? <form onSubmit={addTime} className="space-y-3">
               <div><Label>Salarié</Label><Select value={employeeId} onValueChange={setEmployeeId}><SelectTrigger><SelectValue placeholder="Choisir" /></SelectTrigger><SelectContent>{employees.map((employee) => <SelectItem key={employee.id} value={employee.id}>{employee.first_name} {employee.last_name}</SelectItem>)}</SelectContent></Select></div>
-              <div><Label htmlFor="hours">Heures aujourd’hui</Label><Input id="hours" inputMode="decimal" value={hours} onChange={(event) => setHours(event.target.value)} required /></div>
+              <div><Label htmlFor="hours">Heures aujourd’hui (total sur ce chantier)</Label><Input id="hours" inputMode="decimal" value={hours} onChange={(event) => setHours(event.target.value)} required /></div>
               <Button type="submit" variant="primary" className="w-full"><Clock3 className="h-4 w-4 mr-2" />Enregistrer le temps</Button>
             </form> : <p className="text-sm text-slate-400">Ajoutez d’abord un salarié dans Équipe. Cette fonction est réservée à Pro.</p>}</CardContent>
           </Card>

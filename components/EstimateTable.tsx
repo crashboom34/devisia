@@ -1,7 +1,7 @@
 'use client';
 /* eslint-disable react/no-unescaped-entities */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +12,7 @@ import { Eye, EyeOff, Download, ChevronDown, ChevronUp, Edit2, Save, X, Trash2, 
 import { supabase } from '@/lib/supabase';
 import EditableEstimateRow from './EditableEstimateRow';
 import { toast } from 'sonner';
+import { buildClientEstimateExport } from '@/lib/client-estimate-export';
 import {
   recalculateEstimateTotals,
   calculateMargin,
@@ -61,6 +62,33 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
   const [editedEstimate, setEditedEstimate] = useState<EstimateData>(estimate);
   const [isSaving, setIsSaving] = useState(false);
   const [isAccepting, setIsAccepting] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
+
+  const clientExport = buildClientEstimateExport({
+    estimateNumber: estimate.estimate_number,
+    projectTitle,
+    clientName: estimate.client_name,
+    estimateDate: estimate.estimate_date,
+    validityDays: estimate.validity_days,
+    paymentTerms: estimate.payment_terms,
+    executionDelay: estimate.execution_delay,
+    depositRequired: estimate.deposit_required,
+    specialConditions: estimate.special_conditions,
+    totalHt: estimate.total_ht,
+    totalTva: estimate.total_tva,
+    totalTtc: estimate.total_ttc,
+    discountAmount: estimate.discount_amount,
+    categories: estimate.categories,
+  });
+
+  useEffect(() => {
+    if (!isPrinting) return;
+    const timer = window.setTimeout(() => {
+      window.print();
+      setIsPrinting(false);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [isPrinting]);
 
   const handleAcceptQuote = async () => {
     setIsAccepting(true);
@@ -314,7 +342,7 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
               <TabsTrigger value="detailed" className="text-xs sm:text-sm data-[state=active]:bg-brand-green data-[state=active]:text-white">Détaillée</TabsTrigger>
               <TabsTrigger value="internal" className="text-xs sm:text-sm data-[state=active]:bg-brand-green data-[state=active]:text-white">Interne</TabsTrigger>
             </TabsList>
-            <Button variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm border-gray-700 text-gray-300 hover:bg-brand-darkLight">
+            <Button type="button" variant="outline" size="sm" disabled={isEditing || isPrinting} onClick={() => setIsPrinting(true)} className="w-full sm:w-auto text-xs sm:text-sm border-gray-700 text-gray-300 hover:bg-brand-darkLight">
               <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
               Exporter PDF
             </Button>
@@ -569,6 +597,49 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
           </div>
         )}
       </CardContent>
+
+      <section className={isPrinting ? 'client-estimate-print client-estimate-print-active' : 'client-estimate-print'} aria-hidden={!isPrinting}>
+        <header className="mb-8 border-b-2 border-slate-900 pb-4">
+          <div className="flex items-start justify-between gap-6">
+            <div><p className="text-2xl font-bold">Devisia</p><p className="text-sm text-slate-600">Devis professionnel</p></div>
+            <div className="text-right text-sm">
+              <p className="text-lg font-bold">{clientExport.estimateNumber || 'Devis'}</p>
+              <p>{formatDate(clientExport.estimateDate)}</p>
+              <p>Validité : {clientExport.validityDays || 30} jours</p>
+            </div>
+          </div>
+          <div className="mt-5 grid grid-cols-2 gap-6 text-sm">
+            <div><p className="font-semibold">Projet</p><p>{clientExport.projectTitle || 'Travaux'}</p></div>
+            <div><p className="font-semibold">Client</p><p>{clientExport.clientName || 'À préciser'}</p></div>
+          </div>
+        </header>
+
+        {clientExport.categories.map((category, categoryIndex) => (
+          <div key={`${category.name}-${categoryIndex}`} className="mb-6 break-inside-avoid">
+            <h2 className="mb-2 text-base font-bold">{category.name}</h2>
+            {category.description && <p className="mb-2 text-xs text-slate-600">{category.description}</p>}
+            <table className="w-full border-collapse text-xs">
+              <thead><tr className="border-y border-slate-400 bg-slate-100"><th className="p-2 text-left">Prestation</th><th className="p-2 text-right">Qté</th><th className="p-2 text-right">PU HT</th><th className="p-2 text-right">Total HT</th><th className="p-2 text-right">TVA</th><th className="p-2 text-right">TTC</th></tr></thead>
+              <tbody>{category.items.map((item, itemIndex) => <tr key={`${item.poste}-${itemIndex}`} className="border-b border-slate-200"><td className="p-2"><p className="font-medium">{item.poste}</p>{item.description && <p className="text-[10px] text-slate-600">{item.description}</p>}</td><td className="p-2 text-right">{item.quantity} {item.unit}</td><td className="p-2 text-right">{formatCurrency(item.unitPriceHt)}</td><td className="p-2 text-right">{formatCurrency(item.amountHt)}</td><td className="p-2 text-right">{item.vatPercent} %</td><td className="p-2 text-right font-medium">{formatCurrency(item.amountTtc)}</td></tr>)}</tbody>
+              <tfoot><tr className="border-t border-slate-500 font-semibold"><td className="p-2" colSpan={3}>Sous-total</td><td className="p-2 text-right">{formatCurrency(category.subtotalHt)}</td><td className="p-2 text-right">{formatCurrency(category.subtotalTva)}</td><td className="p-2 text-right">{formatCurrency(category.subtotalTtc)}</td></tr></tfoot>
+            </table>
+          </div>
+        ))}
+
+        <div className="ml-auto w-72 space-y-1 border-t-2 border-slate-900 pt-3 text-sm">
+          <div className="flex justify-between"><span>Total HT</span><strong>{formatCurrency(clientExport.totalHt)}</strong></div>
+          <div className="flex justify-between"><span>Total TVA</span><strong>{formatCurrency(clientExport.totalTva)}</strong></div>
+          {clientExport.discountAmount ? <div className="flex justify-between"><span>Remise</span><strong>- {formatCurrency(clientExport.discountAmount)}</strong></div> : null}
+          <div className="flex justify-between border-t border-slate-400 pt-2 text-lg"><span>Total TTC</span><strong>{formatCurrency(clientExport.totalTtc - (clientExport.discountAmount || 0))}</strong></div>
+        </div>
+
+        {(clientExport.paymentTerms || clientExport.executionDelay || clientExport.depositRequired || clientExport.specialConditions) && <footer className="mt-8 border-t border-slate-300 pt-4 text-xs text-slate-700">
+          {clientExport.paymentTerms && <p><strong>Paiement :</strong> {clientExport.paymentTerms}</p>}
+          {clientExport.executionDelay && <p><strong>Délai :</strong> {clientExport.executionDelay}</p>}
+          {clientExport.depositRequired ? <p><strong>Acompte :</strong> {clientExport.depositRequired} % à la commande</p> : null}
+          {clientExport.specialConditions && <p><strong>Conditions particulières :</strong> {clientExport.specialConditions}</p>}
+        </footer>}
+      </section>
 
     </Card>
   );

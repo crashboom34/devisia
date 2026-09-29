@@ -214,3 +214,32 @@
     opacity: 0;
   }
 }
+
+.client-estimate-print {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  .client-estimate-print-active,
+  .client-estimate-print-active * {
+    visibility: visible !important;
+  }
+
+  .client-estimate-print-active {
+    display: block !important;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    background: white !important;
+    color: #0f172a !important;
+  }
+}

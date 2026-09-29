@@ -40,11 +40,28 @@ function validCents(value: number | undefined): number {
   return value;
 }
 
+function safeResult(value: number): MoneyCents {
+  if (!Number.isSafeInteger(value)) throw new Error('Le résultat doit être un entier sûr');
+  return value;
+}
+
 export function laborCostCents(minutes: number, hourlyCostCents: MoneyCents): MoneyCents {
   // This helper also prices an entire planned job, so its duration can exceed
   // one day. The database keeps the 24-hour limit on each daily time entry.
   if (!Number.isSafeInteger(minutes) || minutes < 0) throw new Error('Durée invalide');
-  return Math.round((minutes * validCents(hourlyCostCents)) / 60);
+  const cents = validCents(hourlyCostCents);
+  const rounded = (BigInt(minutes) * BigInt(cents) + BigInt(30)) / BigInt(60);
+  return safeResult(Number(rounded));
+}
+
+export function resolveHourlyCostSnapshot(
+  existingHourlyCostCents: MoneyCents | null | undefined,
+  currentHourlyCostCents: MoneyCents,
+): MoneyCents {
+  if (existingHourlyCostCents !== null && existingHourlyCostCents !== undefined) {
+    return validCents(existingHourlyCostCents);
+  }
+  return validCents(currentHourlyCostCents);
 }
 
 export function validateDailyMinutes(existingMinutes: number, nextMinutes: number): number {
@@ -106,6 +123,6 @@ export function calculateJobProfitability(
 export function estimatedCostAtCompletion(actualCostCents: MoneyCents, progressPercent: number): MoneyCents | null {
   validCents(actualCostCents);
   if (!Number.isFinite(progressPercent) || progressPercent <= 0 || progressPercent > 100) return null;
-  return Math.round(actualCostCents / (progressPercent / 100));
+  return safeResult(Math.round(actualCostCents / (progressPercent / 100)));
 }
 

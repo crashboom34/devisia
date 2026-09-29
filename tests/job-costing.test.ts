@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calculateJobProfitability, estimatedCostAtCompletion, laborCostCents, validateDailyMinutes } from '../lib/job-costing';
+import { calculateJobProfitability, estimatedCostAtCompletion, laborCostCents, resolveHourlyCostSnapshot, validateDailyMinutes } from '../lib/job-costing';
 
 describe('job costing', () => {
   it('agrège prévision et réel par catégorie', () => {
@@ -27,6 +27,11 @@ describe('job costing', () => {
     expect(laborCostCents(420, 2400)).toBe(16800);
   });
 
+  it('conserve le coût horaire historique lors d’une correction de temps', () => {
+    expect(resolveHourlyCostSnapshot(2400, 3100)).toBe(2400);
+    expect(resolveHourlyCostSnapshot(null, 3100)).toBe(3100);
+  });
+
   it('ne produit aucun pourcentage trompeur lorsque la vente vaut zéro', () => {
     const result = calculateJobProfitability(0, [], [], []);
     expect(result.plannedMarginRate).toBeNull();
@@ -46,5 +51,14 @@ describe('job costing', () => {
   it('refuse une allocation quotidienne supérieure à 24 heures', () => {
     expect(() => validateDailyMinutes(900, 600)).toThrow(/24 heures/);
     expect(() => validateDailyMinutes(0, 0)).toThrow(/Durée saisie/);
+  });
+
+  it('refuse les résultats monétaires hors entier sûr', () => {
+    expect(() => laborCostCents(Number.MAX_SAFE_INTEGER, 100)).toThrow(/entier sûr/i);
+    expect(() => estimatedCostAtCompletion(Number.MAX_SAFE_INTEGER, 1)).toThrow(/entier sûr/i);
+  });
+
+  it('garde un arrondi exact lorsque le produit intermédiaire dépasse un entier sûr', () => {
+    expect(laborCostCents(Number.MAX_SAFE_INTEGER, 16)).toBe(2_401_919_801_264_264);
   });
 });
