@@ -9,6 +9,8 @@ import {
   Settings,
   CreditCard,
   FilePlus,
+  BriefcaseBusiness,
+  UsersRound,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -38,6 +40,18 @@ const navigationItems: NavigationItem[] = [
     label: 'Factures',
     href: '/dashboard/invoices',
     icon: Receipt,
+  },
+  {
+    id: 'jobs',
+    label: 'Chantiers',
+    href: '/dashboard/jobs',
+    icon: BriefcaseBusiness,
+  },
+  {
+    id: 'team',
+    label: 'Équipe',
+    href: '/dashboard/team',
+    icon: UsersRound,
   },
   {
     id: 'clients',

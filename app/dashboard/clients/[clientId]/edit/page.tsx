@@ -2,7 +2,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,7 +26,8 @@ interface ClientFormData {
   notes: string;
 }
 
-export default function EditClientPage({ params }: { params: { clientId: string } }) {
+export default function EditClientPage() {
+  const params = useParams<{ clientId: string }>();
   const router = useRouter();
   const { user, loading: authLoading } = useAuthGuard();
   const [saving, setSaving] = useState(false);
