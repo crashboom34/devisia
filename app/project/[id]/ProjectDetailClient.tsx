@@ -36,7 +36,7 @@ import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { toast } from 'sonner';
 import ProjectRefinement from '@/components/ProjectRefinement';
 import PreliminaryEstimateCard from '@/components/PreliminaryEstimateCard';
-import { getUserEntitlements, hasEntitlement } from '@/lib/entitlements';
+import { getOrganizationEntitlements, hasEntitlement } from '@/lib/entitlements';
 
 const EstimateTable = dynamic(() => import('@/components/EstimateTable'), {
   loading: () => <div className="animate-pulse h-64 bg-gray-800 rounded-lg" />,
@@ -75,16 +75,15 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
 
   useEffect(() => {
     if (authLoading || !user) return;
-    loadProject(user.id);
+    loadProject();
   }, [authLoading, user]);
 
-  const loadProject = async (userId: string) => {
+  const loadProject = async () => {
     try {
       const { data, error } = await supabase
         .from('projects')
         .select('*')
         .eq('id', projectId)
-        .eq('user_id', userId)
         .maybeSingle();
 
       if (error) throw error;
@@ -103,7 +102,7 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
       if (estimatesData) {
         setEstimates(estimatesData);
       }
-      const access = await getUserEntitlements(userId);
+      const access = await getOrganizationEntitlements(data.organization_id);
       setCanCreateJob(hasEntitlement(access.entitlements, 'job_management'));
       const { data: refinement } = await supabase.from('project_refinements').select('version')
         .eq('project_id', projectId).maybeSingle();
@@ -321,7 +320,7 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
 
               <TabsContent value="cadrage" className="mt-4">
                 <ProjectRefinement projectId={projectId} onEstimateCreated={() => {
-                  if (user) void loadProject(user.id);
+                  if (user) void loadProject();
                   setActiveTab('devis');
                 }} onStateChanged={onRefinementChanged} />
               </TabsContent>
@@ -468,7 +467,7 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
 
                       {isExpanded && (
                         <div className="border-t border-gray-800">
-                          {estimate.estimate_kind === 'preliminary' ? <PreliminaryEstimateCard estimate={estimate} currentVersion={refinementVersion} projectDescription={project.description} onFinalized={() => user && loadProject(user.id)} /> : <EstimateTable
+                          {estimate.estimate_kind === 'preliminary' ? <PreliminaryEstimateCard estimate={estimate} currentVersion={refinementVersion} projectDescription={project.description} onFinalized={() => user && loadProject()} /> : <EstimateTable
                             estimate={{
                               id: estimate.id,
                               scenario_type: estimate.scenario_type,
@@ -492,7 +491,7 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
                             }}
                             projectTitle={project.title}
                             projectDescription={project.description}
-                            onRegenerate={() => user && loadProject(user.id)}
+                            onRegenerate={() => user && loadProject()}
                             canCreateJob={canCreateJob}
                           />}
                         </div>

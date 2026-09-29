@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
-import { getUserEntitlements, hasEntitlement } from '@/lib/entitlements';
+import { getOrganizationEntitlements, hasEntitlement } from '@/lib/entitlements';
 import { formatCurrencyEUR } from '@/lib/pricing/engine';
 import { supabase } from '@/lib/supabase';
 
@@ -33,14 +33,15 @@ export default function TeamPage() {
 
   const load = useCallback(async () => {
     if (!user) return;
-    const access = await getUserEntitlements(user.id);
-    const canManage = hasEntitlement(access.entitlements, 'team_management');
-    setAllowed(canManage);
-    if (!canManage) { setLoading(false); return; }
     const membership = await supabase.from('organization_members').select('organization_id').eq('user_id', user.id).in('role', ['owner', 'admin']).limit(1).maybeSingle();
     if (membership.error) throw membership.error;
     const orgId = membership.data?.organization_id || '';
     setOrganizationId(orgId);
+    if (!orgId) { setAllowed(false); setLoading(false); return; }
+    const access = await getOrganizationEntitlements(orgId);
+    const canManage = hasEntitlement(access.entitlements, 'team_management');
+    setAllowed(canManage);
+    if (!canManage) { setLoading(false); return; }
     if (orgId) {
       const result = await supabase.from('employees').select('id, first_name, last_name, job_title, employer_monthly_cost_cents, direct_hourly_cost_cents, hourly_cost_is_estimated').eq('organization_id', orgId).eq('status', 'active').order('last_name');
       if (result.error) throw result.error;

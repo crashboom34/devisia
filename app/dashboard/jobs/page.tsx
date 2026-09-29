@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { EmptyState } from '@/components/dashboard/EmptyState';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
-import { getUserEntitlements, hasEntitlement } from '@/lib/entitlements';
+import { getOrganizationEntitlements, hasEntitlement } from '@/lib/entitlements';
 import { formatCurrencyEUR } from '@/lib/pricing/engine';
 import { supabase } from '@/lib/supabase';
 
@@ -31,9 +31,13 @@ export default function JobsPage() {
   useEffect(() => {
     if (authLoading || !user) return;
     Promise.all([
-      getUserEntitlements(user.id),
+      supabase.from('organization_members').select('organization_id').eq('user_id', user.id).limit(1).maybeSingle(),
       supabase.from('jobs').select('id, name, client_name, status, sold_total_ht_cents, initial_budget_cents, created_at').order('created_at', { ascending: false }),
-    ]).then(([access, result]) => {
+    ]).then(async ([membership, result]) => {
+      if (membership.error) throw membership.error;
+      const access = membership.data?.organization_id
+        ? await getOrganizationEntitlements(membership.data.organization_id)
+        : { tier: 'starter', entitlements: [] };
       const canUseJobs = hasEntitlement(access.entitlements, 'job_management');
       setAllowed(canUseJobs);
       if (result.error && canUseJobs) throw result.error;

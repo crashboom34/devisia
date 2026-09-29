@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
-import { getUserEntitlements, hasEntitlement } from '@/lib/entitlements';
+import { getOrganizationEntitlements, hasEntitlement } from '@/lib/entitlements';
 import { supabase } from '@/lib/supabase';
 import { prepareTimeEntryWrite, validateDailyMinutes, type ActualCostLine, type CostCategory as JobCostCategory, type PlannedCostLine, type TimeCostLine } from '@/lib/job-costing';
 import { calculateJobIntelligence, type ChangeOrderStatus } from '@/lib/job-intelligence';
@@ -92,7 +92,7 @@ export default function JobDetailPage() {
     if (jobResult.error) throw jobResult.error;
     if (!jobResult.data) { setLoading(false); return; }
     const loadedJob = jobResult.data as Job;
-    const access = await getUserEntitlements(user.id);
+    const access = await getOrganizationEntitlements(loadedJob.organization_id);
     const historyEnabled = hasEntitlement(access.entitlements, 'historical_cost_learning');
     const [budgetResult, costsResult, timeResult, employeesResult, changeOrdersResult, classificationResult] = await Promise.all([
       supabase.from('job_budget_snapshots').select('material_cents, labor_cents, subcontract_cents, equipment_cents, other_cents').eq('job_id', params.id).order('version', { ascending: false }).limit(1).maybeSingle(),

@@ -17,6 +17,7 @@ export const supabase = createClient(
 export interface Project {
   id: string;
   user_id: string;
+  organization_id: string;
   title: string;
   description: string;
   client_name?: string;
