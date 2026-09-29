@@ -2,6 +2,12 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.58.0";
 import { BTP_SPECIALISTS, buildRefinedDescription } from "../_shared/btp-refinement.ts";
 import { selectAiRoute, type Complexity } from "../_shared/ai-router.ts";
+import {
+  PRELIMINARY_ESTIMATE_RESPONSE_FORMAT,
+  shouldRetryWithoutStructuredOutput,
+  validateInternalCost,
+  validatePreliminary,
+} from "../_shared/estimate-validation.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -33,12 +39,6 @@ function validateTvaRate(rate: number): number {
   );
 }
 
-function validateInternalCost(value: unknown): number {
-  const amount = Number(value ?? 0);
-  if (!Number.isFinite(amount) || amount < 0 || amount > 10_000_000) throw new Error("Coût interne invalide");
-  return Math.round(amount * 100) / 100;
-}
-
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 200, headers: corsHeaders });
@@ -50,6 +50,11 @@ Deno.serve(async (req: Request) => {
   let projectId: string | null = null;
   let organizationId: string | null = null;
   let usedModelName = "unknown";
+  let usedModelId: string | null = null;
+  let resolvedTier: string | null = null;
+  let fallbackUsedForLog = false;
+  let tokensInput = 0;
+  let tokensOutput = 0;
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -95,6 +100,7 @@ Deno.serve(async (req: Request) => {
     const route = await selectAiRoute(supabase, user.id, {
       taskType: "quote_generation", complexity, adminTier,
     });
+    resolvedTier = route.tier;
 
     const refined = body.refinementVersion !== undefined;
     let refinement: any = null;
@@ -153,15 +159,19 @@ Deno.serve(async (req: Request) => {
     let estimateData: any = null;
     let usedModel = route.models[0];
     let fallbackUsed = false;
-    let tokensInput = 0;
-    let tokensOutput = 0;
     let lastError: string | null = null;
+    let validatedEstimate: ReturnType<typeof validatePreliminary> | ReturnType<typeof validateAndRecalculate> | null = null;
+    let useStructuredOutput = refined;
 
     for (const [modelIndex, currentModel] of route.models.entries()) {
+      usedModelName = currentModel.display_name;
+      usedModelId = currentModel.id;
+      fallbackUsedForLog = modelIndex > 0;
       const result = await callOpenRouter(
         currentModel, openrouterApiKey, supabaseUrl, prompt, apiTemperature, refined,
-        route.maxOutputTokens, route.reasoningEffort,
+        route.maxOutputTokens, route.reasoningEffort, useStructuredOutput,
       );
+      if (result.structuredOutputUnsupported) useStructuredOutput = false;
       if (result.error) {
         lastError = result.error;
         if (result.isRateLimit) continue;
@@ -177,30 +187,26 @@ Deno.serve(async (req: Request) => {
         continue;
       }
 
+      try {
+        validatedEstimate = refined
+          ? validatePreliminary(parsed.data)
+          : validateAndRecalculate(parsed.data, scenarioType, coefficient);
+      } catch (validationError) {
+        lastError = validationError instanceof Error ? validationError.message : 'Réponse IA invalide';
+        continue;
+      }
+
       estimateData = parsed.data;
       usedModel = currentModel;
-      usedModelName = currentModel.display_name;
       fallbackUsed = modelIndex > 0;
       break;
     }
 
-    if (!estimateData) {
-      const durationMs = Date.now() - startTime;
-      await logUsage(supabase, {
-        userId: user.id, projectId, organizationId,
-        provider: usedModel?.provider || "openrouter",
-        modelUsed: usedModelName, modelId: usedModel?.id || null,
-        endpoint: "generate-estimate",
-        tokensInput: 0, tokensOutput: 0, cost: 0, durationMs,
-        status: "error", errorMessage: lastError || "All models failed",
-        taskType: route.taskType, planName: route.tier, fallbackUsed: false, promptVersion: "quote-generation-v1",
-      });
+    if (!estimateData || !validatedEstimate) {
       throw new Error(`All models failed. Last error: ${lastError}`);
     }
 
-    const validated = refined
-      ? validatePreliminary(estimateData)
-      : validateAndRecalculate(estimateData, scenarioType, coefficient);
+    const validated = validatedEstimate;
 
     if (refined) {
       const { data: latest } = await supabase.from('project_refinements').select('version')
@@ -284,11 +290,11 @@ Deno.serve(async (req: Request) => {
       const durationMs = Date.now() - startTime;
       await logUsage(supabase, {
         userId, projectId, organizationId,
-        provider: "openrouter", modelUsed: usedModelName, modelId: null,
+        provider: "openrouter", modelUsed: usedModelName, modelId: usedModelId,
         endpoint: "generate-estimate",
-        tokensInput: 0, tokensOutput: 0, cost: 0, durationMs,
+        tokensInput, tokensOutput, cost: 0, durationMs,
         status: "error", errorMessage,
-        taskType: "quote_generation", planName: null, fallbackUsed: false, promptVersion: "quote-generation-v1",
+        taskType: "quote_generation", planName: resolvedTier, fallbackUsed: fallbackUsedForLog, promptVersion: "quote-generation-v1",
       }).catch(() => {});
     }
 
@@ -357,17 +363,25 @@ async function callOpenRouter(
   refined = false,
   maxOutputTokens = 6000,
   reasoningEffort = "low",
-): Promise<{ content: string; tokensInput: number; tokensOutput: number; error?: string; isRateLimit?: boolean }> {
+  useStructuredOutput = false,
+): Promise<{
+  content: string;
+  tokensInput: number;
+  tokensOutput: number;
+  error?: string;
+  isRateLimit?: boolean;
+  structuredOutputUnsupported?: boolean;
+}> {
   try {
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": supabaseUrl,
-        "X-Title": "Aide Devis IA",
-      },
-      body: JSON.stringify({
+    const requestOpenRouter = (structured: boolean) => fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": supabaseUrl,
+          "X-Title": "Aide Devis IA",
+        },
+        body: JSON.stringify({
         model: model.model_id,
         messages: [
           {
@@ -381,8 +395,18 @@ async function callOpenRouter(
         temperature,
         max_tokens: maxOutputTokens,
         reasoning: reasoningEffort === "none" ? undefined : { effort: reasoningEffort },
-      }),
+        response_format: structured ? PRELIMINARY_ESTIMATE_RESPONSE_FORMAT : undefined,
+        provider: structured ? { require_parameters: true } : undefined,
+        }),
     });
+
+    let response = await requestOpenRouter(useStructuredOutput);
+    let structuredOutputUnsupported = false;
+    if (!response.ok && useStructuredOutput && shouldRetryWithoutStructuredOutput(response.status, refined)) {
+      await response.text();
+      structuredOutputUnsupported = true;
+      response = await requestOpenRouter(false);
+    }
 
     if (!response.ok) {
       await response.text();
@@ -400,6 +424,7 @@ async function callOpenRouter(
       content,
       tokensInput: usage.prompt_tokens || usage.input_tokens || 0,
       tokensOutput: usage.completion_tokens || usage.output_tokens || 0,
+      structuredOutputUnsupported,
     };
   } catch (e: any) {
     return { content: "", tokensInput: 0, tokensOutput: 0, error: e.message };
@@ -489,47 +514,6 @@ function validateAndRecalculate(estimateData: any, scenarioType: string, coeffic
     totalHT: Math.round(totalHT * 100) / 100,
     totalTVA: Math.round(totalTVA * 100) / 100,
     totalTTC: Math.round(totalTTC * 100) / 100,
-  };
-}
-
-function validatePreliminary(data: any) {
-  if (!Array.isArray(data?.categories) || !data.categories.length || data.categories.length > 25)
-    throw new Error("L'estimation ne contient aucun lot valide");
-  let totalCents = 0;
-  let count = 0;
-  const categories = data.categories.map((category: any) => {
-    if (typeof category?.name !== 'string' || !Array.isArray(category.items) || category.items.length > 60)
-      throw new Error("Lot d'estimation invalide");
-    let subtotal = 0;
-    const items = category.items.map((item: any) => {
-      const qty = Number(item?.quantity);
-      const price = Number(item?.unit_price_ht);
-      if (typeof item?.poste !== 'string' || !item.poste.trim() || !Number.isFinite(qty) || qty <= 0 ||
-          !Number.isFinite(price) || price < 0 || qty > 1000000 || price > 10000000) {
-        throw new Error("Poste d'estimation invalide");
-      }
-      count++;
-      const cents = Math.round(qty * Math.round(price * 100));
-      if (!Number.isSafeInteger(cents)) throw new Error("Montant hors limites");
-      subtotal += cents;
-      return {
-        poste: item.poste.trim().slice(0, 180),
-        description: typeof item.description === 'string' ? item.description.slice(0, 1000) : '',
-        quantity: qty, unit: typeof item.unit === 'string' ? item.unit.slice(0, 20) : 'u',
-        unit_price_ht: Math.round(price * 100) / 100, amount_ht: cents / 100,
-        materials_cost: validateInternalCost(item.materials_cost),
-        labor_cost: validateInternalCost(item.labor_cost),
-        tva_percent: null, tva_amount: null, amount_ttc: null,
-      };
-    });
-    totalCents += subtotal;
-    return { name: category.name.slice(0, 120), description: typeof category.description === 'string' ? category.description.slice(0, 500) : '',
-      items, subtotal_ht: subtotal / 100, subtotal_tva: null, subtotal_ttc: null };
-  });
-  if (!count || totalCents <= 0 || !Number.isSafeInteger(totalCents)) throw new Error("Montant d'estimation invalide");
-  return {
-    categories, lineItems: categories.flatMap((category: any) => category.items.map((item: any) => ({ ...item, category: category.name }))),
-    totalHT: totalCents / 100, totalTVA: null, totalTTC: null,
   };
 }
 
