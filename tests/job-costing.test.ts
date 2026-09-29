@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { calculateJobProfitability, estimatedCostAtCompletion, laborCostCents, resolveHourlyCostSnapshot, validateDailyMinutes } from '../lib/job-costing';
+import {
+  calculateJobProfitability,
+  estimatedCostAtCompletion,
+  laborCostCents,
+  prepareTimeEntryWrite,
+  resolveHourlyCostSnapshot,
+  validateDailyMinutes,
+} from '../lib/job-costing';
 
 describe('job costing', () => {
   it('agrège prévision et réel par catégorie', () => {
@@ -32,6 +39,17 @@ describe('job costing', () => {
     expect(resolveHourlyCostSnapshot(null, 3100)).toBe(3100);
   });
 
+  it('met à jour un pointage existant sans déclencher un nouvel insert avant conflit', () => {
+    expect(prepareTimeEntryWrite({ id: 'entry-1', hourlyCostCentsSnapshot: 2400 }, 3100)).toEqual({
+      existingId: 'entry-1',
+      hourlyCostCentsSnapshot: 2400,
+    });
+    expect(prepareTimeEntryWrite(null, 3100)).toEqual({
+      existingId: null,
+      hourlyCostCentsSnapshot: 3100,
+    });
+  });
+
   it('ne produit aucun pourcentage trompeur lorsque la vente vaut zéro', () => {
     const result = calculateJobProfitability(0, [], [], []);
     expect(result.plannedMarginRate).toBeNull();
@@ -60,5 +78,13 @@ describe('job costing', () => {
 
   it('garde un arrondi exact lorsque le produit intermédiaire dépasse un entier sûr', () => {
     expect(laborCostCents(Number.MAX_SAFE_INTEGER, 16)).toBe(2_401_919_801_264_264);
+  });
+
+  it('refuse un agrégat monétaire qui dépasse un entier sûr', () => {
+    const halfUnsafeTotal = Math.floor(Number.MAX_SAFE_INTEGER / 2) + 1;
+    expect(() => calculateJobProfitability(0, [], [
+      { category: 'material', amountHtCents: halfUnsafeTotal },
+      { category: 'material', amountHtCents: halfUnsafeTotal },
+    ], [])).toThrow(/entier sûr/i);
   });
 });
