@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useId } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,9 +11,30 @@ interface VoiceRecorderProps {
   value: string;
   onChange: (text: string) => void;
   placeholder?: string;
+  ariaLabel?: string;
 }
 
-export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRecorderProps) {
+interface SpeechRecognitionEventLike {
+  results: ArrayLike<{ isFinal: boolean; 0: { transcript: string } }>;
+}
+
+interface SpeechRecognitionErrorEventLike {
+  error: string;
+}
+
+interface SpeechRecognitionLike {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onstart: (() => void) | null;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEventLike) => void) | null;
+  onend: (() => void) | null;
+  start(): void;
+  stop(): void;
+}
+
+export default function VoiceRecorder({ value, onChange, placeholder, ariaLabel = 'Texte dicté' }: VoiceRecorderProps) {
   const [isListening, setIsListening] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [isResuming, setIsResuming] = useState(false);
@@ -25,7 +46,8 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
   const [errorMessage, setErrorMessage] = useState('');
   const [duration, setDuration] = useState(0);
 
-  const recognitionRef = useRef<any>(null);
+  const descriptionId = useId();
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const isListeningRef = useRef(false);
   const isPausedRef = useRef(false);
   const isRecognitionActiveRef = useRef(false);
@@ -72,7 +94,11 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const speechWindow = window as typeof window & {
+      SpeechRecognition?: new () => SpeechRecognitionLike;
+      webkitSpeechRecognition?: new () => SpeechRecognitionLike;
+    };
+    const SpeechRecognition = speechWindow.SpeechRecognition || speechWindow.webkitSpeechRecognition;
     if (!SpeechRecognition) {
       setIsSupported(false);
       return;
@@ -120,7 +146,7 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
       }
     };
 
-    recognition.onresult = (event: any) => {
+    recognition.onresult = (event: SpeechRecognitionEventLike) => {
       if (ignoreResultsRef.current) return;
       const { final: sessionFinal, interim: currentInterim, processed } = collectSpeechResults(event.results, sessionFinalCountRef.current);
       sessionFinalCountRef.current = processed;
@@ -137,7 +163,7 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
       setInterimText(isPausedRef.current ? '' : currentInterim);
     };
 
-    recognition.onerror = (event: any) => {
+    recognition.onerror = (event: SpeechRecognitionErrorEventLike) => {
       isRecognitionActiveRef.current = false;
 
       if (event.error === 'no-speech') return;
@@ -215,10 +241,10 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
       setIsListening(true);
       setIsPaused(false);
       setIsResuming(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       isListeningRef.current = false;
       isRecognitionActiveRef.current = false;
-      if (error?.name === 'InvalidStateError') {
+      if (error instanceof DOMException && error.name === 'InvalidStateError') {
         setErrorMessage('La reconnaissance vocale est deja en cours. Veuillez attendre.');
       } else {
         setErrorMessage('Impossible de demarrer la reconnaissance vocale. Assurez-vous d\'etre en HTTPS sur mobile.');
@@ -303,7 +329,7 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
 
   if (!isSupported) {
     return (
-      <Card className="bg-yellow-900/20 border-yellow-700">
+      <Card className="bg-yellow-900/20 border-yellow-700" role="status">
         <CardContent className="pt-6">
           <div className="flex items-start gap-3">
             <AlertCircle className="h-5 w-5 text-yellow-400 flex-shrink-0 mt-0.5" />
@@ -327,7 +353,7 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
   return (
     <div className="space-y-4">
       {errorMessage && (
-        <Card className="bg-red-900/20 border-red-700">
+        <Card className="bg-red-900/20 border-red-700" role="alert" aria-live="assertive">
           <CardContent className="pt-6">
             <div className="flex items-start gap-3">
               <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
@@ -352,6 +378,7 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
           {isEditing ? (
             <div className="space-y-3">
               <Textarea
+                aria-label={ariaLabel}
                 value={transcript}
                 onChange={(e) => setTranscript(e.target.value)}
                 rows={8}
@@ -448,7 +475,7 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
       {!isEditing && (
         <div className="flex flex-wrap gap-3 justify-center">
           {!isListening && (
-            <Button type="button" onClick={startListening} size="lg" className="bg-red-600 hover:bg-red-700 text-white">
+            <Button type="button" onClick={startListening} size="lg" className="bg-red-600 hover:bg-red-700 text-white" aria-describedby={descriptionId}>
               <Mic className="h-5 w-5 mr-2" />
               {transcript ? 'Continuer la dictée' : 'Commencer la dictée'}
             </Button>
@@ -508,6 +535,9 @@ export default function VoiceRecorder({ value, onChange, placeholder }: VoiceRec
           )}
         </div>
       )}
+      <p id={descriptionId} className="sr-only">
+        La dictée utilise le microphone de votre appareil. Vous pourrez relire et modifier le texte avant de le valider.
+      </p>
     </div>
   );
 }
