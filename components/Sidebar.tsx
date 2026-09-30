@@ -40,6 +40,7 @@ const navigationItems: NavigationItem[] = [
     label: 'Factures',
     href: '/dashboard/invoices',
     icon: Receipt,
+    badge: 'Bientôt',
   },
   {
     id: 'jobs',

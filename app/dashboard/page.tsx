@@ -12,20 +12,30 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import AdminPlanSimulator from '@/components/AdminPlanSimulator';
 import {
   FileText, Plus, Clock, Euro, RefreshCw, ChevronRight,
-  Loader as Loader2, CircleCheck as CheckCircle2, TrendingUp,
+  Loader as Loader2, CircleCheck as CheckCircle2,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import type { Project } from '@/lib/supabase';
 import { checkProjectLimit, isUserAdmin, type ProjectLimitInfo } from '@/lib/subscription-helper';
 import { cn } from '@/lib/utils';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
+import { calculateDashboardEstimateMetrics, type DashboardEstimateMetrics } from '@/lib/dashboard-metrics';
+
+const formatCurrencyFromCents = (value: number) => new Intl.NumberFormat('fr-FR', {
+  style: 'currency',
+  currency: 'EUR',
+}).format(value / 100);
 
 export default function DashboardPage() {
   const { user, loading: authLoading } = useAuthGuard();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
-  const [estimatesCount, setEstimatesCount] = useState({ total: 0, completed: 0, processing: 0, pending: 0 });
-  const [chartPeriod, setChartPeriod] = useState<'7days' | '30days' | '3months'>('30days');
+  const [estimateMetrics, setEstimateMetrics] = useState<DashboardEstimateMetrics>({
+    total: 0,
+    drafts: 0,
+    accepted: 0,
+    acceptedValueCents: 0,
+  });
   const [isAdmin, setIsAdmin] = useState(false);
   const [projectLimits, setProjectLimits] = useState<ProjectLimitInfo | null>(null);
 
@@ -39,7 +49,7 @@ export default function DashboardPage() {
       isUserAdmin(userId),
       checkProjectLimit(userId),
       supabase.from('projects').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
-      supabase.from('estimates').select('id, scenario_type').eq('user_id', userId).eq('estimate_kind', 'quote'),
+      supabase.from('estimates').select('quote_status, total_ttc').eq('user_id', userId).eq('estimate_kind', 'quote'),
     ]);
 
     setIsAdmin(adminStatus);
@@ -48,13 +58,7 @@ export default function DashboardPage() {
     const projectsData = projectsResult.data || [];
     setProjects(projectsData);
 
-    const estimatesData = estimatesResult.data || [];
-    setEstimatesCount({
-      total: estimatesData.length,
-      completed: estimatesData.filter(e => e.scenario_type).length,
-      processing: projectsData.filter(p => p.status === 'processing').length,
-      pending: projectsData.filter(p => p.status === 'draft').length,
-    });
+    setEstimateMetrics(calculateDashboardEstimateMetrics(estimatesResult.data || []));
 
     setLoading(false);
   };
@@ -64,7 +68,7 @@ export default function DashboardPage() {
     setLoading(true);
     const [projectsResult, estimatesResult, limits] = await Promise.all([
       supabase.from('projects').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
-      supabase.from('estimates').select('id, scenario_type').eq('user_id', user.id).eq('estimate_kind', 'quote'),
+      supabase.from('estimates').select('quote_status, total_ttc').eq('user_id', user.id).eq('estimate_kind', 'quote'),
       checkProjectLimit(user.id),
     ]);
 
@@ -72,13 +76,7 @@ export default function DashboardPage() {
     setProjects(projectsData);
     setProjectLimits(limits);
 
-    const estimatesData = estimatesResult.data || [];
-    setEstimatesCount({
-      total: estimatesData.length,
-      completed: estimatesData.filter(e => e.scenario_type).length,
-      processing: projectsData.filter(p => p.status === 'processing').length,
-      pending: projectsData.filter(p => p.status === 'draft').length,
-    });
+    setEstimateMetrics(calculateDashboardEstimateMetrics(estimatesResult.data || []));
 
     setLoading(false);
   };
@@ -147,10 +145,10 @@ export default function DashboardPage() {
             <div className="-mx-4 px-4 sm:mx-0 sm:px-0">
               <div className="flex gap-3 overflow-x-auto pb-1 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:gap-4 lg:gap-6 sm:overflow-visible scrollbar-hide">
                 {[
-                  { title: 'Total devis', value: estimatesCount.total, sub: `${estimatesCount.completed} approuvés`, color: 'cyan', icon: FileText },
-                  { title: 'En attente', value: estimatesCount.pending, sub: 'À traiter', color: 'orange', icon: Clock },
-                  { title: 'Approuvés', value: estimatesCount.completed, sub: 'Devis acceptés', color: 'emerald', icon: CheckCircle2 },
-                  { title: "Chiffre d'affaires", value: '0 EUR', sub: '30 derniers jours', color: 'cyan', icon: Euro },
+                  { title: 'Total devis', value: estimateMetrics.total, sub: 'Tous les scénarios', color: 'cyan', icon: FileText },
+                  { title: 'Brouillons', value: estimateMetrics.drafts, sub: 'À vérifier ou envoyer', color: 'orange', icon: Clock },
+                  { title: 'Acceptés', value: estimateMetrics.accepted, sub: 'Statut client confirmé', color: 'emerald', icon: CheckCircle2 },
+                  { title: 'Montant accepté', value: formatCurrencyFromCents(estimateMetrics.acceptedValueCents), sub: 'Devis acceptés, TTC', color: 'cyan', icon: Euro },
                 ].map((kpi) => {
                   const Icon = kpi.icon;
                   const colorMap: Record<string, string> = {
@@ -183,50 +181,6 @@ export default function DashboardPage() {
                 })}
               </div>
             </div>
-
-            {/* Chart Section */}
-            <Card className="bg-slate-800/40 border-slate-700/40 overflow-hidden">
-              <CardHeader className="border-b border-slate-700/40 p-4 lg:p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-white text-base sm:text-lg lg:text-xl font-bold">
-                      Chiffre d&apos;affaires
-                    </CardTitle>
-                    <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5">
-                      {chartPeriod === '7days' ? '7' : chartPeriod === '30days' ? '30' : '90'} derniers jours
-                    </p>
-                  </div>
-                  <div className="flex bg-slate-900/60 p-0.5 rounded-lg border border-slate-700/40">
-                    {[
-                      { key: '7days' as const, label: '7J' },
-                      { key: '30days' as const, label: '30J' },
-                      { key: '3months' as const, label: '3M' },
-                    ].map((p) => (
-                      <button
-                        key={p.key}
-                        onClick={() => setChartPeriod(p.key)}
-                        className={cn(
-                          'px-2.5 sm:px-3 py-1.5 text-xs font-medium rounded-md transition-all',
-                          chartPeriod === p.key
-                            ? 'bg-cyan-600 text-white shadow'
-                            : 'text-slate-500 hover:text-slate-300'
-                        )}
-                      >
-                        {p.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="p-4 lg:p-6">
-                <div className="h-36 sm:h-48 lg:h-56 flex items-center justify-center text-slate-500 bg-slate-900/30 rounded-xl border border-dashed border-slate-700/40">
-                  <div className="text-center">
-                    <TrendingUp className="h-8 w-8 text-slate-600 mx-auto mb-2" />
-                    <p className="text-xs sm:text-sm text-slate-500">Aucune donnée pour le moment</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
 
             {/* Recent Quotes + Plan -- stack on mobile, side by side on desktop */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-6">
@@ -291,12 +245,12 @@ export default function DashboardPage() {
                     </div>
                     <div className="flex items-center justify-between p-3 bg-slate-900/40 rounded-xl border border-slate-800/40">
                       <div>
-                        <p className="text-sm font-semibold text-white">Plan Gratuit</p>
-                        <p className="text-[10px] sm:text-xs text-slate-500">Essai gratuit actif</p>
+                        <p className="text-sm font-semibold text-white">{projectLimits?.tier_name || 'Plan en cours de chargement'}</p>
+                        <p className="text-[10px] sm:text-xs text-slate-500">Droits appliqués côté serveur</p>
                       </div>
                       <Link href="/pricing">
                         <Button variant="outline" size="xs">
-                          Upgrade
+                          Voir les formules
                         </Button>
                       </Link>
                     </div>
