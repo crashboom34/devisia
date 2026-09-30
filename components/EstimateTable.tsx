@@ -544,7 +544,7 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
               </div>
             </>
           )}
-          {estimate.discount_amount && estimate.discount_amount > 0 && (
+          {typeof estimate.discount_amount === 'number' && Number.isFinite(estimate.discount_amount) && estimate.discount_amount > 0 && (
             <>
               <div className="flex justify-between text-sm sm:text-lg text-brand-green">
                 <span>Remise ({estimate.discount_percent}%):</span>
@@ -582,7 +582,7 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
                 <p className="text-gray-400 mt-1">{estimate.execution_delay}</p>
               </div>
             )}
-            {estimate.deposit_required && estimate.deposit_required > 0 && (
+            {typeof estimate.deposit_required === 'number' && Number.isFinite(estimate.deposit_required) && estimate.deposit_required > 0 && (
               <div className="text-sm sm:text-base">
                 <span className="font-semibold text-gray-300">Acompte demandé:</span>
                 <p className="text-gray-400 mt-1">{estimate.deposit_required}% à la commande</p>
