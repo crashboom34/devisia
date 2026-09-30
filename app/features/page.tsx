@@ -48,8 +48,8 @@ export default function FeaturesPage() {
               />
               <FeatureCard
                 icon={FileText}
-                title="10 Templates BTP Professionnels"
-                description="Modèles pré-configurés pour rénovation, construction, plomberie, électricité et plus encore. Prêts à l'emploi."
+                title="Compréhension du chantier"
+                description="Décrivez le projet librement : Devisia identifie les métiers concernés, structure les lots et prépare une base adaptée."
               />
               <FeatureCard
                 icon={Download}

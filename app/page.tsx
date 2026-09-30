@@ -83,8 +83,8 @@ export default function Home() {
               />
               <FeatureCard
                 icon={FileText}
-                title="10 Templates BTP"
-                description="Modèles professionnels pré-configurés pour tous types de travaux : rénovation, construction, etc."
+                title="Lots adaptés au chantier"
+                description="Décrivez les travaux sans choisir de modèle : les métiers et les lots sont structurés à partir de votre projet."
               />
               <FeatureCard
                 icon={Download}

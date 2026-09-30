@@ -12,10 +12,12 @@ import { supabase } from '@/lib/supabase';
 
 export default function RegisterPage() {
   const router = useRouter();
+  const [companyName, setCompanyName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [confirmationRequired, setConfirmationRequired] = useState(false);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,15 +25,25 @@ export default function RegisterPage() {
     setError('');
 
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            company_name: companyName.trim(),
+          },
+        },
       });
 
       if (error) throw error;
-      router.push('/dashboard');
-    } catch (err: any) {
-      setError(err.message || 'Une erreur est survenue');
+      if (!data.session) {
+        setConfirmationRequired(true);
+        setLoading(false);
+        return;
+      }
+      router.push('/project/new');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Une erreur est survenue');
       setLoading(false);
     }
   };
@@ -64,7 +76,30 @@ export default function RegisterPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {confirmationRequired ? (
+              <div role="status" className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-4 text-sm leading-relaxed text-emerald-100">
+                Si cette inscription peut être créée, un message de confirmation vous a été envoyé. Ouvrez-le puis
+                connectez-vous pour créer votre premier chantier.
+                <Button asChild variant="outline" className="mt-4 w-full">
+                  <Link href="/auth/login">Revenir à la connexion</Link>
+                </Button>
+              </div>
+            ) : (
             <form onSubmit={handleRegister} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="companyName" className="text-gray-300">Nom de l&apos;entreprise</Label>
+                <Input
+                  id="companyName"
+                  type="text"
+                  autoComplete="organization"
+                  placeholder="Mon entreprise"
+                  value={companyName}
+                  onChange={(event) => setCompanyName(event.target.value)}
+                  required
+                  maxLength={120}
+                  className="bg-brand-darkLight border-gray-700 text-white placeholder:text-gray-500 focus:border-brand-green focus:ring-brand-green"
+                />
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-gray-300">Email</Label>
                 <Input
@@ -87,10 +122,10 @@ export default function RegisterPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  minLength={6}
+                  minLength={8}
                   className="bg-brand-darkLight border-gray-700 text-white placeholder:text-gray-500 focus:border-brand-green focus:ring-brand-green"
                 />
-                <p className="text-xs text-gray-500">Minimum 6 caractères</p>
+                <p className="text-xs text-gray-500">Minimum 8 caractères</p>
               </div>
 
               {error && (
@@ -107,6 +142,7 @@ export default function RegisterPage() {
                 {loading ? 'Inscription...' : 'Créer mon compte'}
               </Button>
             </form>
+            )}
 
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-400">

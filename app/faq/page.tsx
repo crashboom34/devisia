@@ -96,11 +96,11 @@ export default function FAQPage() {
 
               <AccordionItem value="item-8" className="bg-brand-darkCard border border-gray-800 rounded-lg px-6">
                 <AccordionTrigger className="text-white hover:text-brand-green">
-                  Quels types de travaux sont supportés ?
+                  Dois-je choisir un modèle de chantier ?
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-400">
-                  Devisia propose 10 templates BTP incluant rénovation, construction neuve, plomberie, électricité,
-                  maçonnerie, menuiserie, peinture et plus encore. L&apos;IA s&apos;adapte à votre secteur.
+                  Non. Décrivez les travaux avec vos mots : Devisia propose une classification et une structure de lots
+                  à vérifier. Vous gardez la main pour corriger ou compléter le périmètre avant le chiffrage.
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
