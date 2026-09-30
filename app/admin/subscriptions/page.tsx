@@ -19,6 +19,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { PLAN_LABELS } from '@/lib/plan-labels';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { toast } from 'sonner';
+import { getPlanSwitchError, isSuccessfulPlanSwitch } from '@/lib/admin-plan';
 
 interface AIModel {
   id: string;
@@ -187,13 +188,17 @@ export default function AdminSubscriptionsPage() {
     if (savingModelTierId || !aiModels.some((model) => model.id === modelId)) return;
     setSavingModelTierId(tier.id);
     try {
-      const { error } = await supabase.from('subscription_tiers')
-        .update({ ai_model_id: modelId }).eq('id', tier.id).select('id').single();
+      const { data, error } = await supabase.rpc('set_subscription_tier_model', {
+        p_tier_id: tier.id,
+        p_model_id: modelId,
+      });
       if (error) throw error;
+      if (!isSuccessfulPlanSwitch(data)) throw new Error(getPlanSwitchError(data));
       await loadTiers();
       toast.success(`Modèle du plan ${tier.display_name} mis à jour`);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Impossible de modifier le modèle du plan');
+    } catch {
+      console.error('Admin model assignment failed');
+      toast.error('Impossible de modifier le modèle du plan.');
     } finally {
       setSavingModelTierId(null);
     }
