@@ -18,7 +18,7 @@ export default function FeaturesPage() {
               Fonctionnalités conçues pour accélérer votre succès
             </h1>
             <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-              Découvrez les outils qui vous permettront de créer des devis professionnels en quelques minutes et d&apos;augmenter vos taux de conversion.
+              Découvrez les outils qui structurent la préparation, la révision et le suivi de vos devis BTP.
             </p>
           </div>
         </section>
@@ -33,8 +33,8 @@ export default function FeaturesPage() {
               />
               <FeatureCard
                 icon={Clock}
-                title="Gain de Temps Radical"
-                description="Créez un devis complet en 2 minutes au lieu de 2 heures. Concentrez-vous sur votre métier, pas sur la paperasse."
+                title="Base de travail structurée"
+                description="Partez d'une proposition organisée, puis concentrez votre temps sur les contrôles et ajustements métier."
               />
               <FeatureCard
                 icon={Mic}
@@ -44,12 +44,12 @@ export default function FeaturesPage() {
               <FeatureCard
                 icon={BarChart3}
                 title="3 Scénarios Automatiques"
-                description="Générez instantanément 3 versions (Éco, Standard, Premium) pour proposer plus d'options et maximiser vos ventes."
+                description="Comparez les versions Éco, Standard et Premium lorsque le projet génère plusieurs scénarios."
               />
               <FeatureCard
                 icon={FileText}
-                title="10 Templates BTP Professionnels"
-                description="Modèles pré-configurés pour rénovation, construction, plomberie, électricité et plus encore. Prêts à l'emploi."
+                title="Compréhension du chantier"
+                description="Décrivez le projet librement : Devisia identifie les métiers concernés, structure les lots et prépare une base adaptée."
               />
               <FeatureCard
                 icon={Download}
@@ -59,7 +59,7 @@ export default function FeaturesPage() {
               <FeatureCard
                 icon={Edit3}
                 title="Éditeur Intuitif"
-                description="Interface glisser-déposer simple et puissante. Modifiez vos devis sans compétences techniques requises."
+                description="Modifiez les lignes, quantités, prix et informations du devis avant sa validation finale."
               />
               <FeatureCard
                 icon={Users}
@@ -69,7 +69,7 @@ export default function FeaturesPage() {
               <FeatureCard
                 icon={Shield}
                 title="Données Sécurisées"
-                description="Vos données sont hébergées en Europe avec chiffrement de bout en bout. Conformité RGPD garantie."
+                description="Les accès applicatifs sont contrôlés par compte et les données métier sont isolées par organisation. La sécurité reste vérifiée en continu pendant la bêta."
               />
               <FeatureCard
                 icon={Zap}

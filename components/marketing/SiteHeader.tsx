@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Menu, X, FileText } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import type { User } from '@supabase/supabase-js';
+import { getSupabaseClient } from '@/lib/supabase';
 
 const navigation = [
   { name: 'Fonctionnalités', href: '/features' },
@@ -16,22 +17,32 @@ const navigation = [
 
 export function SiteHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const pathname = usePathname();
 
   useEffect(() => {
-    const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-    };
-    checkUser();
+    let active = true;
+    let unsubscribe: (() => void) | undefined;
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
+    const checkUser = async () => {
+      try {
+        const client = getSupabaseClient();
+        const { data: { user: currentUser } } = await client.auth.getUser();
+        if (active) setUser(currentUser);
+
+        const { data: authListener } = client.auth.onAuthStateChange((_event, session) => {
+          if (active) setUser(session?.user ?? null);
+        });
+        unsubscribe = () => authListener.subscription.unsubscribe();
+      } catch {
+        if (active) setUser(null);
+      }
+    };
+    void checkUser();
 
     return () => {
-      authListener.subscription.unsubscribe();
+      active = false;
+      unsubscribe?.();
     };
   }, []);
 

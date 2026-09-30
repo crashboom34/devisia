@@ -1,66 +1,32 @@
-const TRUST_COMPANIES = [
-  {
-    name: 'Hérault Plomberie Services',
-    initials: 'HPS',
-    color: 'from-teal-500 to-emerald-600',
-    logo: '/Generated_Image_February_18%2C_2026_-_10_52PM.png',
-  },
-  {
-    name: 'BatiSud Rénovation',
-    initials: 'BSR',
-    color: 'from-sky-500 to-blue-600',
-    logo: '/Generated_Image_February_18%2C_2026_-_10_52PM_%282%29.png',
-  },
-  {
-    name: 'Occitanie Maçonnerie',
-    initials: 'OM',
-    color: 'from-amber-500 to-orange-600',
-  },
-  {
-    name: 'Pro Elec 34',
-    initials: 'PE',
-    color: 'from-yellow-400 to-amber-500',
-  },
-  {
-    name: 'MultiTravaux Construction',
-    initials: 'MTC',
-    color: 'from-cyan-500 to-teal-600',
-    logo: '/Generated_Image_February_18%2C_2026_-_10_54PM.png',
-  },
+const WORKFLOW = [
+  { step: '1', title: 'Décrire', detail: 'Texte ou dictée selon le navigateur' },
+  { step: '2', title: 'Structurer', detail: 'Lots et lignes proposés par le moteur' },
+  { step: '3', title: 'Ajuster', detail: 'Quantités, prix, marge et mentions' },
+  { step: '4', title: 'Valider', detail: 'Contrôle humain avant utilisation' },
 ];
 
 export function LogosSection() {
   return (
-    <section className="py-20 bg-brand-dark">
+    <section className="bg-brand-dark py-20">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-3xl mx-auto mb-10 space-y-3">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white">Ils font confiance à Devisia</h2>
+        <div className="mx-auto mb-10 max-w-3xl space-y-3 text-center">
+          <h2 className="text-3xl font-bold text-white sm:text-4xl">Un parcours simple et vérifiable</h2>
           <p className="text-lg text-gray-400">
-            Artisans, TPE et entreprises du BTP utilisent Devisia pour gagner du temps et sécuriser leurs marges.
+            Chaque étape reste visible et modifiable pour adapter le devis à la réalité du chantier.
           </p>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mt-6">
-          {TRUST_COMPANIES.map((company) => (
-            <div
-              key={company.name}
-              className="group flex flex-col items-center gap-3 rounded-2xl border border-slate-700/60 bg-slate-900/70 px-4 py-5 shadow-sm hover:-translate-y-0.5 hover:border-slate-600 hover:shadow-lg hover:shadow-black/20 transition-all duration-300"
-            >
-              {'logo' in company && company.logo ? (
-                <div className="h-12 w-12 rounded-xl overflow-hidden shadow-lg group-hover:scale-110 transition-transform duration-300">
-                  <img src={company.logo} alt={company.name} className="h-full w-full object-cover" />
-                </div>
-              ) : (
-                <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${company.color} shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                  <span className="text-sm font-bold text-white tracking-tight">{company.initials}</span>
-                </div>
-              )}
-              <span className="text-xs sm:text-sm font-medium text-slate-200 leading-tight text-center">
-                {company.name}
+        <ol className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {WORKFLOW.map((item) => (
+            <li key={item.step} className="rounded-2xl border border-slate-700/60 bg-slate-900/70 px-5 py-6">
+              <span className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-brand-green text-sm font-bold text-white">
+                {item.step}
               </span>
-            </div>
+              <h3 className="font-semibold text-white">{item.title}</h3>
+              <p className="mt-1 text-sm leading-relaxed text-slate-400">{item.detail}</p>
+            </li>
           ))}
-        </div>
+        </ol>
       </div>
     </section>
   );

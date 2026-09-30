@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Shield, FileText, Users, Crown, Eye, Zap, Loader2 } from 'lucide-react';
+import { Shield, FileText, Users, Crown, Eye, Zap, Loader2, ChevronDown } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { getPlanSwitchError, isSuccessfulPlanSwitch } from '@/lib/admin-plan';
+import { toast } from 'sonner';
 
 const PLANS = [
   {
@@ -46,11 +48,16 @@ interface AdminPlanSimulatorProps {
 }
 
 export default function AdminPlanSimulator({ userId }: AdminPlanSimulatorProps) {
-  const [currentMode, setCurrentMode] = useState<string>(() => {
-    if (typeof window === 'undefined') return 'unlimited';
-    return localStorage.getItem('admin_current_mode') || 'unlimited';
-  });
+  const [currentMode, setCurrentMode] = useState<string>('unlimited');
   const [switching, setSwitching] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    const storedMode = localStorage.getItem('admin_current_mode');
+    if (storedMode && PLANS.some((plan) => plan.id === storedMode)) {
+      setCurrentMode(storedMode);
+    }
+  }, []);
 
   const switchMode = async (modeId: string) => {
     if (switching) return;
@@ -75,18 +82,22 @@ export default function AdminPlanSimulator({ userId }: AdminPlanSimulatorProps) 
           p_tier_name: plan.tierName,
         });
 
-        if (error) {
-          console.error('Error switching plan:', error);
-        }
+        if (error) throw error;
+        if (!isSuccessfulPlanSwitch(data)) throw new Error(getPlanSwitchError(data));
+      } else {
+        throw new Error('Session administrateur introuvable.');
       }
     } catch (err) {
-      console.error('Error switching plan:', err);
+      console.error('Admin plan switch failed');
+      toast.error(err instanceof Error ? err.message : 'Impossible de changer de formule.');
+      setSwitching(false);
+      return;
     }
 
     setCurrentMode(modeId);
     localStorage.setItem('admin_current_mode', modeId);
+    toast.success(`Simulation ${plan.name} activée`);
     setSwitching(false);
-    window.location.reload();
   };
 
   const currentPlan = PLANS.find((p) => p.id === currentMode) || PLANS[0];
@@ -94,8 +105,8 @@ export default function AdminPlanSimulator({ userId }: AdminPlanSimulatorProps) 
 
   return (
     <Card className="border-purple-500/30 bg-gradient-to-br from-purple-50/5 to-purple-100/5">
-      <CardHeader>
-        <div className="flex items-center justify-between">
+      <CardHeader className="p-4 sm:p-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
               <Eye className="h-5 w-5 text-purple-500" />
@@ -105,12 +116,24 @@ export default function AdminPlanSimulator({ userId }: AdminPlanSimulatorProps) 
               Choisissez votre mode de navigation
             </CardDescription>
           </div>
-          <Badge variant="secondary" className="gap-1.5">
-            {switching ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Icon className="h-3.5 w-3.5" />}
-            {currentPlan.name}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="gap-1.5">
+              {switching ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Icon className="h-3.5 w-3.5" />}
+              {currentPlan.name}
+            </Badge>
+            <button
+              type="button"
+              onClick={() => setExpanded((value) => !value)}
+              aria-expanded={expanded}
+              className="inline-flex min-h-9 items-center gap-1 rounded-md border border-purple-500/30 px-3 text-xs font-semibold text-purple-200 hover:bg-purple-500/10"
+            >
+              {expanded ? 'Masquer' : 'Changer'}
+              <ChevronDown className={`h-4 w-4 transition-transform ${expanded ? 'rotate-180' : ''}`} aria-hidden="true" />
+            </button>
+          </div>
         </div>
       </CardHeader>
+      {expanded && (
       <CardContent>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {PLANS.map((plan) => {
@@ -118,9 +141,11 @@ export default function AdminPlanSimulator({ userId }: AdminPlanSimulatorProps) 
             const isActive = currentMode === plan.id;
             return (
               <button
+                type="button"
                 key={plan.id}
                 onClick={() => switchMode(plan.id)}
                 disabled={switching}
+                aria-pressed={isActive}
                 className={`relative group rounded-lg border-2 p-4 text-left transition-all ${
                   isActive
                     ? `${plan.color} border-transparent text-white shadow-lg`
@@ -166,6 +191,7 @@ export default function AdminPlanSimulator({ userId }: AdminPlanSimulatorProps) 
           </div>
         </div>
       </CardContent>
+      )}
     </Card>
   );
 }

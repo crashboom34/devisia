@@ -3,6 +3,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.58.0";
 import { BTP_SPECIALISTS, buildRefinedDescription } from "../_shared/btp-refinement.ts";
 import { selectAiRoute, type Complexity } from "../_shared/ai-router.ts";
 import { toSafeGenerateEstimateError } from "../_shared/generate-estimate-error.ts";
+import { replaceActiveEstimate } from "../_shared/estimate-persistence.ts";
 import {
   PRELIMINARY_ESTIMATE_RESPONSE_FORMAT,
   shouldRetryWithoutStructuredOutput,
@@ -218,11 +219,8 @@ Deno.serve(async (req: Request) => {
         throw new Error('Le dossier a changé pendant le calcul. Relancez le chiffrage.');
     }
 
-    const { data: estimate, error: insertError } = await supabase
-      .from("estimates")
-      .insert({
+    const estimate = await replaceActiveEstimate(supabase, {
         user_id: user.id,
-        organization_id: project.organization_id,
         project_id: projectId,
         scenario_type: scenarioType,
         estimate_kind: refined ? "preliminary" : "quote",
@@ -250,11 +248,7 @@ Deno.serve(async (req: Request) => {
         discount_percent: estimateData.discount_percent || 0,
         model_used: usedModel.display_name,
         scenario_justification: estimateData.scenario_justification || null,
-      })
-      .select()
-      .single();
-
-    if (insertError) throw new Error(`Failed to save estimate: ${insertError.message}`);
+      });
 
     const durationMs = Date.now() - startTime;
     const cost = Number(

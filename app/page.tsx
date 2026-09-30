@@ -21,8 +21,8 @@ export default function Home() {
       <main>
         <HeroSection
           badge="Propulsé par l'IA - Créez vos devis en quelques minutes"
-          title="Chaque devis mal fait vous coûte de l'argent. Devisia corrige ça."
-          subtitle="Décrivez votre chantier, ajustez vos prix, Devisia génère un devis prêt à être envoyé, avec vos marges déjà intégrées. Votre nouveau copilote pour gagner plus en travaillant moins."
+          title="Préparez vos devis BTP avec une base claire à vérifier."
+          subtitle="Décrivez votre chantier, ajustez les lignes et les prix, puis validez chaque information avant d'envoyer votre devis. Devisia vous aide à structurer le travail sans remplacer votre expertise."
           primaryCTA={{
             label: 'Commencer gratuitement',
             href: '/auth/register',
@@ -56,7 +56,7 @@ export default function Home() {
                 Fonctionnalités conçues pour accélérer votre succès
               </h2>
               <p className="text-lg text-gray-400 max-w-2xl mx-auto">
-                Découvrez les outils qui vous permettront de créer des devis professionnels en quelques minutes et d&apos;augmenter vos taux de conversion.
+                Structurez un premier devis, contrôlez vos données métier puis préparez un document à valider.
               </p>
             </div>
 
@@ -69,7 +69,7 @@ export default function Home() {
               <FeatureCard
                 icon={Clock}
                 title="Gain de temps"
-                description="Plus besoin de passer des heures sur Excel. Générez un devis complet en 2 minutes chrono."
+                description="Partez d'une proposition structurée et consacrez votre temps aux ajustements qui demandent votre expertise."
               />
               <FeatureCard
                 icon={Mic}
@@ -83,8 +83,8 @@ export default function Home() {
               />
               <FeatureCard
                 icon={FileText}
-                title="10 Templates BTP"
-                description="Modèles professionnels pré-configurés pour tous types de travaux : rénovation, construction, etc."
+                title="Lots adaptés au chantier"
+                description="Décrivez les travaux sans choisir de modèle : les métiers et les lots sont structurés à partir de votre projet."
               />
               <FeatureCard
                 icon={Download}
@@ -104,7 +104,7 @@ export default function Home() {
                     Éditeur intuitif
                   </h3>
                   <p className="text-gray-400 mb-6 leading-relaxed">
-                    Notre interface glisser-déposer vous permet de personnaliser chaque aspect de vos devis sans compétences techniques. Ajoutez votre logo, mentions légales et TVA pour un rendu soigné.
+                    L&apos;éditeur vous permet d&apos;ajuster les lignes, les quantités, les prix et les informations du devis avant validation. Ajoutez votre logo, vos mentions et votre TVA pour préparer un document cohérent.
                   </p>
                   <ul className="space-y-3">
                     <li className="flex items-start gap-3">
@@ -165,7 +165,7 @@ export default function Home() {
 
         <CTASection
           title="Prêt à transformer votre façon de créer des devis ?"
-          description="Rejoignez les professionnels du bâtiment qui utilisent Devisia pour gagner du temps et augmenter leur taux de conversion."
+          description="Testez le parcours sur vos propres cas pendant la bêta et gardez la validation finale de chaque devis."
           cta={{
             label: 'Créer mon compte gratuitement',
             href: '/auth/register',
