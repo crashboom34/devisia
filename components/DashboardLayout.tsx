@@ -15,6 +15,12 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children, showNewQuoteButton = true }: DashboardLayoutProps) {
   return (
     <div className="min-h-screen bg-[#020617] flex">
+      <a
+        href="#main-content"
+        className="sr-only z-[100] rounded-md bg-cyan-600 px-4 py-2 text-white focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
+      >
+        Aller au contenu
+      </a>
       <Sidebar />
 
       <div className="flex-1 lg:ml-64 flex flex-col min-h-screen">
@@ -42,7 +48,7 @@ export function DashboardLayout({ children, showNewQuoteButton = true }: Dashboa
           </div>
         </header>
 
-        <main className="flex-1 px-4 sm:px-6 lg:px-8 py-5 lg:py-8 pb-24 lg:pb-8">
+        <main id="main-content" tabIndex={-1} className="flex-1 px-4 sm:px-6 lg:px-8 py-5 lg:py-8 pb-24 lg:pb-8">
           {children}
         </main>
 

@@ -4,7 +4,10 @@ import { Toaster } from '@/components/ui/sonner';
 
 export const metadata: Metadata = {
   title: 'Devisia - Générez vos devis BTP en quelques minutes',
-  description: 'Créez des devis professionnels pour vos chantiers en quelques minutes grâce à l\'IA. Dictez votre projet, obtenez un devis prêt à envoyer.',
+  description: 'Structurez et révisez vos devis BTP avec une assistance IA, puis validez chaque information avant utilisation.',
+  icons: {
+    icon: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({
