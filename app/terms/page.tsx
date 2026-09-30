@@ -8,23 +8,28 @@ export default function TermsPage() {
 
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 max-w-4xl">
         <h1 className="text-4xl font-bold text-white mb-8">
-          Conditions Générales d&apos;Utilisation
+          Conditions d&apos;utilisation — version bêta
         </h1>
+
+        <div className="mb-8 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-amber-100">
+          Cette version encadre uniquement une bêta contrôlée. L&apos;identité complète de l&apos;éditeur, ses coordonnées,
+          les conditions commerciales et les mentions légales doivent être ajoutées et validées avant toute vente.
+        </div>
 
         <div className="prose prose-invert max-w-none">
           <section className="mb-8">
             <h2 className="text-2xl font-semibold text-white mb-4">1. Objet</h2>
             <p className="text-gray-400 leading-relaxed">
-              Les présentes Conditions Générales d&apos;Utilisation (CGU) définissent les conditions dans lesquelles
-              vous pouvez utiliser Devisia, plateforme de génération de devis assistée par intelligence artificielle.
+              Ces conditions décrivent l&apos;utilisation de Devisia pendant une phase bêta contrôlée. Le service assiste
+              la préparation de devis mais ne remplace ni l&apos;expertise métier ni la validation du professionnel.
             </p>
           </section>
 
           <section className="mb-8">
             <h2 className="text-2xl font-semibold text-white mb-4">2. Acceptation des CGU</h2>
             <p className="text-gray-400 leading-relaxed">
-              L&apos;utilisation de Devisia implique l&apos;acceptation pleine et entière des présentes CGU.
-              Si vous n&apos;acceptez pas ces conditions, vous ne devez pas utiliser le service.
+              En utilisant l&apos;accès bêta qui vous a été remis, vous acceptez ces conditions provisoires. Si vous ne les
+              acceptez pas, n&apos;utilisez pas le service et demandez la fermeture de votre accès par le canal d&apos;invitation.
             </p>
           </section>
 
@@ -37,7 +42,7 @@ export default function TermsPage() {
               <li>Génération automatique de devis via intelligence artificielle</li>
               <li>Gestion de projets et de clients</li>
               <li>Export de devis au format PDF</li>
-              <li>Stockage sécurisé des données</li>
+              <li>Conservation des données nécessaires au fonctionnement du compte</li>
             </ul>
           </section>
 
@@ -53,8 +58,8 @@ export default function TermsPage() {
           <section className="mb-8">
             <h2 className="text-2xl font-semibold text-white mb-4">5. Propriété intellectuelle</h2>
             <p className="text-gray-400 leading-relaxed">
-              Tous les éléments de Devisia (logiciel, design, contenu) sont protégés par le droit d&apos;auteur
-              et restent la propriété exclusive de Devisia. Les devis que vous créez vous appartiennent.
+              Les droits applicables au logiciel et aux contenus devront être précisés avec l&apos;identité de l&apos;éditeur
+              dans la version commerciale. L&apos;utilisateur reste responsable des informations qu&apos;il saisit et valide.
             </p>
           </section>
 
@@ -69,15 +74,15 @@ export default function TermsPage() {
           <section className="mb-8">
             <h2 className="text-2xl font-semibold text-white mb-4">7. Modification des CGU</h2>
             <p className="text-gray-400 leading-relaxed">
-              Devisia se réserve le droit de modifier les présentes CGU à tout moment. Les utilisateurs seront
-              informés des modifications par email.
+              Ces conditions peuvent évoluer pendant la bêta. Une version datée et juridiquement validée devra être
+              présentée avant toute ouverture commerciale.
             </p>
           </section>
 
           <section className="mb-8">
             <h2 className="text-2xl font-semibold text-white mb-4">8. Contact</h2>
             <p className="text-gray-400 leading-relaxed">
-              Pour toute question concernant ces CGU, vous pouvez nous contacter à : support@devisia.fr
+              Le contact légal reste à renseigner avant l&apos;ouverture commerciale.
             </p>
           </section>
         </div>

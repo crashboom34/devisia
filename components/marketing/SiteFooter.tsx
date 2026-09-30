@@ -17,7 +17,7 @@ const footerLinks = {
     links: [
       { name: 'Blog', href: '/blog' },
       { name: 'Documentation', href: '/faq' },
-      { name: 'Support', href: 'mailto:support@devisia.fr' },
+      { name: 'Support', href: '/faq' },
     ],
   },
   legal: {

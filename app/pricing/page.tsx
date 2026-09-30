@@ -37,7 +37,7 @@ const PLANS: Plan[] = [
   {
     key: 'business',
     name: 'Business',
-    description: "Le choix de la majorité des artisans Devisia",
+    description: "Pour les artisans qui créent régulièrement des devis",
     icon: Users,
     popular: true,
     stripePriceIds: {
@@ -78,11 +78,13 @@ export default function PricingPage() {
               Choisissez le plan qui correspond à vos besoins. Changez ou annulez à tout moment.
             </p>
 
-            <div className="inline-flex items-center gap-3 bg-gray-900/60 border border-gray-700 rounded-full p-1.5">
-              <span className="text-sm text-gray-400 pl-3">Facturation :</span>
+            <div className="mx-auto flex w-full max-w-sm flex-col gap-2 rounded-2xl border border-gray-700 bg-gray-900/60 p-2 sm:inline-flex sm:w-auto sm:max-w-none sm:flex-row sm:items-center sm:gap-3 sm:rounded-full sm:p-1.5">
+              <span className="px-2 pt-1 text-sm text-gray-400 sm:pl-3 sm:pt-0">Facturation :</span>
               <button
                 onClick={() => setBilling('monthly')}
-                className={`px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
+                type="button"
+                aria-pressed={billing === 'monthly'}
+                className={`w-full rounded-full px-5 py-2 text-sm font-semibold transition-all duration-200 sm:w-auto ${
                   billing === 'monthly'
                     ? 'bg-brand-green text-white shadow'
                     : 'text-gray-400 hover:text-white'
@@ -92,7 +94,9 @@ export default function PricingPage() {
               </button>
               <button
                 onClick={() => setBilling('yearly')}
-                className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
+                type="button"
+                aria-pressed={billing === 'yearly'}
+                className={`flex w-full flex-wrap items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200 sm:w-auto sm:flex-nowrap sm:px-5 ${
                   billing === 'yearly'
                     ? 'bg-brand-green text-white shadow'
                     : 'text-gray-400 hover:text-white'
@@ -189,7 +193,7 @@ export default function PricingPage() {
                           <span className="text-xs text-gray-500">{valueProp}</span>
                           <span className="relative group cursor-default">
                             <Info className="h-3 w-3 text-gray-600 hover:text-gray-400 transition-colors" />
-                            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-56 bg-gray-900 border border-gray-700 text-gray-300 text-xs rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 text-center shadow-xl">
+                            <span className="absolute bottom-full right-0 mb-1.5 w-56 rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-center text-xs text-gray-300 opacity-0 shadow-xl transition-opacity pointer-events-none z-10 group-hover:opacity-100 sm:left-1/2 sm:right-auto sm:-translate-x-1/2">
                               {PLAN_TOOLTIP}
                             </span>
                           </span>
@@ -257,7 +261,7 @@ export default function PricingPage() {
                 },
                 {
                   q: "Où sont hébergées mes données ?",
-                  a: "Toutes vos données sont hébergées en Europe avec des serveurs conformes RGPD. Vos informations sont chiffrées et sécurisées.",
+                  a: "Devisia s'appuie sur des prestataires techniques pour l'hébergement, l'authentification et la génération assistée. Les accès applicatifs sont isolés par compte et par organisation. La politique de confidentialité précise les traitements connus ; les informations légales complètes restent à finaliser avant l'ouverture commerciale.",
                 },
               ].map(({ q, a }) => (
                 <div key={q} className="bg-brand-darkCard border border-gray-800 rounded-lg p-6">
@@ -271,9 +275,9 @@ export default function PricingPage() {
 
         <CTASection
           title="Prêt à commencer ?"
-          description="Essayez Devisia gratuitement pendant 14 jours. Aucune carte bancaire requise."
+          description="Créez un compte pour découvrir le parcours Devisia pendant la phase bêta."
           cta={{
-            label: "Démarrer l'essai gratuit",
+            label: "Accéder à la bêta",
             href: '/auth/register',
           }}
         />

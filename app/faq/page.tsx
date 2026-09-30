@@ -38,8 +38,8 @@ export default function FAQPage() {
                   Ai-je besoin d&apos;une clé API ?
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-400">
-                  Non, nos formules payantes incluent l&apos;accès à l&apos;IA. Cependant, vous pouvez utiliser votre propre
-                  clé API OpenAI ou Anthropic si vous préférez gérer directement les coûts.
+                  Non. L&apos;accès au moteur de génération est géré par Devisia selon votre formule ; aucune clé de
+                  fournisseur d&apos;IA ne doit être saisie dans l&apos;application.
                 </AccordionContent>
               </AccordionItem>
 
@@ -58,8 +58,9 @@ export default function FAQPage() {
                   Mes données sont-elles sécurisées ?
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-400">
-                  Oui, toutes vos données sont hébergées en Europe sur des serveurs sécurisés et conformes RGPD.
-                  Nous utilisons le chiffrement de bout en bout pour protéger vos informations.
+                  Les accès applicatifs sont contrôlés par compte et les données métier sont isolées par organisation.
+                  Nous documentons les traitements et les prestataires dans la politique de confidentialité ; les
+                  informations légales complètes doivent être finalisées avant l&apos;ouverture commerciale.
                 </AccordionContent>
               </AccordionItem>
 
@@ -68,8 +69,8 @@ export default function FAQPage() {
                   Puis-je essayer avant d&apos;acheter ?
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-400">
-                  Oui, nous offrons un essai gratuit de 14 jours sur tous nos plans. Aucune carte bancaire n&apos;est requise
-                  pour commencer.
+                  Devisia est actuellement proposé en bêta contrôlée. Les conditions d&apos;accès commercial et de
+                  facturation seront affichées avant toute souscription payante.
                 </AccordionContent>
               </AccordionItem>
 
