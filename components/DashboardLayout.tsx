@@ -23,7 +23,7 @@ export function DashboardLayout({ children, showNewQuoteButton = true }: Dashboa
       </a>
       <Sidebar />
 
-      <div className="flex-1 lg:ml-64 flex flex-col min-h-screen">
+      <div className="flex-1 min-w-0 lg:ml-64 flex flex-col min-h-screen">
         <header className="bg-slate-900/98 backdrop-blur-xl border-b border-slate-800/50 sticky top-0 z-30">
           <div className="px-4 sm:px-6 lg:px-8 h-14 lg:h-16 flex items-center justify-between">
             <Link href="/dashboard" className="flex items-center gap-2.5 lg:hidden">
@@ -48,7 +48,7 @@ export function DashboardLayout({ children, showNewQuoteButton = true }: Dashboa
           </div>
         </header>
 
-        <main id="main-content" tabIndex={-1} className="flex-1 px-4 sm:px-6 lg:px-8 py-5 lg:py-8 pb-24 lg:pb-8">
+        <main id="main-content" tabIndex={-1} className="flex-1 min-w-0 px-3 min-[380px]:px-4 sm:px-6 lg:px-8 py-5 lg:py-8 pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-8">
           {children}
         </main>
 

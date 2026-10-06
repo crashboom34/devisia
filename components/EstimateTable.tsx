@@ -7,14 +7,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Eye, EyeOff, Download, ChevronDown, ChevronUp, Edit2, Save, X, Trash2, History, BriefcaseBusiness } from 'lucide-react';
+import { Eye, EyeOff, Download, ChevronDown, ChevronUp, Edit2, Save, X, Trash2, History, BriefcaseBusiness, Plus } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import EditableEstimateRow from './EditableEstimateRow';
 import { toast } from 'sonner';
 import { buildClientEstimateExport } from '@/lib/client-estimate-export';
+import { isValidManualEstimate, recalculateManualEstimate } from '@/lib/manual-estimate';
 import {
-  recalculateEstimateTotals,
+  calculateLineAmounts,
   calculateMargin,
   calculateTotalMargin,
   formatCurrencyEUR as formatCurrency,
@@ -63,6 +65,9 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
   const [isSaving, setIsSaving] = useState(false);
   const [isAccepting, setIsAccepting] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+
+  const withTotals = recalculateManualEstimate;
 
   const clientExport = buildClientEstimateExport({
     estimateNumber: estimate.estimate_number,
@@ -160,52 +165,94 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
   })));
 
   const handleDeleteItem = (categoryIndex: number, itemIndex: number) => {
-    const newCategories = [...editedEstimate.categories];
-    newCategories[categoryIndex].items.splice(itemIndex, 1);
-
-    if (newCategories[categoryIndex].items.length === 0) {
-      newCategories.splice(categoryIndex, 1);
-    }
-
-    const recalculated = recalculateEstimateTotals(newCategories);
-    setEditedEstimate({
-      ...editedEstimate,
-      ...recalculated
+    setEditedEstimate((current) => {
+      const categories = current.categories.map((category, index) => index === categoryIndex
+        ? { ...category, items: category.items.filter((_, index) => index !== itemIndex) } : category)
+        .filter((category) => category.items.length > 0);
+      return withTotals(current, categories);
     });
   };
 
-  const handleItemChange = (categoryIndex: number, itemIndex: number, field: keyof EstimateItem, value: any) => {
-    const newCategories = [...editedEstimate.categories];
-    newCategories[categoryIndex].items[itemIndex] = {
-      ...newCategories[categoryIndex].items[itemIndex],
-      [field]: value
-    };
-
-    const recalculated = recalculateEstimateTotals(newCategories);
-    setEditedEstimate({
-      ...editedEstimate,
-      ...recalculated
+  const handleItemChange = (categoryIndex: number, itemIndex: number, field: keyof EstimateItem, value: string | number) => {
+    setEditedEstimate((current) => {
+      const categories = current.categories.map((category, index) => index === categoryIndex ? {
+        ...category,
+        items: category.items.map((item, row) => {
+          if (row !== itemIndex) return item;
+          const updated = { ...item, [field]: value };
+          if (field === 'quantity' || field === 'unit_price_ht') {
+            if (updated.sell_price !== null && updated.sell_price !== undefined) updated.sell_price = calculateLineAmounts(updated).amount_ht;
+          }
+          if (field === 'materials_cost' || field === 'labor_cost') {
+            updated.cost_price = (updated.materials_cost ?? 0) + (updated.labor_cost ?? 0);
+          }
+          return updated;
+        }),
+      } : category);
+      return withTotals(current, categories);
     });
+  };
+
+  const handleCategoryChange = (categoryIndex: number, field: 'name' | 'description', value: string) => {
+    setEditedEstimate((current) => withTotals(current, current.categories.map((category, index) => index === categoryIndex ? { ...category, [field]: value } : category)));
+  };
+
+  const addItem = (categoryIndex: number) => {
+    setEditedEstimate((current) => {
+      const categories = current.categories.map((category, index) => index === categoryIndex ? {
+        ...category,
+        items: [...category.items, { poste: '', description: '', quantity: 1, unit: 'u', unit_price_ht: 0, amount_ht: 0, tva_percent: 20, tva_amount: 0, amount_ttc: 0 }],
+      } : category);
+      return withTotals(current, categories);
+    });
+    setExpandedCategories((current) => new Set(current).add(categoryIndex));
+  };
+
+  const addCategory = () => {
+    const name = newCategoryName.trim();
+    if (!name) return;
+    setEditedEstimate((current) => withTotals(current, [...current.categories, {
+      name, description: '', items: [{ poste: '', description: '', quantity: 1, unit: 'u', unit_price_ht: 0, amount_ht: 0, tva_percent: 20, tva_amount: 0, amount_ttc: 0 }],
+      subtotal_ht: 0, subtotal_tva: 0, subtotal_ttc: 0,
+    }]));
+    setExpandedCategories((current) => new Set(current).add(editedEstimate.categories.length));
+    setNewCategoryName('');
   };
 
   const handleSaveChanges = async () => {
+    if (estimate.quote_status !== 'draft') return toast.error('Seul un devis brouillon peut être modifié. Pour un devis accepté, utilisez un avenant.');
+    if (!isValidManualEstimate(editedEstimate)) {
+      return toast.error('Vérifiez les postes, quantités, prix, TVA, remise et acompte avant d’enregistrer.');
+    }
+    const finalized = recalculateManualEstimate(editedEstimate, editedEstimate.categories);
     setIsSaving(true);
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('estimates')
         .update({
-          categories: editedEstimate.categories,
-          total_ht: editedEstimate.total_ht,
-          total_tva: editedEstimate.total_tva,
-          total_ttc: editedEstimate.total_ttc,
-          total_amount: editedEstimate.total_ttc
+          categories: finalized.categories,
+          total_ht: finalized.total_ht,
+          total_tva: finalized.total_tva,
+          total_ttc: finalized.total_ttc,
+          total_amount: finalized.total_ttc,
+          discount_percent: finalized.discount_percent ?? 0,
+          discount_amount: finalized.discount_amount,
+          client_name: finalized.client_name || null,
+          payment_terms: finalized.payment_terms || null,
+          execution_delay: finalized.execution_delay || null,
+          deposit_required: finalized.deposit_required ?? 0,
+          special_conditions: finalized.special_conditions || null,
         })
-        .eq('id', estimate.id);
+        .eq('id', estimate.id)
+        .eq('quote_status', 'draft')
+        .select('id')
+        .maybeSingle();
 
       if (error) {
         console.error('Supabase error:', error);
         throw error;
       }
+      if (!data) throw new Error('Ce devis a changé ou ne peut plus être modifié. Rechargez la page.');
 
       setIsEditing(false);
       window.location.reload();
@@ -284,11 +331,12 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setIsEditing(true)}
+                  onClick={() => { setEditedEstimate({ ...estimate, categories: estimate.categories.map((category) => ({ ...category, items: category.items.map((item) => ({ ...item })) })) }); setViewMode('detailed'); setIsEditing(true); }}
+                  disabled={estimate.quote_status !== 'draft'}
                   className="text-xs sm:text-sm"
                 >
                   <Edit2 className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
-                  Modifier
+                  {estimate.quote_status === 'draft' ? 'Modifier' : 'Devis figé'}
                 </Button>
               </>
             ) : (
@@ -326,6 +374,16 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
             )}
           </div>
         </div>
+
+        {isEditing && <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-xl border border-cyan-500/30 bg-cyan-500/5 p-3 sm:p-4">
+          <div><Label htmlFor="estimate-client-name">Client</Label><Input id="estimate-client-name" value={editedEstimate.client_name || ''} onChange={(event) => setEditedEstimate((current) => ({ ...current, client_name: event.target.value }))} className="bg-brand-dark border-gray-700 text-white" /></div>
+          <div><Label htmlFor="estimate-discount">Remise (%)</Label><Input id="estimate-discount" type="number" inputMode="decimal" min="0" max="100" step="0.1" value={editedEstimate.discount_percent ?? 0} onChange={(event) => setEditedEstimate((current) => withTotals({ ...current, discount_percent: Number(event.target.value), discount_amount: Number(event.target.value) === 0 ? 0 : current.discount_amount }, current.categories))} className="bg-brand-dark border-gray-700 text-white" /></div>
+          {(editedEstimate.discount_percent ?? 0) === 0 && <div><Label htmlFor="estimate-fixed-discount">Remise fixe (€ TTC)</Label><Input id="estimate-fixed-discount" type="number" inputMode="decimal" min="0" step="0.01" value={editedEstimate.discount_amount ?? 0} onChange={(event) => setEditedEstimate((current) => ({ ...current, discount_amount: Number(event.target.value) }))} className="bg-brand-dark border-gray-700 text-white" /></div>}
+          <div><Label htmlFor="estimate-payment">Conditions de paiement</Label><Input id="estimate-payment" value={editedEstimate.payment_terms || ''} onChange={(event) => setEditedEstimate((current) => ({ ...current, payment_terms: event.target.value }))} className="bg-brand-dark border-gray-700 text-white" /></div>
+          <div><Label htmlFor="estimate-delay">Délai d’exécution</Label><Input id="estimate-delay" value={editedEstimate.execution_delay || ''} onChange={(event) => setEditedEstimate((current) => ({ ...current, execution_delay: event.target.value }))} className="bg-brand-dark border-gray-700 text-white" /></div>
+          <div><Label htmlFor="estimate-deposit">Acompte (%)</Label><Input id="estimate-deposit" type="number" inputMode="decimal" min="0" max="100" step="0.1" value={editedEstimate.deposit_required ?? 0} onChange={(event) => setEditedEstimate((current) => ({ ...current, deposit_required: Number(event.target.value) }))} className="bg-brand-dark border-gray-700 text-white" /></div>
+          <div><Label htmlFor="estimate-conditions">Conditions particulières</Label><Input id="estimate-conditions" value={editedEstimate.special_conditions || ''} onChange={(event) => setEditedEstimate((current) => ({ ...current, special_conditions: event.target.value }))} className="bg-brand-dark border-gray-700 text-white" /></div>
+        </div>}
 
         {displayEstimate.scenario_justification && (
           <div className="bg-brand-green/10 border border-brand-green/30 rounded-lg p-3 sm:p-4">
@@ -379,6 +437,8 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
                   </div>
                 </div>
               </button>
+
+              {isEditing && <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 rounded-lg border border-gray-800 p-3"><div><Label htmlFor={`category-name-${catIndex}`}>Nom de la catégorie</Label><Input id={`category-name-${catIndex}`} value={category.name} onChange={(event) => handleCategoryChange(catIndex, 'name', event.target.value)} className="bg-brand-dark border-gray-700 text-white" /></div><div><Label htmlFor={`category-description-${catIndex}`}>Description de la catégorie</Label><Input id={`category-description-${catIndex}`} value={category.description} onChange={(event) => handleCategoryChange(catIndex, 'description', event.target.value)} className="bg-brand-dark border-gray-700 text-white" /></div></div>}
 
               {isExpanded && (
                 <>
@@ -438,19 +498,17 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
                           key={itemIndex}
                           className="bg-brand-darkLight border border-gray-800 rounded-lg p-3 space-y-2"
                         >
-                          <div className="flex justify-between items-start gap-2">
+                          <div className="flex flex-wrap justify-between items-start gap-2">
                             <div className="flex-1 min-w-0">
-                              <h4 className="font-semibold text-sm truncate text-white">{item.poste}</h4>
-                              {viewMode !== 'client' && (
-                                <p className="text-xs text-gray-400 mt-1 line-clamp-2">{item.description}</p>
-                              )}
+                              {isEditing ? <div className="space-y-2"><Label htmlFor={`poste-${catIndex}-${itemIndex}`}>Poste</Label><Input id={`poste-${catIndex}-${itemIndex}`} value={item.poste} onChange={(event) => handleItemChange(catIndex, itemIndex, 'poste', event.target.value)} placeholder="Ex. Fourniture et pose" className="bg-brand-dark border-gray-700 text-white" /><Label htmlFor={`description-${catIndex}-${itemIndex}`}>Description</Label><Input id={`description-${catIndex}-${itemIndex}`} value={item.description} onChange={(event) => handleItemChange(catIndex, itemIndex, 'description', event.target.value)} className="bg-brand-dark border-gray-700 text-white" /></div> : <><h4 className="font-semibold text-sm break-words text-white">{item.poste}</h4>{viewMode !== 'client' && <p className="text-xs text-gray-400 mt-1 break-words">{item.description}</p>}</>}
                             </div>
-                            <span className="font-bold text-brand-green text-sm whitespace-nowrap">
+                            <span className="font-bold text-brand-green text-sm break-words">
                               {formatCurrency(item.amount_ttc)}
                             </span>
                           </div>
 
-                          {viewMode !== 'client' && (
+                          {isEditing && <div className="grid grid-cols-2 gap-3 border-t border-gray-800 pt-3 text-xs"><div><Label htmlFor={`quantity-${catIndex}-${itemIndex}`}>Quantité</Label><Input id={`quantity-${catIndex}-${itemIndex}`} type="number" inputMode="decimal" min="0.01" step="0.01" value={item.quantity} onChange={(event) => handleItemChange(catIndex, itemIndex, 'quantity', Number(event.target.value))} className="bg-brand-dark border-gray-700 text-white" /></div><div><Label htmlFor={`unit-${catIndex}-${itemIndex}`}>Unité</Label><Input id={`unit-${catIndex}-${itemIndex}`} value={item.unit} onChange={(event) => handleItemChange(catIndex, itemIndex, 'unit', event.target.value)} className="bg-brand-dark border-gray-700 text-white" /></div><div><Label htmlFor={`price-${catIndex}-${itemIndex}`}>Prix unitaire HT (€)</Label><Input id={`price-${catIndex}-${itemIndex}`} type="number" inputMode="decimal" min="0" step="0.01" value={item.unit_price_ht} onChange={(event) => handleItemChange(catIndex, itemIndex, 'unit_price_ht', Number(event.target.value))} className="bg-brand-dark border-gray-700 text-white" /></div><div><Label htmlFor={`vat-${catIndex}-${itemIndex}`}>TVA (%)</Label><Input id={`vat-${catIndex}-${itemIndex}`} type="number" inputMode="decimal" min="0" max="100" step="0.1" value={item.tva_percent} onChange={(event) => handleItemChange(catIndex, itemIndex, 'tva_percent', Number(event.target.value))} className="bg-brand-dark border-gray-700 text-white" /></div></div>}
+                          {!isEditing && viewMode !== 'client' && (
                             <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-gray-800">
                               <div>
                                 <span className="text-gray-500">Quantité:</span>
@@ -471,7 +529,9 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
                             </div>
                           )}
 
-                          {viewMode === 'detailed' && (item.materials_cost || item.labor_cost) && (
+                          {isEditing && <Button type="button" variant="outline" size="sm" onClick={() => handleDeleteItem(catIndex, itemIndex)} className="min-h-11 text-red-300"><Trash2 className="h-4 w-4 mr-2" />Supprimer la ligne</Button>}
+
+                          {viewMode === 'detailed' && !isEditing && (item.materials_cost || item.labor_cost) && (
                             <div className="text-xs text-gray-500 pt-2 border-t border-gray-800 space-y-1">
                               {item.materials_cost && (
                                 <div className="text-gray-400">Matériaux: {formatCurrency(item.materials_cost)}</div>
@@ -482,7 +542,7 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
                             </div>
                           )}
 
-                          {viewMode === 'internal' && margin && (
+                          {viewMode === 'internal' && (margin || isEditing) && (
                             <div className="text-xs pt-2 border-t grid grid-cols-2 gap-2">
                               <div>
                                 <span className="text-gray-500">Matériaux:</span>
@@ -495,13 +555,13 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
                               <div>
                                 <span className="text-gray-500">Marge:</span>
                                 <span className="ml-1 font-semibold text-green-700">
-                                  {formatCurrency(margin.margin)}
+                                  {margin ? formatCurrency(margin.margin) : '—'}
                                 </span>
                               </div>
                               <div>
                                 <span className="text-gray-500">Marge %:</span>
                                 <span className="ml-1 font-semibold text-brand-green">
-                                  {margin.marginPercent.toFixed(1)}%
+                                  {margin ? `${margin.marginPercent.toFixed(1)}%` : '—'}
                                 </span>
                               </div>
                             </div>
@@ -510,6 +570,8 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
                       );
                     })}
                   </div>
+
+                  {isEditing && <Button type="button" variant="outline" onClick={() => addItem(catIndex)} className="w-full min-h-11 border-dashed border-cyan-600/50 text-cyan-300"><Plus className="h-4 w-4 mr-2" />Ajouter une ligne dans {category.name}</Button>}
 
                   <div className="bg-brand-darkLight px-3 sm:px-4 py-2 sm:py-3 rounded font-bold border-t-2 border-gray-800">
                     <div className="flex justify-between items-center text-sm sm:text-base">
@@ -530,32 +592,34 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
           );
         })}
 
+        {isEditing && <div className="rounded-lg border border-dashed border-cyan-600/50 bg-brand-darkLight p-3 sm:p-4 space-y-2"><Label htmlFor="new-estimate-category" className="text-sm text-white">Nouvelle catégorie</Label><div className="flex flex-col sm:flex-row gap-2"><Input id="new-estimate-category" value={newCategoryName} onChange={(event) => setNewCategoryName(event.target.value)} placeholder="Ex. Travaux supplémentaires" className="bg-brand-dark border-gray-700 text-white" /><Button type="button" variant="outline" onClick={addCategory} disabled={!newCategoryName.trim()} className="min-h-11 whitespace-nowrap"><Plus className="h-4 w-4 mr-2" />Ajouter</Button></div></div>}
+
         <div className="bg-brand-darkCard p-4 sm:p-6 rounded-lg border-2 border-gray-800 space-y-2 sm:space-y-3">
           <h3 className="font-bold text-lg sm:text-xl mb-3 sm:mb-4 text-white">Récapitulatif</h3>
           {viewMode !== 'client' && (
             <>
               <div className="flex justify-between text-sm sm:text-lg text-gray-300">
                 <span>Total HT:</span>
-                <span className="font-semibold text-white">{formatCurrency(estimate.total_ht)}</span>
+                <span className="font-semibold text-white">{formatCurrency(displayEstimate.total_ht)}</span>
               </div>
               <div className="flex justify-between text-sm sm:text-lg text-gray-300">
                 <span>Total TVA:</span>
-                <span className="font-semibold text-white">{formatCurrency(estimate.total_tva)}</span>
+                <span className="font-semibold text-white">{formatCurrency(displayEstimate.total_tva)}</span>
               </div>
             </>
           )}
-          {typeof estimate.discount_amount === 'number' && Number.isFinite(estimate.discount_amount) && estimate.discount_amount > 0 && (
+          {typeof displayEstimate.discount_amount === 'number' && Number.isFinite(displayEstimate.discount_amount) && displayEstimate.discount_amount > 0 && (
             <>
               <div className="flex justify-between text-sm sm:text-lg text-brand-green">
-                <span>Remise ({estimate.discount_percent}%):</span>
-                <span className="font-semibold">- {formatCurrency(estimate.discount_amount)}</span>
+                <span>{displayEstimate.discount_percent ? `Remise (${displayEstimate.discount_percent}%)` : 'Remise fixe'}:</span>
+                <span className="font-semibold">- {formatCurrency(displayEstimate.discount_amount)}</span>
               </div>
               <div className="border-t border-gray-800 pt-2"></div>
             </>
           )}
-          <div className="flex justify-between text-xl sm:text-2xl font-bold text-brand-green pt-2 border-t-2 border-gray-700">
+          <div className="flex flex-wrap justify-between gap-2 text-xl sm:text-2xl font-bold text-brand-green pt-2 border-t-2 border-gray-700">
             <span>Total TTC:</span>
-            <span>{formatCurrency(estimate.total_ttc - (estimate.discount_amount || 0))}</span>
+            <span>{formatCurrency(displayEstimate.total_ttc - (displayEstimate.discount_amount || 0))}</span>
           </div>
           {viewMode === 'internal' && totalMargin() && (
             <div className="flex justify-between text-sm sm:text-lg text-brand-green pt-2 border-t border-gray-800">
@@ -567,31 +631,31 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
           )}
         </div>
 
-        {(estimate.payment_terms || estimate.execution_delay || estimate.deposit_required || estimate.special_conditions) && (
+        {(displayEstimate.payment_terms || displayEstimate.execution_delay || displayEstimate.deposit_required || displayEstimate.special_conditions) && (
           <div className="bg-brand-darkCard p-4 sm:p-6 rounded-lg border border-gray-800 space-y-2 sm:space-y-3">
             <h3 className="font-bold text-base sm:text-lg mb-2 sm:mb-3 text-white">Informations Devis</h3>
-            {estimate.payment_terms && (
+            {displayEstimate.payment_terms && (
               <div className="text-sm sm:text-base">
                 <span className="font-semibold text-gray-300">Conditions de paiement:</span>
-                <p className="text-gray-400 mt-1">{estimate.payment_terms}</p>
+                <p className="text-gray-400 mt-1">{displayEstimate.payment_terms}</p>
               </div>
             )}
-            {estimate.execution_delay && (
+            {displayEstimate.execution_delay && (
               <div className="text-sm sm:text-base">
                 <span className="font-semibold text-gray-300">Délai d'exécution:</span>
-                <p className="text-gray-400 mt-1">{estimate.execution_delay}</p>
+                <p className="text-gray-400 mt-1">{displayEstimate.execution_delay}</p>
               </div>
             )}
-            {typeof estimate.deposit_required === 'number' && Number.isFinite(estimate.deposit_required) && estimate.deposit_required > 0 && (
+            {typeof displayEstimate.deposit_required === 'number' && Number.isFinite(displayEstimate.deposit_required) && displayEstimate.deposit_required > 0 && (
               <div className="text-sm sm:text-base">
                 <span className="font-semibold text-gray-300">Acompte demandé:</span>
-                <p className="text-gray-400 mt-1">{estimate.deposit_required}% à la commande</p>
+                <p className="text-gray-400 mt-1">{displayEstimate.deposit_required}% à la commande</p>
               </div>
             )}
-            {estimate.special_conditions && (
+            {displayEstimate.special_conditions && (
               <div className="text-sm sm:text-base">
                 <span className="font-semibold text-gray-300">Conditions particulières:</span>
-                <p className="text-gray-400 mt-1">{estimate.special_conditions}</p>
+                <p className="text-gray-400 mt-1">{displayEstimate.special_conditions}</p>
               </div>
             )}
           </div>

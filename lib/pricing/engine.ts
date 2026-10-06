@@ -61,7 +61,10 @@ function isFinitePrice(value: number | null | undefined): value is number {
 
 /** Rounds a monetary amount to the nearest cent. Guards against -0. */
 export function roundCents(amount: number): number {
-  const rounded = Math.round((amount + Number.EPSILON) * 100) / 100;
+  if (!Number.isFinite(amount)) return Number.NaN;
+  const scaled = Math.abs(amount) * 100;
+  // Multiplication can represent an exact half-cent as 6322.499999999999.
+  const rounded = Math.sign(amount) * Math.round(scaled + Number.EPSILON * Math.max(1, scaled) * 2) / 100;
   return rounded === 0 ? 0 : rounded;
 }
 

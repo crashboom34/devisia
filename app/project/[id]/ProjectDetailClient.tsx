@@ -196,6 +196,10 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
 
   const handleDeleteProject = async () => {
     if (!project) return;
+    if (estimates.some((estimate) => estimate.quote_status === 'accepted')) {
+      toast.error('Ce projet contient un devis accepté : son historique ne peut pas être supprimé.');
+      return;
+    }
 
     setIsDeleting(true);
     try {
@@ -245,6 +249,10 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
   };
 
   const confirmDeleteEstimate = (estimateId: string) => {
+    if (estimates.some((estimate) => estimate.id === estimateId && estimate.quote_status === 'accepted')) {
+      toast.error('Un devis accepté est figé et ne peut pas être supprimé.');
+      return;
+    }
     setEstimateToDelete(estimateId);
     setShowDeleteEstimateDialog(true);
   };
@@ -425,48 +433,25 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
                   const isExpanded = expandedScenarios.has(estimate.scenario_type);
                   return (
                     <div key={estimate.id} className="border border-gray-800 bg-brand-darkCard rounded-lg overflow-hidden">
-                      <button
-                        onClick={() => toggleScenario(estimate.scenario_type)}
-                        className="w-full px-4 py-3 flex items-center justify-between hover:bg-brand-darkLight transition-colors"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className={`px-3 py-1 rounded-full border ${getScenarioColor(estimate.scenario_type)}`}>
-                            {getScenarioLabel(estimate.scenario_type)}
-                          </div>
-                          <span className="font-bold text-lg text-white">
-                            {(estimate.estimate_kind === 'preliminary' ? estimate.total_ht : estimate.total_ttc || estimate.total_amount || 0).toLocaleString('fr-FR', {
-                              style: 'currency',
-                              currency: 'EUR'
-                            })} {estimate.estimate_kind === 'preliminary' && <span className="text-xs text-amber-300">HT · préliminaire</span>}
+                      <div className="flex items-center gap-1 pr-2">
+                        <button type="button" onClick={() => toggleScenario(estimate.scenario_type)}
+                          aria-expanded={isExpanded} aria-controls={`estimate-panel-${estimate.id}`}
+                          className="min-w-0 flex-1 px-3 sm:px-4 py-3 flex items-center justify-between gap-2 text-left hover:bg-brand-darkLight transition-colors">
+                          <span className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
+                            <span className={`px-3 py-1 rounded-full border ${getScenarioColor(estimate.scenario_type)}`}>{getScenarioLabel(estimate.scenario_type)}</span>
+                            <span className="font-bold text-base sm:text-lg text-white break-words">{(estimate.estimate_kind === 'preliminary' ? estimate.total_ht : estimate.total_ttc ?? estimate.total_amount ?? 0).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })} {estimate.estimate_kind === 'preliminary' && <span className="text-xs text-amber-300">HT · préliminaire</span>}</span>
+                            {estimate.model_used && <span className="text-xs text-gray-500 hidden sm:inline">• {estimate.model_used}</span>}
                           </span>
-                          {estimate.model_used && (
-                            <span className="text-xs text-gray-500 hidden sm:inline">
-                              • {estimate.model_used}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              confirmDeleteEstimate(estimate.id);
-                            }}
-                            className="h-8 w-8 text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                          {isExpanded ? (
-                            <ChevronUp className="h-5 w-5 text-gray-400" />
-                          ) : (
-                            <ChevronDown className="h-5 w-5 text-gray-400" />
-                          )}
-                        </div>
-                      </button>
+                          {isExpanded ? <ChevronUp className="h-5 w-5 shrink-0 text-gray-400" /> : <ChevronDown className="h-5 w-5 shrink-0 text-gray-400" />}
+                        </button>
+                        {estimate.quote_status !== 'accepted' && <Button type="button" variant="ghost" size="icon" aria-label="Supprimer ce devis"
+                          onClick={() => confirmDeleteEstimate(estimate.id)} className="min-h-11 min-w-11 text-red-400 hover:text-red-300 hover:bg-red-500/10">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>}
+                      </div>
 
                       {isExpanded && (
-                        <div className="border-t border-gray-800">
+                        <div id={`estimate-panel-${estimate.id}`} className="border-t border-gray-800">
                           {estimate.estimate_kind === 'preliminary' ? <PreliminaryEstimateCard estimate={estimate} currentVersion={refinementVersion} projectDescription={project.description} onFinalized={() => user && loadProject()} /> : <EstimateTable
                             estimate={{
                               id: estimate.id,
@@ -527,10 +512,12 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
                   variant="outline"
                   className="w-full text-red-400 hover:text-red-300 hover:bg-red-500/10 border-red-500/50 text-sm sm:text-base"
                   onClick={() => setShowDeleteDialog(true)}
+                  disabled={estimates.some((estimate) => estimate.quote_status === 'accepted')}
                 >
                   <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
                   Supprimer le Projet
                 </Button>
+                {estimates.some((estimate) => estimate.quote_status === 'accepted') && <p className="text-xs text-amber-300">Projet conservé : un devis accepté fait partie de son historique.</p>}
               </CardContent>
             </Card>
 

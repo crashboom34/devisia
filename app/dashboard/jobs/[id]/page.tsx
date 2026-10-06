@@ -16,6 +16,7 @@ import { getOrganizationEntitlements, hasEntitlement } from '@/lib/entitlements'
 import { supabase } from '@/lib/supabase';
 import { prepareTimeEntryWrite, validateDailyMinutes, type ActualCostLine, type CostCategory as JobCostCategory, type PlannedCostLine, type TimeCostLine } from '@/lib/job-costing';
 import { calculateJobIntelligence, type ChangeOrderStatus } from '@/lib/job-intelligence';
+import { normalizeJobCostCatalogKey } from '@/lib/job-cost-catalog';
 import { formatCurrencyEUR } from '@/lib/pricing/engine';
 
 type CostCategory = ActualCostLine['category'];
@@ -26,8 +27,9 @@ interface Job {
 }
 interface Budget { material_cents: number; labor_cents: number; subcontract_cents: number; equipment_cents: number; other_cents: number }
 interface CostRow { id: string; category: CostCategory; description: string; amount_ht_cents: number; incurred_on: string }
+interface CatalogRow { id: string; category: CostCategory; description: string; description_key: string; amount_ht_cents: number; use_count: number }
 interface TimeRow { id: string; minutes: number; hourly_cost_cents_snapshot: number; work_date: string; employees?: { first_name: string; last_name: string } | null }
-interface Employee { id: string; first_name: string; last_name: string; direct_hourly_cost_cents: number | null; employer_monthly_cost_cents: number | null }
+interface Employee { id: string; first_name: string; last_name: string; direct_hourly_cost_cents: number | null; employer_monthly_cost_cents: number | null; contracted_weekly_minutes: number | null }
 interface ChangeOrderRow {
   id: string; title: string; description: string | null; status: ChangeOrderStatus;
   sold_delta_cents: number; planned_cost_delta_cents: number; cost_category: JobCostCategory;
@@ -64,6 +66,9 @@ export default function JobDetailPage() {
   const [job, setJob] = useState<Job | null>(null);
   const [budget, setBudget] = useState<Budget | null>(null);
   const [costs, setCosts] = useState<CostRow[]>([]);
+  const [catalog, setCatalog] = useState<CatalogRow[]>([]);
+  const [catalogQuery, setCatalogQuery] = useState('');
+  const [catalogError, setCatalogError] = useState(false);
   const [time, setTime] = useState<TimeRow[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [changeOrders, setChangeOrders] = useState<ChangeOrderRow[]>([]);
@@ -98,7 +103,7 @@ export default function JobDetailPage() {
       supabase.from('job_budget_snapshots').select('material_cents, labor_cents, subcontract_cents, equipment_cents, other_cents').eq('job_id', params.id).order('version', { ascending: false }).limit(1).maybeSingle(),
       supabase.from('job_cost_entries').select('id, category, description, amount_ht_cents, incurred_on').eq('job_id', params.id).order('incurred_on', { ascending: false }),
       supabase.from('time_entries').select('id, minutes, hourly_cost_cents_snapshot, work_date, employees(first_name,last_name)').eq('job_id', params.id).order('work_date', { ascending: false }),
-      supabase.from('employees').select('id, first_name, last_name, direct_hourly_cost_cents, employer_monthly_cost_cents').eq('organization_id', loadedJob.organization_id).eq('status', 'active').order('last_name'),
+      supabase.from('employees').select('id, first_name, last_name, direct_hourly_cost_cents, employer_monthly_cost_cents, contracted_weekly_minutes').eq('organization_id', loadedJob.organization_id).eq('status', 'active').order('last_name'),
       supabase.from('job_change_orders').select('id, title, description, status, sold_delta_cents, planned_cost_delta_cents, cost_category, approved_on, created_at').eq('job_id', params.id).order('created_at', { ascending: false }),
       supabase.from('quote_classifications').select('project_type').eq('project_id', loadedJob.source_project_id).maybeSingle(),
     ]);
@@ -138,6 +143,26 @@ export default function JobDetailPage() {
     load().catch((error) => { console.error('[job] loading failed', error); toast.error('Chargement du chantier impossible'); setLoading(false); });
   }, [authLoading, user, load]);
 
+  useEffect(() => {
+    if (!job) return;
+    let active = true;
+    const timer = window.setTimeout(async () => {
+      let query = supabase.from('job_cost_catalog')
+        .select('id, category, description, description_key, amount_ht_cents, use_count')
+        .eq('organization_id', job.organization_id)
+        .eq('category', costCategory)
+        .order('last_used_at', { ascending: false })
+        .limit(8);
+      const searchKey = normalizeJobCostCatalogKey(catalogQuery).slice(0, 80);
+      if (searchKey) query = query.ilike('description_key', `%${searchKey}%`);
+      const result = await query;
+      if (!active) return;
+      setCatalog((result.data || []) as CatalogRow[]);
+      setCatalogError(Boolean(result.error));
+    }, 250);
+    return () => { active = false; window.clearTimeout(timer); };
+  }, [job, costCategory, catalogQuery, costs]);
+
   const profitability = useMemo(() => {
     if (!job) return null;
     const planned: PlannedCostLine[] = budget ? [
@@ -164,6 +189,9 @@ export default function JobDetailPage() {
     });
   }, [job, budget, costs, time, changeOrders, progress]);
 
+  const searchKey = normalizeJobCostCatalogKey(catalogQuery);
+  const catalogMatches = catalog.filter((entry) => entry.category === costCategory && entry.description_key.includes(searchKey));
+
   const addCost = async (event: FormEvent) => {
     event.preventDefault();
     if (!job || !user) return;
@@ -174,7 +202,8 @@ export default function JobDetailPage() {
       description: costDescription.trim(), amount_ht_cents: cents, created_by: user.id,
     });
     if (error) return toast.error(error.message);
-    setCostAmount(''); setCostDescription(''); await load(); toast.success('Coût réel enregistré');
+    setCostAmount(''); setCostDescription(''); setCatalogQuery(''); await load();
+    toast.success('Coût réel enregistré');
   };
 
   const addTime = async (event: FormEvent) => {
@@ -182,7 +211,8 @@ export default function JobDetailPage() {
     if (!job || !user) return;
     const employee = employees.find((item) => item.id === employeeId);
     const minutes = Math.round(Number(hours.replace(',', '.')) * 60);
-    const currentHourly = employee?.direct_hourly_cost_cents ?? (employee?.employer_monthly_cost_cents ? Math.round(employee.employer_monthly_cost_cents / 151.67) : null);
+    const monthlyHours = employee?.contracted_weekly_minutes ? employee.contracted_weekly_minutes / 60 * 52 / 12 : 35 * 52 / 12;
+    const currentHourly = employee?.direct_hourly_cost_cents ?? (employee?.employer_monthly_cost_cents !== null && employee?.employer_monthly_cost_cents !== undefined ? Math.round(employee.employer_monthly_cost_cents / monthlyHours) : null);
     try { validateDailyMinutes(0, minutes); } catch { return toast.error('Salarié, durée ou coût horaire invalide'); }
     if (!employee || currentHourly === null) return toast.error('Salarié, durée ou coût horaire invalide');
     const workDate = new Date().toISOString().slice(0, 10);
@@ -268,8 +298,8 @@ export default function JobDetailPage() {
     <DashboardLayout>
       <div className="max-w-7xl mx-auto space-y-6">
         <PageHeader title={job.name} subtitle={[job.client_name, job.address].filter(Boolean).join(' · ') || 'Pilotage du chantier'} breadcrumbs={[{ label: 'Chantiers', href: '/dashboard/jobs' }, { label: job.name }]} />
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {metrics.map(({ label, value, icon: Icon, color }) => <Card key={label} className="bg-slate-800/50 border-slate-700/40"><CardContent className="p-4"><Icon className={`h-4 w-4 ${color} mb-2`} /><p className="text-xs text-slate-500">{label}</p><p className={`text-lg font-bold ${color}`}>{formatCurrencyEUR(value / 100)}</p></CardContent></Card>)}
+        <div className="grid grid-cols-1 min-[380px]:grid-cols-2 lg:grid-cols-4 gap-3">
+          {metrics.map(({ label, value, icon: Icon, color }) => <Card key={label} className="bg-slate-800/50 border-slate-700/40 min-w-0"><CardContent className="p-4 min-w-0"><Icon className={`h-4 w-4 ${color} mb-2`} /><p className="text-xs text-slate-500">{label}</p><p className={`text-base sm:text-lg font-bold break-words ${color}`}>{formatCurrencyEUR(value / 100)}</p></CardContent></Card>)}
         </div>
 
         {profitability.approvedChangeOrderCount > 0 && <div className="flex gap-3 rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-4 text-sm text-cyan-100"><CheckCircle2 className="h-5 w-5 shrink-0" /><span>{profitability.approvedChangeOrderCount} avenant{profitability.approvedChangeOrderCount > 1 ? 's' : ''} accepté{profitability.approvedChangeOrderCount > 1 ? 's' : ''} : vendu {formatCurrencyEUR(profitability.initialSoldCents / 100)} → {formatCurrencyEUR(profitability.soldCents / 100)}, budget {formatCurrencyEUR(profitability.initialPlannedCostCents / 100)} → {formatCurrencyEUR(profitability.plannedCostCents / 100)}.</span></div>}
@@ -280,17 +310,25 @@ export default function JobDetailPage() {
           <Card className="bg-slate-800/40 border-slate-700/40">
             <CardHeader><CardTitle className="text-white text-base">Ajouter un coût réel</CardTitle></CardHeader>
             <CardContent><form onSubmit={addCost} className="space-y-3">
-              <div><Label>Catégorie</Label><Select value={costCategory} onValueChange={(value) => setCostCategory(value as CostCategory)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{costCategories.map((category) => <SelectItem key={category.value} value={category.value}>{category.label}</SelectItem>)}</SelectContent></Select></div>
+              <div><Label>Catégorie</Label><Select value={costCategory} onValueChange={(value) => { setCostCategory(value as CostCategory); setCatalogQuery(''); }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{costCategories.map((category) => <SelectItem key={category.value} value={category.value}>{category.label}</SelectItem>)}</SelectContent></Select></div>
+              <div className="rounded-xl border border-slate-700/50 bg-slate-900/40 p-3 space-y-2">
+                <Label htmlFor="catalog-search">Retrouver un produit déjà saisi</Label>
+                <Input id="catalog-search" type="search" value={catalogQuery} onChange={(event) => setCatalogQuery(event.target.value)} placeholder="Rechercher dans cette catégorie" aria-controls="catalog-results" />
+                <div id="catalog-results" className="max-h-48 overflow-y-auto space-y-1" aria-live="polite">
+                  {catalogMatches.length ? catalogMatches.map((entry) => <button key={entry.id} type="button" onClick={() => { setCostDescription(entry.description); setCostAmount(String(entry.amount_ht_cents / 100)); setCatalogQuery(entry.description); }} className="w-full min-h-11 rounded-lg border border-slate-700/50 px-3 py-2 text-left flex items-center justify-between gap-3 hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-400"><span className="text-sm text-slate-200 break-words min-w-0">{entry.description}</span><span className="text-sm font-medium text-cyan-300 whitespace-nowrap">{formatCurrencyEUR(entry.amount_ht_cents / 100)} HT</span></button>) : <p className="text-xs text-slate-500">{catalogError ? 'Catalogue indisponible pour le moment.' : 'Aucun produit enregistré dans cette catégorie.'}</p>}
+                </div>
+              </div>
               <div><Label htmlFor="cost-description">Description</Label><Input id="cost-description" value={costDescription} onChange={(event) => setCostDescription(event.target.value)} maxLength={160} required /></div>
               <div><Label htmlFor="cost-amount">Montant HT (€)</Label><Input id="cost-amount" inputMode="decimal" value={costAmount} onChange={(event) => setCostAmount(event.target.value)} required /></div>
-              <Button type="submit" variant="primary" className="w-full">Enregistrer le coût</Button>
+              <p className={catalogError ? 'text-xs text-amber-300' : 'text-xs text-slate-500'}>{catalogError ? 'Catalogue indisponible : ce coût peut être enregistré, mais sa réutilisation n’est pas garantie.' : 'La description et le montant HT seront mémorisés automatiquement dans le catalogue de cette catégorie pour les prochains chantiers.'}</p>
+              <Button type="submit" variant="primary" className="w-full min-h-11">Enregistrer le coût</Button>
             </form></CardContent>
           </Card>
 
           <Card className="bg-slate-800/40 border-slate-700/40">
             <CardHeader><CardTitle className="text-white text-base">Ajouter du temps</CardTitle></CardHeader>
             <CardContent>{employees.length ? <form onSubmit={addTime} className="space-y-3">
-              <div><Label>Salarié</Label><Select value={employeeId} onValueChange={setEmployeeId}><SelectTrigger><SelectValue placeholder="Choisir" /></SelectTrigger><SelectContent>{employees.map((employee) => <SelectItem key={employee.id} value={employee.id}>{employee.first_name} {employee.last_name}</SelectItem>)}</SelectContent></Select></div>
+              <div><Label>Salarié</Label><Select value={employeeId} onValueChange={setEmployeeId}><SelectTrigger><SelectValue placeholder="Choisir" /></SelectTrigger><SelectContent>{employees.map((employee) => <SelectItem key={employee.id} value={employee.id}>{employee.first_name} {employee.last_name}{employee.direct_hourly_cost_cents === null && employee.employer_monthly_cost_cents === null ? ' · coût à renseigner' : ''}</SelectItem>)}</SelectContent></Select></div>
               <div><Label htmlFor="hours">Heures aujourd’hui (total sur ce chantier)</Label><Input id="hours" inputMode="decimal" value={hours} onChange={(event) => setHours(event.target.value)} required /></div>
               <Button type="submit" variant="primary" className="w-full"><Clock3 className="h-4 w-4 mr-2" />Enregistrer le temps</Button>
             </form> : <p className="text-sm text-slate-400">Ajoutez d’abord un salarié dans Équipe. Cette fonction est réservée à Pro.</p>}</CardContent>

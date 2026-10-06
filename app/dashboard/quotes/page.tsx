@@ -126,7 +126,7 @@ export default function QuotesPage() {
         />
 
         {/* KPI Cards - horizontal scroll on mobile */}
-        <div className="-mx-4 px-4 sm:mx-0 sm:px-0">
+        <div className="-mx-3 px-3 min-[380px]:-mx-4 min-[380px]:px-4 sm:mx-0 sm:px-0 min-w-0">
           <div className="flex gap-3 overflow-x-auto pb-1 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:gap-4 lg:gap-6 sm:overflow-visible scrollbar-hide">
             <KpiCard title="Total Devis" value={stats.total} subtitle={`${stats.approvedCount} approuves`} icon={FileText} iconColor="text-cyan-400" />
             <KpiCard title="Valeur Totale" value={`${stats.totalValue.toFixed(2)} EUR`} valueColor="text-cyan-400" subtitle="Tous devis" icon={Euro} iconColor="text-cyan-400" />

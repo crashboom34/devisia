@@ -142,7 +142,7 @@ export default function DashboardPage() {
             {isAdmin && <AdminPlanSimulator userId={user?.id} />}
 
             {/* KPI Strip -- horizontal scroll on mobile */}
-            <div className="-mx-4 px-4 sm:mx-0 sm:px-0">
+            <div className="-mx-3 px-3 min-[380px]:-mx-4 min-[380px]:px-4 sm:mx-0 sm:px-0 min-w-0">
               <div className="flex gap-3 overflow-x-auto pb-1 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:gap-4 lg:gap-6 sm:overflow-visible scrollbar-hide">
                 {[
                   { title: 'Total devis', value: estimateMetrics.total, sub: 'Tous les scénarios', color: 'cyan', icon: FileText },
