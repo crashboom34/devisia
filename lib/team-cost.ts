@@ -28,7 +28,7 @@ export function buildEmployerCostEstimate(
     || !Number.isSafeInteger(grossMonthlyCents) || !Number.isSafeInteger(extraMonthlyCostCents)
     || grossMonthlyCents <= 0 || grossMonthlyCents > MAX_STORED_CENTS
     || extraMonthlyCostCents < 0 || extraMonthlyCostCents > MAX_STORED_CENTS
-    || weeklyHours <= 0 || weeklyHours > 60) return null;
+    || weeklyHours <= 0 || weeklyHours > 35) return null;
   const employerMonthlyCostCents = Math.round(urssafMonthlyCostEuros * 100);
   if (!Number.isSafeInteger(employerMonthlyCostCents) || employerMonthlyCostCents < grossMonthlyCents) return null;
   const totalMonthlyCostCents = employerMonthlyCostCents + extraMonthlyCostCents;
@@ -82,7 +82,9 @@ interface UrssafEvaluation {
 /** Only the gross amount is transmitted; no employee identity leaves Devisia. */
 export async function fetchUrssafEmployerCost(grossMonthlyCents: number, weeklyHours: number, signal?: AbortSignal): Promise<number> {
   if (!Number.isSafeInteger(grossMonthlyCents) || grossMonthlyCents <= 0 || grossMonthlyCents > MAX_STORED_CENTS) throw new Error('Salaire brut invalide');
-  if (!Number.isFinite(weeklyHours) || weeklyHours <= 0 || weeklyHours > 60) throw new Error('Durée hebdomadaire invalide');
+  // The simulator input below models standard full-time and part-time contracts.
+  // Overtime needs additional payroll inputs; never silently price it as 35 h.
+  if (!Number.isFinite(weeklyHours) || weeklyHours <= 0 || weeklyHours > 35) throw new Error('Au-delà de 35 h, saisissez un coût horaire chargé vérifié');
   if (signal?.aborted) throw new DOMException('Calculation cancelled', 'AbortError');
   const controller = new AbortController();
   const abort = () => controller.abort();

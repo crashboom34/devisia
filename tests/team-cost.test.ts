@@ -31,6 +31,7 @@ describe('team employer costs', () => {
     expect(buildEmployerCostEstimate(0, 0, 35)).toBeNull();
     expect(buildEmployerCostEstimate(300000, 2000, 35)).toBeNull();
     expect(buildEmployerCostEstimate(300000, 4000, 0)).toBeNull();
+    expect(buildEmployerCostEstimate(300000, 4000, 39)).toBeNull();
     expect(buildEmployerCostEstimate(300000, 25_000_000, 35)).toBeNull();
   });
 
@@ -62,6 +63,14 @@ describe('team employer costs', () => {
     const sent = JSON.parse(fetchMock.mock.calls[0][1].body as string);
     expect(sent.situation['salarié . contrat . temps de travail . temps partiel']).toBe('oui');
     expect(sent.situation['salarié . contrat . temps de travail . temps partiel . heures par semaine']).toBe('28 heure/semaine');
+  });
+
+  it('requires a verified manual rate for schedules with overtime', async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    await expect(fetchUrssafEmployerCost(300000, 39)).rejects.toThrow('Au-delà de 35 h');
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(buildManualEmployerCostEstimate(300000, 39, 3500)).not.toBeNull();
   });
 
   it('does not start a request when the calculation was already cancelled', async () => {

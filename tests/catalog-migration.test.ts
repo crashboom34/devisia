@@ -17,6 +17,7 @@ describe('cost catalog and accepted quote migrations', () => {
       await db.exec(`
         create role authenticated;
         create role anon;
+        create schema auth;
         create schema private;
         create table public.organizations (id uuid primary key);
         create table public.employees (id uuid primary key, organization_id uuid references public.organizations(id));
@@ -26,14 +27,44 @@ describe('cost catalog and accepted quote migrations', () => {
           category text not null, description text not null,
           amount_ht_cents bigint not null, created_at timestamptz not null default now()
         );
-        create table public.projects (id uuid primary key, organization_id uuid not null references public.organizations(id));
+        create table public.projects (
+          id uuid primary key, organization_id uuid not null references public.organizations(id),
+          title text default 'QA', client_name text, client_address text
+        );
         create table public.estimates (
           id uuid primary key, organization_id uuid not null references public.organizations(id),
           project_id uuid not null references public.projects(id), quote_status text not null,
+          estimate_kind text not null default 'quote',
           categories jsonb, total_ht numeric, total_tva numeric, total_ttc numeric, total_amount numeric,
           discount_percent numeric, discount_amount numeric, client_name text, payment_terms text,
           execution_delay text, deposit_required numeric, special_conditions text, content text
         );
+        create table public.quote_cost_items (
+          id uuid primary key default gen_random_uuid(), organization_id uuid not null,
+          estimate_id uuid not null references public.estimates(id),
+          line_key text not null, category text not null, description text not null,
+          quantity numeric not null default 1, unit text not null default 'forfait',
+          unit_cost_cents bigint not null default 0, planned_minutes integer not null default 0,
+          hourly_cost_cents integer not null default 0, other_cost_cents bigint not null default 0,
+          sale_price_cents bigint not null default 0, source text,
+          updated_at timestamptz default now(), unique (estimate_id, line_key)
+        );
+        create table public.jobs (
+          id uuid primary key default gen_random_uuid(), organization_id uuid not null,
+          source_estimate_id uuid not null unique, source_project_id uuid not null,
+          name text, client_name text, address text, sold_total_ht_cents bigint,
+          initial_budget_cents bigint, created_by uuid, updated_at timestamptz default now()
+        );
+        create table public.job_budget_snapshots (
+          id uuid primary key default gen_random_uuid(), organization_id uuid not null,
+          job_id uuid not null, version integer not null, sold_total_ht_cents bigint,
+          material_cents bigint, labor_cents bigint, subcontract_cents bigint,
+          equipment_cents bigint, other_cents bigint, source_payload jsonb,
+          unique (job_id, version)
+        );
+        create function auth.uid() returns uuid language sql stable set search_path = '' as $$
+          select nullif(current_setting('qa.user_id', true), '')::uuid
+        $$;
         create function private.is_org_admin(org_id uuid) returns boolean language sql stable security definer
           set search_path = '' as $$
           select current_setting('qa.org_id', true) = org_id::text
@@ -42,7 +73,7 @@ describe('cost catalog and accepted quote migrations', () => {
         create function private.has_entitlement(org_id uuid, feature text) returns boolean language sql stable security definer
           set search_path = '' as $$
           select current_setting('qa.org_id', true) = org_id::text
-            and current_setting('qa.entitled', true) = 'true' and feature = 'purchase_tracking'
+            and current_setting('qa.entitled', true) = 'true' and feature in ('purchase_tracking', 'job_management')
           $$;
         grant usage on schema private to authenticated;
         grant execute on function private.is_org_admin(uuid), private.has_entitlement(uuid, text) to authenticated;
@@ -51,12 +82,19 @@ describe('cost catalog and accepted quote migrations', () => {
         grant select on public.projects to authenticated;
         create policy "Admins read own estimates" on public.estimates for select to authenticated
           using (private.is_org_admin(organization_id));
+        create policy "Users can update own estimates" on public.estimates for update to authenticated
+          using (true) with check (true);
       `);
       await db.query('insert into public.organizations (id) values ($1), ($2)', [orgA, orgB]);
       await db.query('insert into public.projects (id, organization_id) values ($1, $2), ($3, $4)', [projectA, orgA, projectB, orgB]);
       await db.query("insert into public.job_cost_entries (organization_id, category, description, amount_ht_cents) values ($1, 'material', 'Sac ciment 25 kg', 1200), ($2, 'material', 'Ciment 25kg', 999)", [orgA, orgB]);
 
       await db.exec(migration);
+      await db.exec(`
+        create trigger sync_quote_cost_items_from_estimate
+          after insert or update of categories on public.estimates
+          for each row execute function private.sync_quote_cost_items_from_estimate();
+      `);
       await db.exec(backfill);
       await db.exec(backfill);
       expect((await db.query('select count(*)::int as count from public.job_cost_catalog')).rows[0]).toEqual({ count: 2 });
@@ -99,6 +137,18 @@ describe('cost catalog and accepted quote migrations', () => {
           ('11111111-1111-4111-8111-111111111111', '${orgA}', '${projectA}', 'sent', 'before');
         update public.estimates set content = 'after' where quote_status = 'draft';
       `);
+      await db.exec(`
+        update public.estimates set categories =
+          '[{"name":"Matériaux","items":[{"poste":"Ciment","materials_cost":10,"amount_ht":20}]}]'::jsonb
+          where quote_status = 'draft';
+        update public.quote_cost_items set unit_cost_cents = 1250
+          where estimate_id = 'cccccccc-cccc-4ccc-cccc-cccccccccccc';
+        update public.estimates set categories =
+          '[{"name":"Matériaux","items":[{"poste":"Ciment","materials_cost":15,"amount_ht":25}]}]'::jsonb
+          where quote_status = 'draft';
+      `);
+      expect((await db.query("select source, unit_cost_cents from public.quote_cost_items where estimate_id = 'cccccccc-cccc-4ccc-cccc-cccccccccccc'")).rows)
+        .toEqual([{ source: 'manual', unit_cost_cents: 1250 }]);
       await db.query("select set_config('qa.org_id', $1, false)", [orgA]);
       await db.exec("select set_config('qa.admin', 'true', false); set role authenticated;");
       expect((await db.query("update public.estimates set total_ht = 42 where quote_status = 'draft' returning id")).rows).toHaveLength(1);
@@ -106,13 +156,42 @@ describe('cost catalog and accepted quote migrations', () => {
       expect((await db.query("update public.estimates set total_ht = 42 where quote_status = 'sent' returning id")).rows).toHaveLength(0);
       await expect(db.query("update public.estimates set quote_status = 'sent' where quote_status = 'draft'")).rejects.toThrow();
       await db.exec('reset role');
+      expect((await db.query("select private.net_sold_total_ht_cents(100, 120, 12) as cents")).rows[0]).toEqual({ cents: 9000 });
+      expect((await db.query("select private.net_sold_total_ht_cents(100, 0, 0) as cents")).rows[0]).toEqual({ cents: 0 });
+      const priorRevision = (await db.query<{ revision: number }>("select revision from public.estimates where id = 'cccccccc-cccc-4ccc-cccc-cccccccccccc'")).rows[0].revision;
+      expect((await db.query("update public.estimates set total_ht = 43 where id = 'cccccccc-cccc-4ccc-cccc-cccccccccccc' and revision = $1 returning revision", [priorRevision])).rows)
+        .toEqual([{ revision: priorRevision + 1 }]);
+      expect((await db.query("update public.estimates set total_ht = 44 where id = 'cccccccc-cccc-4ccc-cccc-cccccccccccc' and revision = $1 returning revision", [priorRevision])).rows)
+        .toEqual([]);
+      await db.exec("insert into public.employees (id, organization_id) values ('22222222-2222-4222-8222-222222222222', '" + orgA + "')");
+      expect((await db.query("update public.employees set organization_id = organization_id where revision = 0 returning revision")).rows).toEqual([{ revision: 1 }]);
+      expect((await db.query("update public.employees set organization_id = organization_id where revision = 0 returning revision")).rows).toEqual([]);
       await db.query("select set_config('qa.org_id', $1, false)", [orgB]);
       await db.exec('set role authenticated');
       expect((await db.query("update public.estimates set total_ht = 99 where quote_status = 'draft' returning id")).rows).toHaveLength(0);
       await db.exec('reset role');
       await expect(db.exec("update public.estimates set content = 'after' where quote_status = 'accepted'")).rejects.toThrow('immutable');
       await expect(db.exec("delete from public.estimates where quote_status = 'accepted'")).rejects.toThrow('immutable');
-      expect((await db.query("select content from public.estimates where quote_status = 'accepted'")).rows[0]).toEqual({ content: 'before' });
+      expect((await db.query("select content from public.estimates where id = 'dddddddd-dddd-4ddd-dddd-dddddddddddd'")).rows[0]).toEqual({ content: 'before' });
+      await db.query("select set_config('qa.org_id', $1, false)", [orgA]);
+      await db.exec("select set_config('qa.admin', 'true', false); select set_config('qa.entitled', 'true', false); select set_config('qa.user_id', '33333333-3333-4333-8333-333333333333', false);");
+      await db.exec("update public.estimates set total_ht = 100, total_ttc = 120, discount_amount = 12 where id = 'cccccccc-cccc-4ccc-cccc-cccccccccccc'");
+      const accepted = await db.query<{ accept_estimate_and_create_job: string }>(
+        "select public.accept_estimate_and_create_job('cccccccc-cccc-4ccc-cccc-cccccccccccc')",
+      );
+      const jobId = accepted.rows[0].accept_estimate_and_create_job;
+      expect((await db.query('select sold_total_ht_cents, initial_budget_cents from public.jobs where id = $1', [jobId])).rows[0])
+        .toEqual({ sold_total_ht_cents: 9000, initial_budget_cents: 1250 });
+      expect((await db.query('select sold_total_ht_cents from public.job_budget_snapshots where job_id = $1', [jobId])).rows[0])
+        .toEqual({ sold_total_ht_cents: 9000 });
+      expect((await db.query("select quote_status from public.estimates where id = 'cccccccc-cccc-4ccc-cccc-cccccccccccc'")).rows[0])
+        .toEqual({ quote_status: 'accepted' });
+      await expect(db.exec("update public.quote_cost_items set unit_cost_cents = 1 where estimate_id = 'cccccccc-cccc-4ccc-cccc-cccccccccccc'"))
+        .rejects.toThrow('immutable');
+      await expect(db.exec("delete from public.quote_cost_items where estimate_id = 'cccccccc-cccc-4ccc-cccc-cccccccccccc'"))
+        .rejects.toThrow('immutable');
+      await expect(db.exec("insert into public.quote_cost_items (organization_id, estimate_id, line_key, category, description) values ('" + orgA + "', 'cccccccc-cccc-4ccc-cccc-cccccccccccc', 'manual-new', 'other', 'Late change')"))
+        .rejects.toThrow('immutable');
     } finally {
       await db.close();
     }

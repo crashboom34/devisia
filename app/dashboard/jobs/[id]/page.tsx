@@ -202,8 +202,9 @@ export default function JobDetailPage() {
       description: costDescription.trim(), amount_ht_cents: cents, created_by: user.id,
     });
     if (error) return toast.error(error.message);
-    setCostAmount(''); setCostDescription(''); setCatalogQuery(''); await load();
+    setCostAmount(''); setCostDescription(''); setCatalogQuery('');
     toast.success('Coût réel enregistré');
+    try { await load(); } catch { toast.warning('Enregistré, mais le chantier n’a pas pu être actualisé. Rechargez la page.'); }
   };
 
   const addTime = async (event: FormEvent) => {

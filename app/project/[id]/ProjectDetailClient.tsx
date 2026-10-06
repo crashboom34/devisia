@@ -455,6 +455,7 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
                           {estimate.estimate_kind === 'preliminary' ? <PreliminaryEstimateCard estimate={estimate} currentVersion={refinementVersion} projectDescription={project.description} onFinalized={() => user && loadProject()} /> : <EstimateTable
                             estimate={{
                               id: estimate.id,
+                              revision: estimate.revision,
                               scenario_type: estimate.scenario_type,
                               estimate_number: estimate.estimate_number,
                               client_name: estimate.client_name,
@@ -465,9 +466,9 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
                               deposit_required: estimate.deposit_required,
                               special_conditions: estimate.special_conditions,
                               categories: estimate.categories || [],
-                              total_ht: estimate.total_ht || 0,
-                              total_tva: estimate.total_tva || 0,
-                              total_ttc: estimate.total_ttc || estimate.total_amount || 0,
+                              total_ht: estimate.total_ht ?? 0,
+                              total_tva: estimate.total_tva ?? 0,
+                              total_ttc: estimate.total_ttc ?? estimate.total_amount ?? 0,
                               discount_amount: estimate.discount_amount,
                               discount_percent: estimate.discount_percent,
                               model_used: estimate.model_used,

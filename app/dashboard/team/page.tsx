@@ -21,6 +21,7 @@ interface Employee {
   other_monthly_employer_cost_cents: number; contracted_weekly_minutes: number | null;
   direct_hourly_cost_cents: number | null;
   cost_source: 'urssaf' | 'manual' | 'legacy';
+  revision: number;
 }
 
 function hasCompleteCost(employee: Employee): boolean {
@@ -38,6 +39,7 @@ export default function TeamPage() {
   const [lastName, setLastName] = useState('');
   const [jobTitle, setJobTitle] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingRevision, setEditingRevision] = useState<number | null>(null);
   const [grossSalary, setGrossSalary] = useState('');
   const [weeklyHours, setWeeklyHours] = useState('35');
   const [otherCosts, setOtherCosts] = useState('0');
@@ -62,7 +64,7 @@ export default function TeamPage() {
     setAllowed(canManage);
     if (!canManage) { setLoading(false); return; }
     if (orgId) {
-      const result = await supabase.from('employees').select('id, first_name, last_name, job_title, gross_monthly_salary_cents, employer_monthly_cost_cents, other_monthly_employer_cost_cents, contracted_weekly_minutes, direct_hourly_cost_cents, cost_source').eq('organization_id', orgId).eq('status', 'active').order('last_name');
+      const result = await supabase.from('employees').select('id, first_name, last_name, job_title, gross_monthly_salary_cents, employer_monthly_cost_cents, other_monthly_employer_cost_cents, contracted_weekly_minutes, direct_hourly_cost_cents, cost_source, revision').eq('organization_id', orgId).eq('status', 'active').order('last_name');
       if (result.error) throw result.error;
       setEmployees((result.data || []) as Employee[]);
     }
@@ -108,13 +110,13 @@ export default function TeamPage() {
   const missingCosts = employees.filter((employee) => !hasCompleteCost(employee)).length;
 
   const resetForm = () => {
-    setEditingId(null); setFirstName(''); setLastName(''); setJobTitle('');
+    setEditingId(null); setEditingRevision(null); setFirstName(''); setLastName(''); setJobTitle('');
     setGrossSalary(''); setWeeklyHours('35'); setOtherCosts('0');
     setCalculationMode('automatic'); setManualHourlyCost('');
   };
 
   const startEditing = (employee: Employee) => {
-    setEditingId(employee.id); setFirstName(employee.first_name); setLastName(employee.last_name);
+    setEditingId(employee.id); setEditingRevision(employee.revision); setFirstName(employee.first_name); setLastName(employee.last_name);
     setJobTitle(employee.job_title || '');
     setGrossSalary(employee.gross_monthly_salary_cents === null ? '' : String(employee.gross_monthly_salary_cents / 100));
     setWeeklyHours(String((employee.contracted_weekly_minutes || 2100) / 60));
@@ -127,6 +129,7 @@ export default function TeamPage() {
   const addEmployee = async (event: FormEvent) => {
     event.preventDefault();
     if (!organizationId || !firstName.trim() || !lastName.trim() || !estimate || calculating || !Number.isInteger(hours * 60)) return toast.error('Saisissez le brut et un coût horaire chargé valide, ou attendez le calcul Urssaf');
+    if (editingId && editingRevision === null) return toast.error('Rechargez cette fiche avant de la modifier.');
     const payload = {
       first_name: firstName.trim(), last_name: lastName.trim(), job_title: jobTitle.trim() || null,
       gross_monthly_salary_cents: estimate.grossMonthlyCents,
@@ -140,12 +143,14 @@ export default function TeamPage() {
     setSaving(true);
     try {
       const { data, error } = editingId
-        ? await supabase.from('employees').update(payload).eq('id', editingId).eq('organization_id', organizationId).select('id').maybeSingle()
+        ? await supabase.from('employees').update(payload).eq('id', editingId).eq('organization_id', organizationId).eq('revision', editingRevision).select('id').maybeSingle()
         : await supabase.from('employees').insert({ ...payload, organization_id: organizationId }).select('id').maybeSingle();
       if (error) throw error;
-      if (!data) throw new Error('La fiche n’a pas été enregistrée. Rechargez la page.');
+      if (!data) throw new Error('Cette fiche a été modifiée ailleurs. Rechargez la page avant de réessayer.');
       const wasEditing = Boolean(editingId);
-      resetForm(); await load(); toast.success(wasEditing ? 'Salarié mis à jour' : 'Salarié ajouté');
+      resetForm();
+      toast.success(wasEditing ? 'Salarié mis à jour' : 'Salarié ajouté');
+      try { await load(); } catch { toast.warning('Enregistré, mais la liste n’a pas pu être actualisée. Rechargez la page.'); }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Enregistrement impossible');
     } finally {

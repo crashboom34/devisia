@@ -28,6 +28,7 @@ type ViewMode = 'client' | 'detailed' | 'internal';
 
 interface EstimateData {
   id: string;
+  revision: number;
   scenario_type: string;
   estimate_number?: string;
   client_name?: string;
@@ -221,6 +222,7 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
 
   const handleSaveChanges = async () => {
     if (estimate.quote_status !== 'draft') return toast.error('Seul un devis brouillon peut être modifié. Pour un devis accepté, utilisez un avenant.');
+    if (!Number.isSafeInteger(estimate.revision)) return toast.error('Rechargez ce devis avant de le modifier.');
     if (!isValidManualEstimate(editedEstimate)) {
       return toast.error('Vérifiez les postes, quantités, prix, TVA, remise et acompte avant d’enregistrer.');
     }
@@ -245,6 +247,7 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
         })
         .eq('id', estimate.id)
         .eq('quote_status', 'draft')
+        .eq('revision', estimate.revision)
         .select('id')
         .maybeSingle();
 
