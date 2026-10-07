@@ -3,8 +3,8 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { PGlite } from '@electric-sql/pglite';
 
-const migration = readFileSync(resolve(process.cwd(), 'supabase/migrations/20261006190000_team_cost_catalog.sql'), 'utf8');
-const backfill = readFileSync(resolve(process.cwd(), 'supabase/migrations/20261006190100_job_cost_catalog_backfill.sql'), 'utf8');
+const migration = readFileSync(resolve(process.cwd(), 'supabase/migrations/20261007060051_team_cost_catalog.sql'), 'utf8');
+const backfill = readFileSync(resolve(process.cwd(), 'supabase/migrations/20261007060100_job_cost_catalog_backfill.sql'), 'utf8');
 const orgA = 'aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa';
 const orgB = 'bbbbbbbb-bbbb-4bbb-bbbb-bbbbbbbbbbbb';
 const projectA = 'eeeeeeee-eeee-4eee-eeee-eeeeeeeeeeee';
