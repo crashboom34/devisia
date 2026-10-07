@@ -6,6 +6,25 @@ export interface EditableTotals {
   discount_amount?: number;
 }
 
+export interface DisplayEstimateTotal {
+  total_ttc?: number | null;
+  total_amount?: number | null;
+  discount_amount?: number | null;
+}
+
+/** TTC payable after the stored discount, shared by quote headers and dashboards. */
+export function estimateTtcAfterDiscount(estimate: DisplayEstimateTotal): number {
+  const gross = typeof estimate.total_ttc === 'number' && Number.isFinite(estimate.total_ttc)
+    ? estimate.total_ttc
+    : typeof estimate.total_amount === 'number' && Number.isFinite(estimate.total_amount)
+      ? estimate.total_amount
+      : 0;
+  const discount = typeof estimate.discount_amount === 'number' && Number.isFinite(estimate.discount_amount)
+    ? estimate.discount_amount
+    : 0;
+  return roundCents(Math.max(0, gross - Math.max(0, discount)));
+}
+
 export function recalculateManualEstimate<T extends EditableTotals>(current: T, categories: EstimateCategory[]): T & ReturnType<typeof recalculateEstimateTotals> & { discount_amount: number } {
   const totals = recalculateEstimateTotals(categories);
   const discountPercent = current.discount_percent ?? 0;

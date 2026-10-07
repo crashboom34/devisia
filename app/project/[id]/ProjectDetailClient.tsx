@@ -37,6 +37,7 @@ import { toast } from 'sonner';
 import ProjectRefinement from '@/components/ProjectRefinement';
 import PreliminaryEstimateCard from '@/components/PreliminaryEstimateCard';
 import { getOrganizationEntitlements, hasEntitlement } from '@/lib/entitlements';
+import { estimateTtcAfterDiscount } from '@/lib/manual-estimate';
 
 const EstimateTable = dynamic(() => import('@/components/EstimateTable'), {
   loading: () => <div className="animate-pulse h-64 bg-gray-800 rounded-lg" />,
@@ -439,7 +440,7 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
                           className="min-w-0 flex-1 px-3 sm:px-4 py-3 flex items-center justify-between gap-2 text-left hover:bg-brand-darkLight transition-colors">
                           <span className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
                             <span className={`px-3 py-1 rounded-full border ${getScenarioColor(estimate.scenario_type)}`}>{getScenarioLabel(estimate.scenario_type)}</span>
-                            <span className="font-bold text-base sm:text-lg text-white break-words">{(estimate.estimate_kind === 'preliminary' ? estimate.total_ht : estimate.total_ttc ?? estimate.total_amount ?? 0).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })} {estimate.estimate_kind === 'preliminary' && <span className="text-xs text-amber-300">HT · préliminaire</span>}</span>
+                            <span className="font-bold text-base sm:text-lg text-white break-words">{(estimate.estimate_kind === 'preliminary' ? estimate.total_ht : estimateTtcAfterDiscount(estimate)).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })} {estimate.estimate_kind === 'preliminary' && <span className="text-xs text-amber-300">HT · préliminaire</span>}</span>
                             {estimate.model_used && <span className="text-xs text-gray-500 hidden sm:inline">• {estimate.model_used}</span>}
                           </span>
                           {isExpanded ? <ChevronUp className="h-5 w-5 shrink-0 text-gray-400" /> : <ChevronDown className="h-5 w-5 shrink-0 text-gray-400" />}

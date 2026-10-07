@@ -13,12 +13,14 @@ import { PageHeader } from '@/components/dashboard/PageHeader';
 import { FilterBar } from '@/components/dashboard/FilterBar';
 import { EmptyState } from '@/components/dashboard/EmptyState';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
+import { estimateTtcAfterDiscount } from '@/lib/manual-estimate';
 
 interface Estimate {
   id: string;
   project_id: string;
   scenario_type: string;
   total_ttc: number;
+  discount_amount?: number | null;
   created_at: string;
   quote_status: string;
   projects?: {
@@ -87,9 +89,9 @@ export default function QuotesPage() {
 
   const calculateStats = () => {
     const total = estimates.length;
-    const totalValue = estimates.reduce((sum, est) => sum + (est.total_ttc || 0), 0);
+    const totalValue = estimates.reduce((sum, est) => sum + estimateTtcAfterDiscount(est), 0);
     const approved = estimates.filter(e => e.quote_status === 'accepted');
-    const approvedValue = approved.reduce((sum, est) => sum + (est.total_ttc || 0), 0);
+    const approvedValue = approved.reduce((sum, est) => sum + estimateTtcAfterDiscount(est), 0);
     const conversionRate = total > 0 ? ((approved.length / total) * 100).toFixed(0) : 0;
 
     return {
@@ -187,7 +189,7 @@ export default function QuotesPage() {
                           {new Date(estimate.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
                         </span>
                         <span className="text-sm font-bold text-white">
-                          {estimate.total_ttc?.toFixed(2) || '0.00'} EUR
+                          {estimateTtcAfterDiscount(estimate).toFixed(2)} EUR
                         </span>
                       </div>
                     </div>
@@ -230,7 +232,7 @@ export default function QuotesPage() {
                           <td className="px-6 py-3.5"><span className="text-sm text-slate-300">{estimate.projects?.title || 'N/A'}</span></td>
                           <td className="px-6 py-3.5 whitespace-nowrap"><span className="text-sm text-slate-400">{new Date(estimate.created_at).toLocaleDateString('fr-FR')}</span></td>
                           <td className="px-6 py-3.5 whitespace-nowrap"><span className="text-sm text-slate-400">{new Date(new Date(estimate.created_at).getTime() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')}</span></td>
-                          <td className="px-6 py-3.5 whitespace-nowrap text-right"><span className="text-sm font-semibold text-white">{estimate.total_ttc?.toFixed(2) || '0.00'} EUR</span></td>
+                          <td className="px-6 py-3.5 whitespace-nowrap text-right"><span className="text-sm font-semibold text-white">{estimateTtcAfterDiscount(estimate).toFixed(2)} EUR</span></td>
                           <td className="px-6 py-3.5 whitespace-nowrap text-center">
                             <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusStyle(estimate.quote_status)}`}>{estimate.quote_status || 'draft'}</span>
                           </td>

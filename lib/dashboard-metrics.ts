@@ -1,6 +1,9 @@
+import { estimateTtcAfterDiscount } from './manual-estimate';
+
 export interface DashboardEstimateRow {
   quote_status?: string | null;
   total_ttc?: number | null;
+  discount_amount?: number | null;
 }
 
 export interface DashboardEstimateMetrics {
@@ -24,7 +27,7 @@ export function calculateDashboardEstimateMetrics(
       if (estimate.quote_status === 'draft') metrics.drafts += 1;
       if (estimate.quote_status === 'accepted') {
         metrics.accepted += 1;
-        metrics.acceptedValueCents += eurosToCents(estimate.total_ttc);
+        metrics.acceptedValueCents += eurosToCents(estimateTtcAfterDiscount(estimate));
       }
       return metrics;
     },

@@ -20,4 +20,13 @@ describe('calculateDashboardEstimateMetrics', () => {
     expect(result.acceptedValueCents).toBe(1_021);
     expect(Number.isFinite(result.acceptedValueCents)).toBe(true);
   });
+
+  it('uses the payable amount after discounts for accepted quotes', () => {
+    const result = calculateDashboardEstimateMetrics([
+      { quote_status: 'accepted', total_ttc: 1188, discount_amount: 118.8 },
+      { quote_status: 'accepted', total_ttc: 60, discount_amount: 5 },
+      { quote_status: 'draft', total_ttc: 120, discount_amount: 20 },
+    ]);
+    expect(result.acceptedValueCents).toBe(112_420);
+  });
 });

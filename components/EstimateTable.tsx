@@ -14,7 +14,7 @@ import { supabase } from '@/lib/supabase';
 import EditableEstimateRow from './EditableEstimateRow';
 import { toast } from 'sonner';
 import { buildClientEstimateExport } from '@/lib/client-estimate-export';
-import { isValidManualEstimate, recalculateManualEstimate } from '@/lib/manual-estimate';
+import { estimateTtcAfterDiscount, isValidManualEstimate, recalculateManualEstimate } from '@/lib/manual-estimate';
 import {
   calculateLineAmounts,
   calculateMargin,
@@ -283,9 +283,9 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
             <div className="flex flex-wrap items-center gap-2">
               <CardTitle className="text-lg sm:text-xl text-white">Scénario {getScenarioLabel(estimate.scenario_type)}</CardTitle>
               <Badge className={`${getScenarioBadgeColor(estimate.scenario_type)} text-sm sm:text-base whitespace-nowrap`}>
-                {formatCurrency(displayEstimate.total_ttc)}
+                {formatCurrency(estimateTtcAfterDiscount(displayEstimate))}
               </Badge>
-              {isEditing && displayEstimate.total_ttc !== estimate.total_ttc && (
+              {isEditing && estimateTtcAfterDiscount(displayEstimate) !== estimateTtcAfterDiscount(estimate) && (
                 <Badge variant="outline" className="text-xs sm:text-sm">
                   Modifié
                 </Badge>
@@ -622,7 +622,7 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
           )}
           <div className="flex flex-wrap justify-between gap-2 text-xl sm:text-2xl font-bold text-brand-green pt-2 border-t-2 border-gray-700">
             <span>Total TTC:</span>
-            <span>{formatCurrency(displayEstimate.total_ttc - (displayEstimate.discount_amount || 0))}</span>
+            <span>{formatCurrency(estimateTtcAfterDiscount(displayEstimate))}</span>
           </div>
           {viewMode === 'internal' && totalMargin() && (
             <div className="flex justify-between text-sm sm:text-lg text-brand-green pt-2 border-t border-gray-800">

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isValidManualEstimate, recalculateManualEstimate } from '../lib/manual-estimate';
+import { estimateTtcAfterDiscount, isValidManualEstimate, recalculateManualEstimate } from '../lib/manual-estimate';
 import { roundCents, type EstimateCategory } from '../lib/pricing/engine';
 
 const categories: EstimateCategory[] = [{
@@ -8,6 +8,17 @@ const categories: EstimateCategory[] = [{
 }];
 
 describe('manual estimate editing', () => {
+  it('shows the payable TTC after a stored percentage or fixed discount', () => {
+    expect(estimateTtcAfterDiscount({ total_ttc: 1188, discount_amount: 118.8 })).toBe(1069.2);
+    expect(estimateTtcAfterDiscount({ total_ttc: 60, discount_amount: 5 })).toBe(55);
+    expect(estimateTtcAfterDiscount({ total_ttc: 0, discount_amount: 0 })).toBe(0);
+  });
+
+  it('keeps a finite nonnegative display total for invalid legacy amounts', () => {
+    expect(estimateTtcAfterDiscount({ total_ttc: Number.NaN, total_amount: 30, discount_amount: Number.POSITIVE_INFINITY })).toBe(30);
+    expect(estimateTtcAfterDiscount({ total_ttc: 10, discount_amount: 20 })).toBe(0);
+    expect(estimateTtcAfterDiscount({ total_ttc: Number.POSITIVE_INFINITY })).toBe(0);
+  });
   it('rounds positive and negative half-cents consistently', () => {
     expect(roundCents(1.5 * 42.15)).toBe(63.23);
     expect(roundCents(-1.5 * 42.15)).toBe(-63.23);
