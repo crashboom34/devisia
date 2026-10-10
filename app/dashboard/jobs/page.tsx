@@ -68,8 +68,8 @@ export default function JobsPage() {
             {jobs.map((job) => {
               const plannedMargin = job.sold_total_ht_cents - job.initial_budget_cents;
               return (
-                <Link key={job.id} href={`/dashboard/jobs/${job.id}`}>
-                  <Card className="h-full bg-slate-800/50 border-slate-700/40 hover:border-cyan-500/40 transition-colors">
+                <Link key={job.id} href={`/dashboard/jobs/${job.id}`} className="min-w-0">
+                  <Card className="h-full min-w-0 bg-slate-800/50 border-slate-700/40 hover:border-cyan-500/40 transition-colors">
                     <CardContent className="p-5 space-y-4">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">

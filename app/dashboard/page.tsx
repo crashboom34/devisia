@@ -90,7 +90,7 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-[#020617] flex">
       <Sidebar />
 
-      <div className="flex-1 lg:ml-64 flex flex-col min-h-screen">
+      <div className="flex-1 min-w-0 lg:ml-64 flex flex-col min-h-screen">
         {/* Mobile Header */}
         <header className="bg-slate-900/98 backdrop-blur-xl border-b border-slate-800/50 sticky top-0 z-30">
           <div className="px-4 sm:px-6 lg:px-8 h-14 lg:h-16 flex items-center justify-between">
