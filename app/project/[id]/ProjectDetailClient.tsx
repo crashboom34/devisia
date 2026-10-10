@@ -119,7 +119,7 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'draft':
-        return <Badge variant="outline" className="bg-gray-100">Brouillon</Badge>;
+        return <Badge variant="outline" className="bg-gray-100 text-gray-900">Brouillon</Badge>;
       case 'processing':
         return <Badge variant="outline" className="bg-blue-100 text-blue-700">En cours</Badge>;
       case 'completed':
