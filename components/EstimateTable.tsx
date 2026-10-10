@@ -14,7 +14,7 @@ import { supabase } from '@/lib/supabase';
 import EditableEstimateRow from './EditableEstimateRow';
 import { toast } from 'sonner';
 import { buildClientEstimateExport } from '@/lib/client-estimate-export';
-import { estimateTtcAfterDiscount, isValidManualEstimate, recalculateManualEstimate } from '@/lib/manual-estimate';
+import { estimateTtcAfterDiscount, isValidManualEstimate, recalculateManualEstimate, withStableCostLineKeys } from '@/lib/manual-estimate';
 import {
   calculateLineAmounts,
   calculateMargin,
@@ -202,7 +202,7 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
     setEditedEstimate((current) => {
       const categories = current.categories.map((category, index) => index === categoryIndex ? {
         ...category,
-        items: [...category.items, { poste: '', description: '', quantity: 1, unit: 'u', unit_price_ht: 0, amount_ht: 0, tva_percent: 20, tva_amount: 0, amount_ttc: 0 }],
+        items: [...category.items, { cost_line_key: `new-${crypto.randomUUID()}`, poste: '', description: '', quantity: 1, unit: 'u', unit_price_ht: 0, amount_ht: 0, tva_percent: 20, tva_amount: 0, amount_ttc: 0 }],
       } : category);
       return withTotals(current, categories);
     });
@@ -213,7 +213,7 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
     const name = newCategoryName.trim();
     if (!name) return;
     setEditedEstimate((current) => withTotals(current, [...current.categories, {
-      name, description: '', items: [{ poste: '', description: '', quantity: 1, unit: 'u', unit_price_ht: 0, amount_ht: 0, tva_percent: 20, tva_amount: 0, amount_ttc: 0 }],
+      name, description: '', items: [{ cost_line_key: `new-${crypto.randomUUID()}`, poste: '', description: '', quantity: 1, unit: 'u', unit_price_ht: 0, amount_ht: 0, tva_percent: 20, tva_amount: 0, amount_ttc: 0 }],
       subtotal_ht: 0, subtotal_tva: 0, subtotal_ttc: 0,
     }]));
     setExpandedCategories((current) => new Set(current).add(editedEstimate.categories.length));
@@ -311,7 +311,7 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {estimate.quote_status !== 'accepted' && canCreateJob && (
+            {(estimate.quote_status === 'draft' || estimate.quote_status === 'sent') && canCreateJob && (
               <Button
                 variant="primary"
                 size="sm"
@@ -323,7 +323,7 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
                 {isAccepting ? 'Création…' : 'Accepter et créer le chantier'}
               </Button>
             )}
-            {estimate.quote_status !== 'accepted' && !canCreateJob && (
+            {(estimate.quote_status === 'draft' || estimate.quote_status === 'sent') && !canCreateJob && (
               <Badge className="bg-amber-500/10 text-amber-300 border-amber-500/30">Chantiers · offre Business</Badge>
             )}
             {estimate.quote_status === 'accepted' && (
@@ -334,7 +334,7 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => { setEditedEstimate({ ...estimate, categories: estimate.categories.map((category) => ({ ...category, items: category.items.map((item) => ({ ...item })) })) }); setViewMode('detailed'); setIsEditing(true); }}
+                  onClick={() => { setEditedEstimate({ ...estimate, categories: withStableCostLineKeys(estimate.categories) }); setViewMode('detailed'); setIsEditing(true); }}
                   disabled={estimate.quote_status !== 'draft'}
                   className="text-xs sm:text-sm"
                 >

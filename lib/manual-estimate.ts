@@ -12,6 +12,17 @@ export interface DisplayEstimateTotal {
   discount_amount?: number | null;
 }
 
+/** Attach existing positional cost keys before any edit can move a quote line. */
+export function withStableCostLineKeys(categories: EstimateCategory[]): EstimateCategory[] {
+  return categories.map((category, categoryIndex) => ({
+    ...category,
+    items: category.items.map((item, itemIndex) => ({
+      ...item,
+      cost_line_key: item.cost_line_key || `${categoryIndex + 1}-${itemIndex + 1}`,
+    })),
+  }));
+}
+
 /** TTC payable after the stored discount, shared by quote headers and dashboards. */
 export function estimateTtcAfterDiscount(estimate: DisplayEstimateTotal): number {
   const gross = typeof estimate.total_ttc === 'number' && Number.isFinite(estimate.total_ttc)

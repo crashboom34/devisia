@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { estimateTtcAfterDiscount, isValidManualEstimate, recalculateManualEstimate } from '../lib/manual-estimate';
+import { estimateTtcAfterDiscount, isValidManualEstimate, recalculateManualEstimate, withStableCostLineKeys } from '../lib/manual-estimate';
 import { roundCents, type EstimateCategory } from '../lib/pricing/engine';
 
 const categories: EstimateCategory[] = [{
@@ -8,6 +8,20 @@ const categories: EstimateCategory[] = [{
 }];
 
 describe('manual estimate editing', () => {
+  it('keeps an original internal-cost key when an earlier line is removed', () => {
+    const withTwoItems: EstimateCategory[] = [{
+      ...categories[0],
+      items: [
+        categories[0].items[0],
+        { ...categories[0].items[0], poste: 'Pose' },
+      ],
+    }];
+    const keyed = withStableCostLineKeys(withTwoItems);
+    expect(keyed[0].items.map((item) => item.cost_line_key)).toEqual(['1-1', '1-2']);
+    expect(keyed[0].items.slice(1)[0].cost_line_key).toBe('1-2');
+    expect(withTwoItems[0].items[1].cost_line_key).toBeUndefined();
+    expect(withStableCostLineKeys(keyed)[0].items[1].cost_line_key).toBe('1-2');
+  });
   it('shows the payable TTC after a stored percentage or fixed discount', () => {
     expect(estimateTtcAfterDiscount({ total_ttc: 1188, discount_amount: 118.8 })).toBe(1069.2);
     expect(estimateTtcAfterDiscount({ total_ttc: 60, discount_amount: 5 })).toBe(55);

@@ -5,6 +5,7 @@ import { PGlite } from '@electric-sql/pglite';
 
 const migration = readFileSync(resolve(process.cwd(), 'supabase/migrations/20261007060051_team_cost_catalog.sql'), 'utf8');
 const backfill = readFileSync(resolve(process.cwd(), 'supabase/migrations/20261007060100_job_cost_catalog_backfill.sql'), 'utf8');
+const guardMigration = readFileSync(resolve(process.cwd(), 'supabase/migrations/20261010143718_guard_quote_cost_alignment_and_totals.sql'), 'utf8');
 const orgA = 'aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa';
 const orgB = 'bbbbbbbb-bbbb-4bbb-bbbb-bbbbbbbbbbbb';
 const projectA = 'eeeeeeee-eeee-4eee-eeee-eeeeeeeeeeee';
@@ -78,12 +79,14 @@ describe('cost catalog and accepted quote migrations', () => {
         grant usage on schema private to authenticated;
         grant execute on function private.is_org_admin(uuid), private.has_entitlement(uuid, text) to authenticated;
         alter table public.estimates enable row level security;
-        grant select on public.estimates to authenticated;
+        grant select, insert on public.estimates to authenticated;
         grant select on public.projects to authenticated;
         create policy "Admins read own estimates" on public.estimates for select to authenticated
           using (private.is_org_admin(organization_id));
         create policy "Users can update own estimates" on public.estimates for update to authenticated
           using (true) with check (true);
+        create policy "Users can insert estimates for own projects" on public.estimates for insert to authenticated
+          with check (private.is_org_admin(organization_id));
       `);
       await db.query('insert into public.organizations (id) values ($1), ($2)', [orgA, orgB]);
       await db.query('insert into public.projects (id, organization_id) values ($1, $2), ($3, $4)', [projectA, orgA, projectB, orgB]);
@@ -95,6 +98,7 @@ describe('cost catalog and accepted quote migrations', () => {
           after insert or update of categories on public.estimates
           for each row execute function private.sync_quote_cost_items_from_estimate();
       `);
+      await db.exec(guardMigration);
       await db.exec(backfill);
       await db.exec(backfill);
       expect((await db.query('select count(*)::int as count from public.job_cost_catalog')).rows[0]).toEqual({ count: 2 });
@@ -144,14 +148,15 @@ describe('cost catalog and accepted quote migrations', () => {
         update public.quote_cost_items set unit_cost_cents = 1250
           where estimate_id = 'cccccccc-cccc-4ccc-cccc-cccccccccccc';
         update public.estimates set categories =
-          '[{"name":"Matériaux","items":[{"poste":"Ciment","materials_cost":15,"amount_ht":25}]}]'::jsonb
+          '[{"name":"Matériaux","items":[{"cost_line_key":"1-1","poste":"Ciment","materials_cost":15,"amount_ht":25}]}]'::jsonb
           where quote_status = 'draft';
       `);
       expect((await db.query("select source, unit_cost_cents from public.quote_cost_items where estimate_id = 'cccccccc-cccc-4ccc-cccc-cccccccccccc'")).rows)
         .toEqual([{ source: 'manual', unit_cost_cents: 1250 }]);
       await db.query("select set_config('qa.org_id', $1, false)", [orgA]);
       await db.exec("select set_config('qa.admin', 'true', false); set role authenticated;");
-      expect((await db.query("update public.estimates set total_ht = 42 where quote_status = 'draft' returning id")).rows).toHaveLength(1);
+      await expect(db.query("update public.estimates set total_ht = 42 where quote_status = 'draft' returning id"))
+        .rejects.toThrow('Quote line amounts are incomplete');
       expect((await db.query("update public.estimates set total_ht = 42 where quote_status = 'accepted' returning id")).rows).toHaveLength(0);
       expect((await db.query("update public.estimates set total_ht = 42 where quote_status = 'sent' returning id")).rows).toHaveLength(0);
       await expect(db.query("update public.estimates set quote_status = 'sent' where quote_status = 'draft'")).rejects.toThrow();
@@ -192,6 +197,137 @@ describe('cost catalog and accepted quote migrations', () => {
         .rejects.toThrow('immutable');
       await expect(db.exec("insert into public.quote_cost_items (organization_id, estimate_id, line_key, category, description) values ('" + orgA + "', 'cccccccc-cccc-4ccc-cccc-cccccccccccc', 'manual-new', 'other', 'Late change')"))
         .rejects.toThrow('immutable');
+
+      // Removing an earlier row must not count a manually overridden later row twice.
+      const shiftingEstimateId = '44444444-4444-4444-8444-444444444444';
+      await db.query(
+        `insert into public.estimates (id, organization_id, project_id, quote_status, categories)
+         values ($1, $2, $3, 'draft', $4::jsonb)`,
+        [shiftingEstimateId, orgA, projectA, JSON.stringify([{
+          name: 'Matériaux', items: [
+            { cost_line_key: '1-1', poste: 'Ciment', materials_cost: 10, amount_ht: 20 },
+            { cost_line_key: '1-2', poste: 'Peinture', materials_cost: 20, amount_ht: 40 },
+          ],
+        }])],
+      );
+      await db.query(
+        "update public.quote_cost_items set unit_cost_cents = 2500 where estimate_id = $1 and line_key = '1-2-material'",
+        [shiftingEstimateId],
+      );
+      await db.query(
+        'update public.estimates set categories = $2::jsonb where id = $1',
+        [shiftingEstimateId, JSON.stringify([{
+          name: 'Matériaux', items: [{ cost_line_key: '1-2', poste: 'Peinture', materials_cost: 20, amount_ht: 40 }],
+        }])],
+      );
+      const shiftedCosts = await db.query<{ total: number }>(
+        'select sum(unit_cost_cents)::integer as total from public.quote_cost_items where estimate_id = $1',
+        [shiftingEstimateId],
+      );
+      expect(shiftedCosts.rows[0].total).toBe(2500);
+      await expect(db.query(
+        'update public.estimates set categories = $2::jsonb where id = $1',
+        [shiftingEstimateId, JSON.stringify([{ name: 'Matériaux', items: [
+          { cost_line_key: '1-2', poste: 'Peinture', materials_cost: 0, labor_cost: 20, amount_ht: 40 },
+        ] }])],
+      )).rejects.toThrow('Manual quote cost would lose its source line');
+      expect((await db.query(
+        'select sum(unit_cost_cents)::integer as total from public.quote_cost_items where estimate_id = $1',
+        [shiftingEstimateId],
+      )).rows[0]).toEqual({ total: 2500 });
+
+      const unkeyedEstimateId = '55555555-5555-4555-8555-555555555555';
+      await db.query(
+        `insert into public.estimates (id, organization_id, project_id, quote_status, categories)
+         values ($1, $2, $3, 'draft', $4::jsonb)`,
+        [unkeyedEstimateId, orgA, projectA, JSON.stringify([{
+          name: 'Matériaux', items: [
+            { poste: 'Ciment', materials_cost: 10, amount_ht: 20 },
+            { poste: 'Peinture', materials_cost: 20, amount_ht: 40 },
+          ],
+        }])],
+      );
+      await db.query(
+        "update public.quote_cost_items set unit_cost_cents = 2500 where estimate_id = $1 and line_key = '1-2-material'",
+        [unkeyedEstimateId],
+      );
+      await expect(db.query(
+        'update public.estimates set categories = $2::jsonb where id = $1',
+        [unkeyedEstimateId, JSON.stringify([{ name: 'Matériaux', items: [{ poste: 'Peinture', materials_cost: 20, amount_ht: 40 }] }])],
+      )).rejects.toThrow('Manual quote cost would lose its source line');
+      await expect(db.query(
+        'update public.estimates set categories = $2::jsonb where id = $1',
+        [unkeyedEstimateId, JSON.stringify([{ name: 'Matériaux', items: [
+          { poste: 'Ciment', materials_cost: 12, amount_ht: 22 },
+          { poste: 'Peinture', materials_cost: 20, amount_ht: 40 },
+        ] }])],
+      )).rejects.toThrow('Manual quote cost would lose its source line');
+      expect((await db.query(
+        'select sum(unit_cost_cents)::integer as total from public.quote_cost_items where estimate_id = $1',
+        [unkeyedEstimateId],
+      )).rows[0]).toEqual({ total: 3500 });
+
+      const multiVatEstimateId = '66666666-6666-4666-8666-666666666666';
+      const multiVatCategories = [
+        { name: 'Fourniture', description: '', subtotal_ht: 50, subtotal_tva: 10, subtotal_ttc: 60,
+          items: [{ poste: 'Matériau', description: '', quantity: 2, unit: 'u', unit_price_ht: 25,
+            amount_ht: 50, tva_percent: 20, tva_amount: 10, amount_ttc: 60 }] },
+        { name: 'Pose', description: '', subtotal_ht: 50, subtotal_tva: 5, subtotal_ttc: 55,
+          items: [{ poste: 'Main d’œuvre', description: '', quantity: 1, unit: 'h', unit_price_ht: 50,
+            amount_ht: 50, tva_percent: 10, tva_amount: 5, amount_ttc: 55 }] },
+      ];
+      await db.query(
+        `insert into public.estimates
+          (id, organization_id, project_id, quote_status, categories, total_ht, total_tva,
+           total_ttc, total_amount, discount_percent, discount_amount, deposit_required)
+         values ($1, $2, $3, 'draft', $4::jsonb, 100, 15, 115, 115, 10, 11.5, 30)`,
+        [multiVatEstimateId, orgA, projectA, JSON.stringify(multiVatCategories)],
+      );
+      await db.query("select set_config('qa.org_id', $1, false)", [orgA]);
+      await db.exec("select set_config('qa.admin', 'true', false); set role authenticated;");
+      await expect(db.query(
+        `insert into public.estimates (id, organization_id, project_id, quote_status, categories, total_ht, total_tva, total_ttc, total_amount)
+         values ('77777777-7777-4777-8777-777777777777', $1, $2, 'accepted', $3::jsonb, 100, 15, 115, 115)`,
+        [orgA, projectA, JSON.stringify(multiVatCategories)],
+      )).rejects.toThrow('Only complete draft quotes may be edited');
+      await expect(db.query(
+        `insert into public.estimates (id, organization_id, project_id, quote_status, categories, total_ht, total_tva, total_ttc, total_amount)
+         values ('88888888-8888-4888-8888-888888888888', $1, $2, 'draft', $3::jsonb, 101, 15, 115, 115)`,
+        [orgA, projectA, JSON.stringify(multiVatCategories)],
+      )).rejects.toThrow('Quote totals do not match its lines');
+      expect((await db.query(
+        'update public.estimates set discount_amount = 11.5 where id = $1 returning id',
+        [multiVatEstimateId],
+      )).rows).toHaveLength(1);
+      await expect(db.query(
+        'update public.estimates set total_ht = 101 where id = $1',
+        [multiVatEstimateId],
+      )).rejects.toThrow('Quote totals do not match its lines');
+      await expect(db.query(
+        'update public.estimates set discount_amount = 12 where id = $1',
+        [multiVatEstimateId],
+      )).rejects.toThrow('Quote discount or deposit is invalid');
+      const forgedCategories = structuredClone(multiVatCategories);
+      forgedCategories[0].items[0].amount_ht = 49;
+      await expect(db.query(
+        'update public.estimates set categories = $2::jsonb where id = $1',
+        [multiVatEstimateId, JSON.stringify(forgedCategories)],
+      )).rejects.toThrow('Quote line amounts do not match');
+      expect((await db.query(
+        'select total_ht::float8 as total_ht, total_tva::float8 as total_tva, total_ttc::float8 as total_ttc, discount_amount::float8 as discount_amount from public.estimates where id = $1',
+        [multiVatEstimateId],
+      )).rows[0]).toMatchObject({ total_ht: 100, total_tva: 15, total_ttc: 115, discount_amount: 11.5 });
+      await db.exec('reset role');
+      const rejectedEstimateId = '99999999-9999-4999-8999-999999999999';
+      await db.query(
+        `insert into public.estimates (id, organization_id, project_id, quote_status, categories, total_ht, total_tva, total_ttc, total_amount)
+         values ($1, $2, $3, 'rejected', $4::jsonb, 100, 15, 115, 115)`,
+        [rejectedEstimateId, orgA, projectA, JSON.stringify(multiVatCategories)],
+      );
+      await expect(db.query('select public.accept_estimate_and_create_job($1)', [rejectedEstimateId]))
+        .rejects.toThrow('Rejected or expired quotes cannot be accepted');
+      expect((await db.query('select count(*)::integer as count from public.jobs where source_estimate_id = $1', [rejectedEstimateId])).rows[0])
+        .toEqual({ count: 0 });
     } finally {
       await db.close();
     }

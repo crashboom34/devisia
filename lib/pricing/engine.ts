@@ -19,6 +19,8 @@
  */
 
 export interface EstimateItem {
+  /** Stable association with generated internal-cost rows across quote edits. */
+  cost_line_key?: string;
   poste: string;
   description: string;
   quantity: number;
