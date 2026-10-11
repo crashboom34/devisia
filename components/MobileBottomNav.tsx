@@ -49,9 +49,9 @@ export function MobileBottomNav() {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden">
+    <nav aria-label="Navigation principale" className="fixed bottom-0 left-0 right-0 z-50 lg:hidden">
       <div className="bg-slate-900/98 backdrop-blur-xl border-t border-slate-800/80">
-        <div className="flex items-end justify-around px-1 pb-[env(safe-area-inset-bottom,8px)] pt-1.5">
+        <div className="flex items-end justify-around gap-0.5 px-1 pb-[max(env(safe-area-inset-bottom),8px)] pt-1.5">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const active = isActive(tab);
@@ -61,7 +61,8 @@ export function MobileBottomNav() {
                 <Link
                   key={tab.id}
                   href={tab.href}
-                  className="flex flex-col items-center justify-center -mt-4 relative"
+                  aria-label="Nouveau devis"
+                  className="flex flex-col items-center justify-center -mt-4 relative min-w-12 min-h-14"
                 >
                   <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/30 active:scale-95 transition-transform">
                     <Icon className="h-6 w-6 text-white" />
@@ -78,7 +79,7 @@ export function MobileBottomNav() {
                 key={tab.id}
                 href={tab.href}
                 className={cn(
-                  'flex flex-col items-center justify-center py-1.5 px-2 min-w-[56px] rounded-xl transition-all duration-200 active:scale-95',
+                  'flex flex-col items-center justify-center py-1.5 px-1 min-w-0 flex-1 min-h-12 rounded-xl transition-all duration-200 active:scale-95',
                   active ? 'text-cyan-400' : 'text-slate-500'
                 )}
               >

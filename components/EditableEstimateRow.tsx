@@ -24,7 +24,7 @@ interface EditableEstimateRowProps {
   categoryIndex: number;
   isEditing: boolean;
   viewMode: 'client' | 'detailed' | 'internal';
-  onItemChange: (categoryIndex: number, itemIndex: number, field: keyof EstimateItem, value: any) => void;
+  onItemChange: (categoryIndex: number, itemIndex: number, field: keyof EstimateItem, value: string | number) => void;
   onDelete: (categoryIndex: number, itemIndex: number) => void;
   formatCurrency: (amount: number) => string;
   calculateMargin: (item: EstimateItem) => { margin: number; marginPercent: number } | null;
@@ -151,7 +151,7 @@ export default function EditableEstimateRow({
       <td className="p-3 text-right font-bold text-brand-green text-sm">
         {formatCurrency(item.amount_ttc)}
       </td>
-      {viewMode === 'internal' && margin && (
+      {viewMode === 'internal' && (margin || isEditing) && (
         <>
           <td className="p-3 text-right text-sm text-gray-300">
             {isEditing ? <Input type="number" value={item.materials_cost ?? 0} onChange={(e) => handleChange('materials_cost', e.target.value)} className="h-8 w-24 bg-brand-darkLight border-gray-700 text-white" min="0" step="0.01" /> : formatCurrency(item.materials_cost ?? 0)}
@@ -160,10 +160,10 @@ export default function EditableEstimateRow({
             {isEditing ? <Input type="number" value={item.labor_cost ?? 0} onChange={(e) => handleChange('labor_cost', e.target.value)} className="h-8 w-24 bg-brand-darkLight border-gray-700 text-white" min="0" step="0.01" /> : formatCurrency(item.labor_cost ?? 0)}
           </td>
           <td className="p-3 text-right text-brand-green font-semibold text-sm">
-            {formatCurrency(margin.margin)}
+            {margin ? formatCurrency(margin.margin) : '—'}
           </td>
           <td className="p-3 text-right text-brand-green font-semibold text-sm">
-            {margin.marginPercent.toFixed(1)}%
+            {margin ? `${margin.marginPercent.toFixed(1)}%` : '—'}
           </td>
         </>
       )}

@@ -58,11 +58,11 @@ export function PageHeader({ title, subtitle, breadcrumbs, actions, showBackButt
             </Button>
           )}
           <div className="flex-1 min-w-0">
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white break-words">
               {title}
             </h1>
             {subtitle && (
-              <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
+              <p className="text-xs sm:text-sm text-slate-400 mt-0.5 break-words">
                 {subtitle}
               </p>
             )}

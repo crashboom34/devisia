@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calculateReviewedQuote } from '../supabase/functions/_shared/estimate-totals';
+import { buildReviewedQuoteConditions, calculateReviewedQuote } from '../supabase/functions/_shared/estimate-totals';
 
 const categories = [
   { name: 'Structure', items: [{ poste: 'Poteaux', quantity: 6, unit: 'u', unit_price_ht: 1050 }] },
@@ -7,6 +7,24 @@ const categories = [
 ];
 
 describe('reviewed quote totals', () => {
+  it('removes preliminary-only tax statements from finalized quote conditions', () => {
+    const conditions = buildReviewedQuoteConditions([
+      'Support sain et préparé à confirmer.',
+      'Le taux de TVA applicable n’est pas déterminé et reste à vérifier ; aucun montant TTC n’est présenté.',
+      'Raccordements existants supposés réutilisables.',
+    ]);
+    expect(conditions).toContain('Support sain et préparé à confirmer.');
+    expect(conditions).toContain('Raccordements existants supposés réutilisables.');
+    expect(conditions).not.toContain('aucun montant TTC');
+    expect(conditions).toContain('TVA : taux choisis pour ce devis ; vérifier leur applicabilité avant remise.');
+    expect(conditions.length).toBeLessThanOrEqual(3000);
+  });
+
+  it('keeps a tax-review reminder even without usable preliminary assumptions', () => {
+    expect(buildReviewedQuoteConditions([null, 42, 'Aucun TTC n’est calculé.']))
+      .toBe('Hypothèses et réserves à vérifier : TVA : taux choisis pour ce devis ; vérifier leur applicabilité avant remise.');
+  });
+
   it('uses only chosen VAT rates and recalculates each line in cents', () => {
     const result = calculateReviewedQuote(categories, [20, 10]);
     expect(result.totalHT).toBe(9050);

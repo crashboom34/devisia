@@ -49,7 +49,7 @@ export default function DashboardPage() {
       isUserAdmin(userId),
       checkProjectLimit(userId),
       supabase.from('projects').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
-      supabase.from('estimates').select('quote_status, total_ttc').eq('user_id', userId).eq('estimate_kind', 'quote'),
+      supabase.from('estimates').select('quote_status, total_ttc, discount_amount').eq('user_id', userId).eq('estimate_kind', 'quote'),
     ]);
 
     setIsAdmin(adminStatus);
@@ -68,7 +68,7 @@ export default function DashboardPage() {
     setLoading(true);
     const [projectsResult, estimatesResult, limits] = await Promise.all([
       supabase.from('projects').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
-      supabase.from('estimates').select('quote_status, total_ttc').eq('user_id', user.id).eq('estimate_kind', 'quote'),
+      supabase.from('estimates').select('quote_status, total_ttc, discount_amount').eq('user_id', user.id).eq('estimate_kind', 'quote'),
       checkProjectLimit(user.id),
     ]);
 
@@ -90,7 +90,7 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-[#020617] flex">
       <Sidebar />
 
-      <div className="flex-1 lg:ml-64 flex flex-col min-h-screen">
+      <div className="flex-1 min-w-0 lg:ml-64 flex flex-col min-h-screen">
         {/* Mobile Header */}
         <header className="bg-slate-900/98 backdrop-blur-xl border-b border-slate-800/50 sticky top-0 z-30">
           <div className="px-4 sm:px-6 lg:px-8 h-14 lg:h-16 flex items-center justify-between">
@@ -142,7 +142,7 @@ export default function DashboardPage() {
             {isAdmin && <AdminPlanSimulator userId={user?.id} />}
 
             {/* KPI Strip -- horizontal scroll on mobile */}
-            <div className="-mx-4 px-4 sm:mx-0 sm:px-0">
+            <div className="-mx-3 px-3 min-[380px]:-mx-4 min-[380px]:px-4 sm:mx-0 sm:px-0 min-w-0">
               <div className="flex gap-3 overflow-x-auto pb-1 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:gap-4 lg:gap-6 sm:overflow-visible scrollbar-hide">
                 {[
                   { title: 'Total devis', value: estimateMetrics.total, sub: 'Tous les scénarios', color: 'cyan', icon: FileText },

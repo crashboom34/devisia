@@ -1,6 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2.58.0';
-import { calculateReviewedQuote } from '../_shared/estimate-totals.ts';
+import { buildReviewedQuoteConditions, calculateReviewedQuote } from '../_shared/estimate-totals.ts';
 
 const headers = {
   'Access-Control-Allow-Origin': '*',
@@ -49,8 +49,7 @@ Deno.serve(async (req) => {
       categories: calculated.categories, line_items: calculated.lineItems,
       total_ht: calculated.totalHT, total_tva: calculated.totalTVA,
       total_ttc: calculated.totalTTC, total_amount: calculated.totalTTC,
-      special_conditions: Array.isArray(estimate.estimate_data?.assumptions) && estimate.estimate_data.assumptions.length
-        ? `Hypothèses et réserves à vérifier : ${estimate.estimate_data.assumptions.join(' ; ').slice(0, 3000)}` : null,
+      special_conditions: buildReviewedQuoteConditions(estimate.estimate_data?.assumptions),
       estimate_data: { ...estimate.estimate_data, status: 'REVIEWED_QUOTE', vat_status: 'CONFIRMED_BY_USER', reviewed_at: new Date().toISOString() },
     }).eq('id', estimate.id).eq('user_id', user.id).eq('estimate_kind', 'preliminary').select('id').maybeSingle();
     if (updateError) throw updateError;
