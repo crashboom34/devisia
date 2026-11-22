@@ -146,5 +146,8 @@ export function calculateJobProfitability(
 export function estimatedCostAtCompletion(actualCostCents: MoneyCents, progressPercent: number): MoneyCents | null {
   validCents(actualCostCents);
   if (!Number.isFinite(progressPercent) || progressPercent <= 0 || progressPercent > 100) return null;
-  return safeResult(Math.round(actualCostCents / (progressPercent / 100)));
+  const basisPoints = Math.round(progressPercent * 100);
+  if (basisPoints / 100 !== progressPercent) return null;
+  const divisor = BigInt(basisPoints);
+  return safeResult(Number((BigInt(actualCostCents) * BigInt(10_000) + divisor / BigInt(2)) / divisor));
 }

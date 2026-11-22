@@ -4,7 +4,7 @@ Mis à jour le **22 novembre 2026**. Commencer chaque tour par le protocole de [
 
 ## État vérifié
 
-- P0-A sur `docs/p0-a-financial-contracts`, issue de `main@2c05f11182b6bde73f184221e727a69804bbad11`. Ce commit intègre la PR #23 (instructions, handoff et cahier maître). Dernier lot applicatif précédemment identifié : PR #22.
+- PR #24 P0-A intégrée dans `main@22333b7522b1e27573b9ca4dad761fdc24e8e7e2`. La branche `fix/p0-b-financial-integrity` part de ce commit. La PR #23 a intégré les instructions, le handoff et le cahier maître.
 - Le propriétaire indique que l’audit statique préliminaire des 22 modules est terminé. P0-A porte sur les contrats financiers et les tests de la base versionnée.
 - Production déclarée par le propriétaire : Vercel, `https://devisia.vercel.app`, Supabase `fwuwzoxanrmsobwfnbxe`. Révision déployée et état des migrations en production non vérifiés.
 - Versions installées et verrouillées : Next.js 16.3.8, React 19.3.0, TypeScript 5.2.2 et client Supabase JS 2.116.0. OpenRouter est appelé depuis les Edge Functions. Version distante des services non vérifiée.
@@ -23,6 +23,12 @@ Le précédent lot documentaire préparait les règles permanentes et la reprise
 - Quatre nouveaux tests locaux rejouent huit migrations sur PostgreSQL PGlite avec données synthétiques. La suite complète passe (178 tests, 24 fichiers), ainsi que le typage et le build. ESLint signale quatre avertissements préexistants. La comparaison avec une instance Supabase hébergée reste ouverte faute de cible de test autorisée identifiée.
 - Le budget lu par l’écran et celui lu par les RPC divergent en présence de plusieurs versions. Le pointage conserve son taux initial ; une grille datée et une clé de rejeu des dépenses restent à définir. La revue des accès aux coûts salariaux précède le pointage mobile.
 
+### P0-B — 22 novembre 2026
+
+- Budget v1 et références protégés en base. L’agrégat SQL sert à la lecture financière et à la capture, indépendamment des limites des listes. Les avenants sont validés sous verrou et leur lecture est indépendante de l’ordre.
+- Les durées restent lisibles pour les membres disposant du droit de suivi du temps. Les finances chantier sont réservées aux administrateurs habilités et le taux figé est réservé au calcul serveur. [Contrat P0-B et matrice](docs/architecture/P0_B_INTEGRITE_FINANCIERE.md)
+- Validation locale sur données synthétiques, dont 1 001 dépenses et 1 001 pointages supplémentaires et concurrence sur deux connexions PostgreSQL 17.
+
 ## Décisions, sources et écarts
 
 - Le brief du propriétaire du 22 novembre fixe la promesse vocale, les 15 priorités, les reports, les contraintes financières et la cible de production. Le cahier des charges maître consolidé de 22 modules est désormais versionné dans [`docs/product/DEVISIA_CAHIER_DES_CHARGES_MAITRE.md`](docs/product/DEVISIA_CAHIER_DES_CHARGES_MAITRE.md) (1 704 lignes, 22 modules et annexe détaillée tâches/pointage). Il s'agit de la référence fonctionnelle, pas d'un ordre de tout développer ; la roadmap approuvée et l'architecture cible restent à arrêter après audit.
@@ -35,7 +41,6 @@ Le précédent lot documentaire préparait les règles permanentes et la reprise
 
 ## Blocages, autorisations et prochaine action
 
-- **En cours** : revue de la branche P0-A. Aucun changement métier ou schéma dans ce lot.
-- **Décisions attendues** : adopter v1 et ses montants comme référence protégée, fixer la visibilité des coûts individuels et le choix du taux à la date travaillée, puis valider les règles de ventilation et de rejeu avant de créer les producteurs de tâches, d’heures et de consommations.
-- **Prochaine action** : après approbation, ouvrir un lot correctif distinct sur la référence budgétaire et les droits. Critère de réussite : même vendu et même budget révisé à l’écran et dans la capture avec deux versions et des avenants, historique conservé et permissions vérifiées sur données synthétiques.
-- **Validation distante** : comparer ensuite le schéma et les droits avec une instance explicitement désignée comme développement/test. L’accord du propriétaire demeure requis pour tout merge, déploiement ou migration de production.
+- **En cours** — revue du lot P0-B. L’accord du propriétaire demeure requis pour fusionner, déployer ou appliquer la migration en production.
+- **Prochaine action** — vérifier la migration et l’état des références v1 sur une instance explicitement autorisée de développement ou de test. Vérifier le rapprochement écran/capture et examiner séparément toute incohérence historique.
+- **Dépendances** — revue des permissions de devis et du lien salarié-compte avant pointage mobile, taux datés et clé de rejeu des dépenses, puis contrats de ventilation des tâches et des consommations.

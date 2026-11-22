@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { PGlite } from '@electric-sql/pglite';
 import { calculateJobIntelligence } from '../lib/job-intelligence';
@@ -22,6 +22,7 @@ describe('contrats financiers du chantier (PostgreSQL local)', () => {
   const project = randomUUID();
   const estimate = randomUUID();
   const member = randomUUID();
+  const administrator = randomUUID();
   let job: string;
   let legacyJob: string;
 
@@ -40,8 +41,8 @@ describe('contrats financiers du chantier (PostgreSQL local)', () => {
     await db.exec('set role authenticated');
     job = (await db.query<{ id: string }>('select accept_estimate_and_create_job($1) as id', [estimate])).rows[0].id;
     await db.exec('reset role');
-    await db.query("insert into auth.users(id, email) values ($1, 'member@example.test')", [member]);
-    await db.query("insert into organization_members (organization_id, user_id, role) values ($1, $2, 'member')", [owner, member]);
+    await db.query("insert into auth.users(id, email) values ($1, 'member@example.test'), ($2, 'admin@example.test')", [member, administrator]);
+    await db.query("insert into organization_members (organization_id, user_id, role) values ($1, $2, 'member'), ($1, $3, 'admin')", [owner, member, administrator]);
     await db.query(`insert into job_budget_snapshots(organization_id, job_id, version, sold_total_ht_cents, material_cents)
       values ($1, $2, 2, 99999, 99999)`, [owner, job]);
     // A pre-existing chantier with only a later snapshot must remain visible for diagnosis.
@@ -54,7 +55,7 @@ describe('contrats financiers du chantier (PostgreSQL local)', () => {
     await db.query(`insert into job_budget_snapshots(organization_id, job_id, version, sold_total_ht_cents)
       values ($1, $2, 2, 0)`, [owner, legacyJob]);
     const hardening = 'supabase/migrations/20261122120000_p0_b_job_financial_integrity.sql';
-    if (existsSync(hardening)) await db.exec(readFileSync(hardening, 'utf8'));
+    await db.exec(readFileSync(hardening, 'utf8'));
     await db.exec('set role authenticated');
   }, 30_000);
 
@@ -71,9 +72,11 @@ describe('contrats financiers du chantier (PostgreSQL local)', () => {
     const rights = await db.query(`
       select has_table_privilege('authenticated', 'job_performance_snapshots', 'select') as read,
              has_table_privilege('authenticated', 'job_performance_snapshots', 'insert') as write,
-             has_function_privilege('anon', 'public.capture_job_performance_snapshot(uuid,numeric,boolean)', 'execute') as anonymous_capture
+             has_function_privilege('anon', 'public.capture_job_performance_snapshot(uuid,numeric,boolean)', 'execute') as anonymous_capture,
+             has_function_privilege('anon', 'public.get_job_financial_summary(uuid)', 'execute') as anonymous_summary,
+             has_function_privilege('authenticated', 'private.calculate_job_financial_summary(public.jobs)', 'execute') as direct_calculator
     `);
-    expect(rights.rows).toEqual([{ read: true, write: false, anonymous_capture: false }]);
+    expect(rights.rows).toEqual([{ read: true, write: false, anonymous_capture: false, anonymous_summary: false, direct_calculator: false }]);
   });
 
   it('fige une seule vente HT remisée pour un poste ventilé entre matériau et pose', async () => {
@@ -114,7 +117,7 @@ describe('contrats financiers du chantier (PostgreSQL local)', () => {
     }
   });
   it('protège directement les montants, les références et toutes les versions historiques', async () => {
-    for (const assignment of ['sold_total_ht_cents = 1', 'initial_budget_cents = 1', 'source_project_id = null', 'source_estimate_id = null']) {
+    for (const assignment of ['sold_total_ht_cents = 1', 'initial_budget_cents = 1', 'source_project_id = null', 'source_estimate_id = null', "status = 'completed'", 'completed_on = current_date']) {
       await expect(db.query(`update jobs set ${assignment} where id = $1`, [job])).rejects.toMatchObject({ code: '42501' });
     }
     await expect(db.query('delete from jobs where id = $1', [job])).rejects.toMatchObject({ code: '42501' });
@@ -124,10 +127,37 @@ describe('contrats financiers du chantier (PostgreSQL local)', () => {
       values ($1, $2, 3, 0)`, [owner, job])).rejects.toMatchObject({ code: '42501' });
     expect((await db.query('select version from job_budget_snapshots where job_id = $1 order by version', [job])).rows)
       .toEqual([{ version: 1 }, { version: 2 }]);
-    await expect(db.query('delete from estimates where id = $1', [estimate])).rejects.toThrow();
+    await db.exec('reset role');
+    try {
+      await expect(db.query('delete from estimates where id = $1', [estimate])).rejects.toThrow('immutable');
+      await expect(db.query('update quote_cost_items set hourly_cost_cents = 1 where estimate_id = $1', [estimate]))
+        .rejects.toThrow('immutable');
+      await expect(db.query('update job_budget_snapshots set labor_cents = 1 where job_id = $1', [job]))
+        .rejects.toThrow('immutable');
+    } finally {
+      await db.exec('set role authenticated');
+    }
+  });
+
+  it('crée une unique v1 atomiquement avec une multiplication de coût supérieure à un int32', async () => {
+    const nextEstimate = randomUUID();
+    await db.exec('reset role');
+    try {
+      await db.query(`insert into estimates(id, user_id, project_id, estimate_kind, total_ht, total_ttc)
+        values ($1, $2, $3, 'quote', 100, 120)`, [nextEstimate, owner, project]);
+      await db.query(`insert into quote_cost_items(organization_id, estimate_id, line_key, category, description, planned_minutes, hourly_cost_cents)
+        values ($1, $2, 'manual', 'labor', 'Lot agrégé', 1000000, 3000)`, [owner, nextEstimate]);
+    } finally {
+      await db.exec('set role authenticated');
+    }
+    const accepted = (await db.query<{ id: string }>('select accept_estimate_and_create_job($1) as id', [nextEstimate])).rows[0].id;
+    expect((await db.query('select labor_cents, sold_total_ht_cents, version from job_budget_snapshots where job_id = $1', [accepted])).rows)
+      .toEqual([{ labor_cents: 50_000_000, sold_total_ht_cents: 10_000, version: 1 }]);
+    await expect(db.query('select accept_estimate_and_create_job($1)', [nextEstimate])).rejects.toThrow('already accepted');
   });
 
   it('refuse une capture et une approbation lorsque la v1 manque', async () => {
+    await expect(db.query('select get_job_financial_summary($1)', [legacyJob])).rejects.toThrow('Initial budget snapshot not found');
     await expect(db.query('select capture_job_performance_snapshot($1, 50)', [legacyJob]))
       .rejects.toThrow('Initial budget snapshot not found');
     await expect(db.query(`insert into job_change_orders(organization_id, job_id, title, status, sold_delta_cents, approved_on)
@@ -177,11 +207,30 @@ describe('contrats financiers du chantier (PostgreSQL local)', () => {
       .toEqual({ actual_cost_cents: 8200 });
   }, 30_000);
 
+  it('protège le rattachement du projet et conserve une seule clôture', async () => {
+    await db.exec('reset role');
+    try {
+      await expect(db.query('update projects set organization_id = $1 where id = $2', [otherOwner, project]))
+        .rejects.toThrow('Contractual project organization is immutable');
+    } finally {
+      await db.exec('set role authenticated');
+    }
+    await expect(db.query('select capture_job_performance_snapshot($1, 33.333)', [job]))
+      .rejects.toThrow('two decimals');
+    await db.query('select capture_job_performance_snapshot($1, 100, true)', [job]);
+    expect((await db.query('select status from jobs where id = $1', [job])).rows).toEqual([{ status: 'completed' }]);
+    await expect(db.query("update jobs set status = 'active' where id = $1", [job])).rejects.toMatchObject({ code: '42501' });
+    await expect(db.query('select capture_job_performance_snapshot($1, 100, true)', [job]))
+      .rejects.toThrow('already completed');
+  });
+
   it('sépare les durées des coûts et réserve les finances aux administrateurs du chantier', async () => {
     try {
+      await expect(db.query('select hourly_cost_cents_snapshot from time_entries where job_id = $1 limit 1', [job]))
+        .rejects.toMatchObject({ code: '42501' });
       await db.query("select set_config('test.user_id', $1, false)", [member]);
       expect((await db.query('select minutes from time_entries where job_id = $1 limit 1', [job])).rows).toHaveLength(1);
-      await expect(db.query('select hourly_cost_cents_snapshot from time_entries where job_id = $1', [job]))
+      await expect(db.query('select hourly_cost_cents_snapshot from time_entries where job_id = $1 limit 1', [job]))
         .rejects.toMatchObject({ code: '42501' });
       for (const table of ['employees', 'jobs', 'job_budget_snapshots', 'job_cost_entries', 'job_change_orders', 'job_performance_snapshots']) {
         expect((await db.query(`select * from ${table} where organization_id = $1`, [owner])).rows).toEqual([]);
@@ -191,9 +240,11 @@ describe('contrats financiers du chantier (PostgreSQL local)', () => {
         await expect(db.query('select get_job_financial_summary($1)', [job])).rejects.toMatchObject({ code: '42501' });
         await expect(db.query('select capture_job_performance_snapshot($1, 100)', [job])).rejects.toThrow();
       }
+      await db.query("select set_config('test.user_id', $1, false)", [administrator]);
+      expect((await db.query('select get_job_financial_summary($1) as summary', [job])).rows[0])
+        .toMatchObject({ summary: { initial_budget_cents: 5000 } });
     } finally {
       await db.query("select set_config('test.user_id', $1, false)", [owner]);
     }
   });
-
 });
