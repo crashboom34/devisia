@@ -1,6 +1,7 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { PGlite } from '@electric-sql/pglite';
+import { calculateJobIntelligence } from '../lib/job-intelligence';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 const migrations = [
@@ -20,7 +21,9 @@ describe('contrats financiers du chantier (PostgreSQL local)', () => {
   const otherOwner = randomUUID();
   const project = randomUUID();
   const estimate = randomUUID();
+  const member = randomUUID();
   let job: string;
+  let legacyJob: string;
 
   beforeAll(async () => {
     await db.exec(readFileSync('tests/fixtures/p0-finance-prerequisites.sql', 'utf8'));
@@ -36,6 +39,23 @@ describe('contrats financiers du chantier (PostgreSQL local)', () => {
     await db.query("select set_config('test.user_id', $1, false)", [owner]);
     await db.exec('set role authenticated');
     job = (await db.query<{ id: string }>('select accept_estimate_and_create_job($1) as id', [estimate])).rows[0].id;
+    await db.exec('reset role');
+    await db.query("insert into auth.users(id, email) values ($1, 'member@example.test')", [member]);
+    await db.query("insert into organization_members (organization_id, user_id, role) values ($1, $2, 'member')", [owner, member]);
+    await db.query(`insert into job_budget_snapshots(organization_id, job_id, version, sold_total_ht_cents, material_cents)
+      values ($1, $2, 2, 99999, 99999)`, [owner, job]);
+    // A pre-existing chantier with only a later snapshot must remain visible for diagnosis.
+    const legacyEstimate = randomUUID();
+    await db.query(`insert into estimates(id, user_id, project_id, estimate_kind, quote_status)
+      values ($1, $2, $3, 'quote', 'accepted')`, [legacyEstimate, owner, project]);
+    legacyJob = (await db.query<{ id: string }>(`
+      insert into jobs(organization_id, source_estimate_id, source_project_id, name, created_by)
+      values ($1, $2, $3, 'Budget v1 absent', $1) returning id`, [owner, legacyEstimate, project])).rows[0].id;
+    await db.query(`insert into job_budget_snapshots(organization_id, job_id, version, sold_total_ht_cents)
+      values ($1, $2, 2, 0)`, [owner, legacyJob]);
+    const hardening = 'supabase/migrations/20261122120000_p0_b_job_financial_integrity.sql';
+    if (existsSync(hardening)) await db.exec(readFileSync(hardening, 'utf8'));
+    await db.exec('set role authenticated');
   }, 30_000);
 
   afterAll(async () => { await db.close(); });
@@ -59,7 +79,7 @@ describe('contrats financiers du chantier (PostgreSQL local)', () => {
   it('fige une seule vente HT remisée pour un poste ventilé entre matériau et pose', async () => {
     expect((await db.query('select category, sale_price_cents from quote_cost_items where estimate_id = $1 order by category', [estimate])).rows)
       .toEqual([{ category: 'labor', sale_price_cents: 0 }, { category: 'material', sale_price_cents: 10000 }]);
-    expect((await db.query('select version, material_cents, labor_cents, sold_total_ht_cents from job_budget_snapshots where job_id = $1', [job])).rows)
+    expect((await db.query('select version, material_cents, labor_cents, sold_total_ht_cents from job_budget_snapshots where job_id = $1 and version = 1', [job])).rows)
       .toEqual([{ version: 1, material_cents: 2000, labor_cents: 3000, sold_total_ht_cents: 9000 }]);
     await expect(db.query('select accept_estimate_and_create_job($1)', [estimate])).rejects.toThrow('already accepted');
   });
@@ -93,4 +113,87 @@ describe('contrats financiers du chantier (PostgreSQL local)', () => {
       await db.query("select set_config('test.user_id', $1, false)", [owner]);
     }
   });
+  it('protège directement les montants, les références et toutes les versions historiques', async () => {
+    for (const assignment of ['sold_total_ht_cents = 1', 'initial_budget_cents = 1', 'source_project_id = null', 'source_estimate_id = null']) {
+      await expect(db.query(`update jobs set ${assignment} where id = $1`, [job])).rejects.toMatchObject({ code: '42501' });
+    }
+    await expect(db.query('delete from jobs where id = $1', [job])).rejects.toMatchObject({ code: '42501' });
+    await expect(db.query('update job_budget_snapshots set labor_cents = 1 where job_id = $1', [job])).rejects.toMatchObject({ code: '42501' });
+    await expect(db.query('delete from job_budget_snapshots where job_id = $1', [job])).rejects.toMatchObject({ code: '42501' });
+    await expect(db.query(`insert into job_budget_snapshots(organization_id, job_id, version, sold_total_ht_cents)
+      values ($1, $2, 3, 0)`, [owner, job])).rejects.toMatchObject({ code: '42501' });
+    expect((await db.query('select version from job_budget_snapshots where job_id = $1 order by version', [job])).rows)
+      .toEqual([{ version: 1 }, { version: 2 }]);
+    await expect(db.query('delete from estimates where id = $1', [estimate])).rejects.toThrow();
+  });
+
+  it('refuse une capture et une approbation lorsque la v1 manque', async () => {
+    await expect(db.query('select capture_job_performance_snapshot($1, 50)', [legacyJob]))
+      .rejects.toThrow('Initial budget snapshot not found');
+    await expect(db.query(`insert into job_change_orders(organization_id, job_id, title, status, sold_delta_cents, approved_on)
+      values ($1, $2, 'Révision', 'approved', 1, current_date)`, [owner, legacyJob]))
+      .rejects.toThrow('Initial budget snapshot not found');
+  });
+
+  it('aligne la lecture exhaustive et la capture sur v1, les centimes et les avenants approuvés', async () => {
+    const employee = randomUUID();
+    await db.query("insert into employees(id, organization_id, first_name, last_name) values ($1, $2, 'Grand', 'Volume')", [employee, owner]);
+    await db.query(`insert into time_entries(organization_id, employee_id, job_id, work_date, minutes, hourly_cost_cents_snapshot)
+      select $1, $2, $3, date '2020-01-01' + n, 1, 90 from generate_series(1, 1001) n`, [owner, employee, job]);
+    await db.query(`insert into job_cost_entries(organization_id, job_id, category, description, amount_ht_cents)
+      select $1, $2, 'transport', 'Écriture ' || n, 3 from generate_series(1, 1001) n`, [owner, job]);
+
+    const insertChange = `insert into job_change_orders(organization_id, job_id, title, status, sold_delta_cents,
+      planned_cost_delta_cents, cost_category, approved_on)
+      values ($1, $2, 'Avenant', $3, $4, $5, $6, current_date) returning id`;
+    const increase = { status: 'approved', soldDeltaCents: 100, plannedCostDeltaCents: 100, category: 'transport' } as const;
+    const decrease = { status: 'approved', soldDeltaCents: -80, plannedCostDeltaCents: -80, category: 'consumable' } as const;
+    const approved = await db.query<{ id: string }>(insertChange, [owner, job, 'approved', 100, 100, 'transport']);
+    await db.query(insertChange, [owner, job, 'approved', -80, -80, 'consumable']);
+    await db.query(insertChange, [owner, job, 'draft', 200, 200, 'other']);
+    await db.query(insertChange, [owner, job, 'rejected', 300, 300, 'other']);
+    await expect(db.query(insertChange, [owner, job, 'approved', -21, -21, 'other'])).rejects.toThrow('negative');
+    await expect(db.query('delete from job_change_orders where id = $1', [approved.rows[0].id])).rejects.toThrow('immutable');
+
+    const ts = calculateJobIntelligence({
+      initialSoldCents: 9000, planned: [
+        { category: 'material', unitCostCents: 2000 },
+        { category: 'labor', plannedMinutes: 60, hourlyCostCents: 3000 },
+      ],
+      actual: [{ category: 'material', amountHtCents: 3400 }, { category: 'transport', amountHtCents: 3003 }],
+      time: [{ minutes: 120, hourlyCostCentsSnapshot: 2400 }, ...Array.from({ length: 1001 }, () => ({ minutes: 1, hourlyCostCentsSnapshot: 90 }))],
+      changeOrders: [decrease, increase], progressPercent: 33.33,
+    });
+    const live = (await db.query<{ summary: Record<string, unknown> }>('select get_job_financial_summary($1) as summary', [job])).rows[0].summary;
+    expect(live).toMatchObject({
+      initial_sold_total_ht_cents: 9000, initial_budget_cents: 5000, revised_sold_total_ht_cents: ts.soldCents,
+      revised_budget_cents: ts.plannedCostCents, actual_cost_cents: 13205, planned_margin_cents: ts.plannedMarginCents,
+      actual_by_category: { labor: 6802, material: 3400, other: 3003 }, planned_by_category: { other: 20 },
+    });
+    const capture = (await db.query<{ id: string }>('select capture_job_performance_snapshot($1, 33.33) as id', [job])).rows[0].id;
+    expect((await db.query('select * from job_performance_snapshots where id = $1', [capture])).rows[0])
+      .toMatchObject({ ...live, forecast_cost_cents: ts.forecastCostCents, projected_margin_cents: ts.projectedMarginCents });
+    expect((await db.query('select actual_cost_cents from job_performance_snapshots where job_id = $1 and version = 1', [job])).rows[0])
+      .toEqual({ actual_cost_cents: 8200 });
+  }, 30_000);
+
+  it('sépare les durées des coûts et réserve les finances aux administrateurs du chantier', async () => {
+    try {
+      await db.query("select set_config('test.user_id', $1, false)", [member]);
+      expect((await db.query('select minutes from time_entries where job_id = $1 limit 1', [job])).rows).toHaveLength(1);
+      await expect(db.query('select hourly_cost_cents_snapshot from time_entries where job_id = $1', [job]))
+        .rejects.toMatchObject({ code: '42501' });
+      for (const table of ['employees', 'jobs', 'job_budget_snapshots', 'job_cost_entries', 'job_change_orders', 'job_performance_snapshots']) {
+        expect((await db.query(`select * from ${table} where organization_id = $1`, [owner])).rows).toEqual([]);
+      }
+      for (const uid of [member, otherOwner]) {
+        await db.query("select set_config('test.user_id', $1, false)", [uid]);
+        await expect(db.query('select get_job_financial_summary($1)', [job])).rejects.toMatchObject({ code: '42501' });
+        await expect(db.query('select capture_job_performance_snapshot($1, 100)', [job])).rejects.toThrow();
+      }
+    } finally {
+      await db.query("select set_config('test.user_id', $1, false)", [owner]);
+    }
+  });
+
 });
