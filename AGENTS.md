@@ -8,6 +8,8 @@
 4. Après cette lecture initiale, lire les éventuels `AGENTS.md` des sous-dossiers concernés, de la racine vers la cible. Consulter ensuite uniquement les fichiers utiles à la mission. En cas de contexte insuffisant, chercher une preuve ciblée.
 5. Si un fichier initial manque, vérifier les noms et emplacements habituels sans ouvrir d’autres documents. Signaler le chemin manquant et proposer sa création. N’attribuer aucune décision au fichier absent.
 
+**Économie de contexte obligatoire :** ce rituel ne comprend **que `AGENTS.md` et `HANDOFF.md`**. Ne jamais ouvrir automatiquement le cahier des charges, le README, les fichiers source, les migrations, les tests ou tout le dépôt au début d'un tour. Après ce rituel seulement, lire **à la demande** les sections pertinentes des documents et les fichiers du code utiles à la tâche. Préférer une recherche ciblée (`rg`, chemins connus, extraits) à une lecture exhaustive ; éviter de relire un fichier inchangé déjà compris pendant le tour. Pour une simple question, ne parcourir aucun code si le handoff suffit. Respecter toute instruction de priorité supérieure qui exige une lecture supplémentaire.
+
 Respecter les instructions de priorité supérieure de l’environnement. Lire les instructions des skills disponibles qui servent la mission avant de les utiliser. Rapporter les outils et contrôles effectivement utilisés.
 
 ## Produit et feuille de route
@@ -61,7 +63,7 @@ Les domaines couvrent le CRM et la gestion commerciale, les devis IA, les biblio
 | --- | --- |
 | `AGENTS.md` | Règles permanentes de travail. |
 | `HANDOFF.md` | État vérifié, décisions en vigueur, blocages et prochaine action. |
-| Cahier des charges maître | Vision fonctionnelle et définition des 22 modules. |
+| [`docs/product/DEVISIA_CAHIER_DES_CHARGES_MAITRE.md`](docs/product/DEVISIA_CAHIER_DES_CHARGES_MAITRE.md) | Référence fonctionnelle des 22 modules. **Ne pas lire intégralement par défaut** ; consulter la section du module concerné après le rituel initial. Une lecture complète est réservée aux missions qui l'exigent explicitement, notamment l'audit global. |
 | Architecture | Contrats techniques, dépendances et sources de vérité. |
 | Roadmap | Ordre des priorités, phases, dépendances et découpage en PR. |
 | Rapports de tests | Preuves datées des validations sur une révision identifiée. |
