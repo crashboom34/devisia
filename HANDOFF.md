@@ -4,19 +4,24 @@ Mis à jour le **22 novembre 2026**. Commencer chaque tour par le protocole de [
 
 ## État vérifié
 
-- Dépôt `crashboom34/devisia`. Branche de préparation `docs/agents-handoff`, créée depuis `work` au même commit que `refs/heads/main` distant. **Commit applicatif de référence** : `96f3f439c9c352f5a5e237cc4fba1866e039f2fe` (vérifié par Git). Pour le dernier commit documentaire, utiliser `git log -1 -- AGENTS.md HANDOFF.md`.
-- Dernier lot intégré identifié par Git : PR #22, branche `feat/mobile-team-cost-catalog-quote-edit`. Les derniers commits du lot portent sur le badge mobile, les totaux de devis et la préservation des lignes de coût manuelles. La présence sur `main` ne prouve pas un déploiement.
-- Branche documentaire publiée et vérifiée sur GitHub. **PR #23 ouverte en brouillon** : `https://github.com/crashboom34/devisia/pull/23` ; la fusion est soumise à accord explicite. La branche contient `AGENTS.md`, `HANDOFF.md` et le cahier maître. Le retour `Forbidden` rencontré lors de la première tentative est résolu.
+- P0-A sur `docs/p0-a-financial-contracts`, issue de `main@2c05f11182b6bde73f184221e727a69804bbad11`. Ce commit intègre la PR #23 (instructions, handoff et cahier maître). Dernier lot applicatif précédemment identifié : PR #22.
+- Le propriétaire indique que l’audit statique préliminaire des 22 modules est terminé. P0-A porte sur les contrats financiers et les tests de la base versionnée.
 - Production déclarée par le propriétaire : Vercel, `https://devisia.vercel.app`, Supabase `fwuwzoxanrmsobwfnbxe`. Révision déployée et état des migrations en production non vérifiés.
 - Versions installées et verrouillées : Next.js 16.3.8, React 19.3.0, TypeScript 5.2.2 et client Supabase JS 2.116.0. OpenRouter est appelé depuis les Edge Functions. Version distante des services non vérifiée.
 
 ## Mission et travaux réalisés
 
-Le lot documentaire prépare les règles permanentes et la reprise du projet avant l’audit. Le périmètre autorisé couvre `AGENTS.md`, `HANDOFF.md` et le versionnement du cahier des charges maître, leur revue et leur PR. Code métier, développement V2, audit détaillé, abonnements, migrations, production et données réelles sont hors périmètre.
+Le précédent lot documentaire préparait les règles permanentes et la reprise du projet avant l’audit. Le périmètre autorisé couvre `AGENTS.md`, `HANDOFF.md` et le versionnement du cahier des charges maître, leur revue et leur PR. Code métier, développement V2, audit détaillé, abonnements, migrations, production et données réelles sont hors périmètre.
 
 - Création du protocole de lecture, des règles métier et de livraison, du premier handoff et ajout du cahier des charges maître. Aucun travail fonctionnel ni migration dans ce lot. **À chaque tour : lire uniquement `AGENTS.md` et `HANDOFF.md` en premier ; tout autre fichier (y compris le cahier maître) n'est consulté qu'ensuite, par sections ciblées si la mission le demande. Ne jamais relire tout le dépôt automatiquement.**
 - Contrôles de ce lot : inventaire du checkout et des instructions locales, recoupement avec le commit distant et les versions installées. Contrôles réussis : diff limité aux deux fichiers, git diff --check, liens de reprise, 15 priorités numérotées, promesse exacte, versions du lockfile, cible Supabase et reconnaissance du bloc géré par Next.js.
 - Preuves antérieures sur le commit applicatif ci-dessus (session de configuration cloud du 22 novembre) : 174 tests réussis dans 23 fichiers, TypeScript et build réussis, ESLint avec 4 avertissements et aucune erreur. Cinq pages publiques vérifiées en développement et en production locale. Ces vérifications ne couvrent ni une connexion Supabase réelle ni la génération IA de bout en bout.
+
+### P0-A — 22 novembre 2026
+
+- Le [contrat de référence](docs/architecture/P0_A_CONTRATS_FINANCIERS.md) décrit les sources, les contrôles et les dépendances des lots tâches, pointages et consommations. Il distingue les garanties SQL actuelles des décisions à approuver.
+- Quatre nouveaux tests locaux rejouent huit migrations sur PostgreSQL PGlite avec données synthétiques. La suite complète passe (178 tests, 24 fichiers), ainsi que le typage et le build. ESLint signale quatre avertissements préexistants. La comparaison avec une instance Supabase hébergée reste ouverte faute de cible de test autorisée identifiée.
+- Le budget lu par l’écran et celui lu par les RPC divergent en présence de plusieurs versions. Le pointage conserve son taux initial ; une grille datée et une clé de rejeu des dépenses restent à définir. La revue des accès aux coûts salariaux précède le pointage mobile.
 
 ## Décisions, sources et écarts
 
@@ -30,7 +35,7 @@ Le lot documentaire prépare les règles permanentes et la reprise du projet ava
 
 ## Blocages, autorisations et prochaine action
 
-- **En cours** : faire relire la PR #23 documentaire actualisée et recueillir l'approbation du propriétaire. Le merge requiert son accord. Aucun déploiement n’est attendu pour le présent lot.
-- **Dépendance externe** : pour valider ultérieurement les parcours connectés, renseigner le projet Supabase de développement et sa clé publique dans les paramètres cloud, autoriser son domaine et vérifier OpenRouter côté Edge Functions. Cette dépendance concerne les essais connectés.
-- **Prochaine action** : après approbation puis fusion de la PR #23, lancer le prompt d'audit. Au début du tour, lire les deux seuls fichiers de démarrage ; ensuite consulter le cahier maître versionné et ses sections pertinentes pour l'audit des 22 modules. La version de référence est celle du commit audité. Ne pas faire de lecture exhaustive du code sans objectif ciblé.
-- **Critère de passage** : instructions et handoff approuvés, périmètre de l’audit explicite et sources de référence identifiées ou lacunes signalées. Le prochain lot peut alors produire un audit d’architecture et une roadmap par dépendances, sous le périmètre du nouveau prompt.
+- **En cours** : revue de la branche P0-A. Aucun changement métier ou schéma dans ce lot.
+- **Décisions attendues** : adopter v1 et ses montants comme référence protégée, fixer la visibilité des coûts individuels et le choix du taux à la date travaillée, puis valider les règles de ventilation et de rejeu avant de créer les producteurs de tâches, d’heures et de consommations.
+- **Prochaine action** : après approbation, ouvrir un lot correctif distinct sur la référence budgétaire et les droits. Critère de réussite : même vendu et même budget révisé à l’écran et dans la capture avec deux versions et des avenants, historique conservé et permissions vérifiées sur données synthétiques.
+- **Validation distante** : comparer ensuite le schéma et les droits avec une instance explicitement désignée comme développement/test. L’accord du propriétaire demeure requis pour tout merge, déploiement ou migration de production.
