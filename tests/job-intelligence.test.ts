@@ -31,6 +31,16 @@ describe('job intelligence', () => {
     expect(result.byCategory.material.plannedCents).toBe(450_000);
   });
 
+  it('réconcilie une réduction et une hausse sur la même enveloppe dans les deux ordres', () => {
+    const increase = { status: 'approved', soldDeltaCents: 100, plannedCostDeltaCents: 100, category: 'transport' } as const;
+    const decrease = { status: 'approved', soldDeltaCents: -80, plannedCostDeltaCents: -80, category: 'consumable' } as const;
+    for (const changeOrders of [[increase, decrease], [decrease, increase]]) {
+      expect(calculateJobIntelligence({
+        initialSoldCents: 0, planned: [], actual: [], time: [], changeOrders, progressPercent: 50,
+      })).toMatchObject({ soldCents: 20, plannedCostCents: 20, byCategory: { other: { plannedCents: 20 } } });
+    }
+  });
+
   it('projette la marge finale et son écart avec la marge prévue révisée', () => {
     const result = calculateJobIntelligence({
       initialSoldCents: 1_000_000,

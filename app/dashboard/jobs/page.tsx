@@ -20,6 +20,14 @@ interface JobRow {
   sold_total_ht_cents: number;
   initial_budget_cents: number;
   created_at: string;
+  job_budget_snapshots: Array<{
+    sold_total_ht_cents: number;
+    material_cents: number;
+    labor_cents: number;
+    subcontract_cents: number;
+    equipment_cents: number;
+    other_cents: number;
+  }>;
 }
 
 export default function JobsPage() {
@@ -27,12 +35,14 @@ export default function JobsPage() {
   const [jobs, setJobs] = useState<JobRow[]>([]);
   const [allowed, setAllowed] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     if (authLoading || !user) return;
+    setLoadError(false);
     Promise.all([
       supabase.from('organization_members').select('organization_id').eq('user_id', user.id).limit(1).maybeSingle(),
-      supabase.from('jobs').select('id, name, client_name, status, sold_total_ht_cents, initial_budget_cents, created_at').order('created_at', { ascending: false }),
+      supabase.from('jobs').select('id, name, client_name, status, sold_total_ht_cents, initial_budget_cents, created_at, job_budget_snapshots(sold_total_ht_cents, material_cents, labor_cents, subcontract_cents, equipment_cents, other_cents)').eq('job_budget_snapshots.version', 1).order('created_at', { ascending: false }),
     ]).then(async ([membership, result]) => {
       if (membership.error) throw membership.error;
       const access = membership.data?.organization_id
@@ -42,7 +52,7 @@ export default function JobsPage() {
       setAllowed(canUseJobs);
       if (result.error && canUseJobs) throw result.error;
       setJobs((result.data || []) as JobRow[]);
-    }).catch((error) => console.error('[jobs] loading failed', error)).finally(() => setLoading(false));
+    }).catch((error) => { console.error('[jobs] loading failed', error); setLoadError(true); }).finally(() => setLoading(false));
   }, [authLoading, user]);
 
   return (
@@ -50,7 +60,9 @@ export default function JobsPage() {
       <div className="max-w-7xl mx-auto space-y-6">
         <PageHeader title="Chantiers" subtitle="Du budget accepté aux coûts réellement engagés." breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Chantiers' }]} />
 
-        {!loading && allowed === false ? (
+        {loadError ? (
+          <div role="alert" className="py-16 text-center text-slate-400">Les chantiers sont indisponibles.</div>
+        ) : !loading && allowed === false ? (
           <Card className="bg-slate-800/40 border-slate-700/40">
             <CardContent className="p-8 text-center">
               <ShieldAlert className="h-10 w-10 text-amber-400 mx-auto mb-3" />
@@ -66,7 +78,13 @@ export default function JobsPage() {
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {jobs.map((job) => {
-              const plannedMargin = job.sold_total_ht_cents - job.initial_budget_cents;
+              const budget = job.job_budget_snapshots[0];
+              const costs = budget && [budget.material_cents, budget.labor_cents, budget.subcontract_cents, budget.equipment_cents, budget.other_cents];
+              const initialBudget = costs?.reduce((total, amount) => total + amount, 0);
+              const validBaseline = budget && Number.isSafeInteger(budget.sold_total_ht_cents) && budget.sold_total_ht_cents === job.sold_total_ht_cents
+                && costs?.every((amount) => Number.isSafeInteger(amount) && amount >= 0)
+                && Number.isSafeInteger(initialBudget) && initialBudget === job.initial_budget_cents;
+              const plannedMargin = validBaseline ? budget.sold_total_ht_cents - job.initial_budget_cents : null;
               return (
                 <Link key={job.id} href={`/dashboard/jobs/${job.id}`} className="min-w-0">
                   <Card className="h-full min-w-0 bg-slate-800/50 border-slate-700/40 hover:border-cyan-500/40 transition-colors">
@@ -78,10 +96,10 @@ export default function JobsPage() {
                         </div>
                         <span className="text-[11px] rounded-full bg-cyan-500/10 text-cyan-300 px-2 py-1">{job.status}</span>
                       </div>
-                      <div className="grid grid-cols-2 gap-3 text-sm">
-                        <div><p className="text-slate-500 text-xs">Vendu HT</p><p className="text-white font-semibold">{formatCurrencyEUR(job.sold_total_ht_cents / 100)}</p></div>
-                        <div><p className="text-slate-500 text-xs">Marge prévue</p><p className={plannedMargin >= 0 ? 'text-emerald-400 font-semibold' : 'text-red-400 font-semibold'}>{formatCurrencyEUR(plannedMargin / 100)}</p></div>
-                      </div>
+                      {plannedMargin === null ? <p className="text-sm text-amber-300">Référence budgétaire indisponible.</p> : <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div><p className="text-slate-500 text-xs">Vendu initial HT</p><p className="text-white font-semibold">{formatCurrencyEUR(budget.sold_total_ht_cents / 100)}</p></div>
+                        <div><p className="text-slate-500 text-xs">Marge initiale</p><p className={plannedMargin >= 0 ? 'text-emerald-400 font-semibold' : 'text-red-400 font-semibold'}>{formatCurrencyEUR(plannedMargin / 100)}</p></div>
+                      </div>}
                       <div className="flex items-center justify-between text-xs text-slate-500"><span>{new Date(job.created_at).toLocaleDateString('fr-FR')}</span><span className="flex items-center gap-1 text-cyan-400">Ouvrir <ChevronRight className="h-3.5 w-3.5" /></span></div>
                     </CardContent>
                   </Card>
