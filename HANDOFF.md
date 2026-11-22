@@ -27,7 +27,7 @@ Le précédent lot documentaire préparait les règles permanentes et la reprise
 
 - Budget v1 et références protégés en base. L’agrégat SQL sert à la lecture financière et à la capture, indépendamment des limites des listes. Les avenants sont validés sous verrou et leur lecture est indépendante de l’ordre.
 - Les durées restent lisibles pour les membres disposant du droit de suivi du temps. Les finances chantier sont réservées aux administrateurs habilités et le taux figé est réservé au calcul serveur. [Contrat P0-B et matrice](docs/architecture/P0_B_INTEGRITE_FINANCIERE.md)
-- Validation locale sur données synthétiques, dont 1 001 dépenses et 1 001 pointages supplémentaires et concurrence sur deux connexions PostgreSQL 17.
+- 185 tests Vitest réussis, dont 1 001 dépenses et 1 001 pointages supplémentaires dans un scénario de parité. Concurrence vérifiée sur deux connexions PostgreSQL 17. Typage et build réussis, ESLint avec quatre avertissements préexistants. Contrôle Chromium mobile avec API synthétique et revue indépendante du diff.
 
 ## Décisions, sources et écarts
 
@@ -41,6 +41,6 @@ Le précédent lot documentaire préparait les règles permanentes et la reprise
 
 ## Blocages, autorisations et prochaine action
 
-- **En cours** — revue du lot P0-B. L’accord du propriétaire demeure requis pour fusionner, déployer ou appliquer la migration en production.
+- **En cours** — branche P0-B publiée. GitHub refuse la création du brouillon via son API (403). [Ouvrir la PR pour revue](https://github.com/crashboom34/devisia/pull/new/fix/p0-b-financial-integrity). L’accord du propriétaire demeure requis pour fusionner, déployer ou appliquer la migration en production.
 - **Prochaine action** — vérifier la migration et l’état des références v1 sur une instance explicitement autorisée de développement ou de test. Vérifier le rapprochement écran/capture et examiner séparément toute incohérence historique.
 - **Dépendances** — revue des permissions de devis et du lien salarié-compte avant pointage mobile, taux datés et clé de rejeu des dépenses, puis contrats de ventilation des tâches et des consommations.
