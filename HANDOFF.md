@@ -1,6 +1,6 @@
 # Devisia — handoff opérationnel
 
-Mis à jour le **22 novembre 2026**. Commencer chaque tour par le protocole de [AGENTS.md](AGENTS.md).
+Mis à jour le **24 novembre 2026**. Commencer chaque tour par le protocole de [AGENTS.md](AGENTS.md).
 
 ## État vérifié
 
@@ -29,6 +29,23 @@ Le précédent lot documentaire préparait les règles permanentes et la reprise
 - Les durées restent lisibles pour les membres disposant du droit de suivi du temps. Les finances chantier sont réservées aux administrateurs habilités et le taux figé est réservé au calcul serveur. [Contrat P0-B et matrice](docs/architecture/P0_B_INTEGRITE_FINANCIERE.md)
 - 185 tests Vitest réussis, dont 1 001 dépenses et 1 001 pointages supplémentaires dans un scénario de parité. Concurrence vérifiée sur deux connexions PostgreSQL 17. Typage et build réussis, ESLint avec quatre avertissements préexistants. Contrôle Chromium mobile avec API synthétique et revue indépendante du diff.
 
+### Mise en service P0-B — 23 novembre 2026
+
+- Le HEAD distant et la PR #25 ont été vérifiés au SHA `0c9dca4aa3986884b6976a708a233454e592cd21` avant le correctif local. Le frontend requiert la RPC de résumé. L’ancien écran requiert le taux que la migration d’accès retire.
+- Correctif local sur la branche P0-B. Phase 1 pour le contrat financier, puis frontend, puis phase 2 de restriction après retrait des anciens clients. 186 tests locaux réussis. Concurrence et restauration synthétique confirmées sur PostgreSQL 17. [Runbook, dépendances et retour](docs/operations/P0_B_RELEASE_GATE.md)
+
+### Préparation de la répétition P0-B — 23 novembre 2026
+
+- `de5418f23f8dce9095ce870baf44fd7168a5daa8` est l’enfant direct de `0c9dca4aa3986884b6976a708a233454e592cd21`, qui reste le HEAD distant de la branche et de la PR #25. Le correctif concerne les deux étapes SQL, les diagnostics, les tests et la documentation de mise en service.
+- La PR #25 atteste une preview Vercel sur `0c9dca4`. L’affectation effective de ses variables Supabase reste inconnue. Toute écriture de recette dans une preview exige une cible de test autorisée.
+- Cible proposée : projet Supabase temporaire dans une organisation Free distincte, avec schéma vérifié et données synthétiques. Le premier fichier SQL versionné exige une table préalable `ai_models` et échoue seul sur PostgreSQL vierge (`42P01`). Identifier le schéma initial avant de préparer la base. [Préparation et matrice de répétition](docs/operations/P0_B_RELEASE_GATE.md#préparer-la-cible-de-répétition)
+
+### P1 et release combinée — 24 novembre 2026
+
+- L’action de duplication figure dans la liste et le détail des devis. Elle crée un brouillon dans le même projet, ouvre son éditeur et permet de renommer la copie. Le scénario, les centimes, les remises et les surcharges manuelles sont recopiés. Les postes reçoivent de nouvelles clés. Une relance dans le même dialogue réutilise l’identifiant de demande.
+- `release/devisia-p0b-p1` rassemble le P0-B publié, le séquencement et le runbook récupérés du ZIP, et P1. L’intégration séquence SQL phase 1, SQL P1, frontend, puis phase 2 différée. Les droits de copie sont portés par la migration et imposent un brouillon rattaché à un devis du même projet, dans la même entreprise. [Dossier de livraison et commandes](docs/operations/DEVISIA_P0B_P1_RELEASE.md)
+- 192 tests Vitest passent sur 25 fichiers. Chromium local à 390 px avec API simulée confirme la déduplication du clic et la gestion des erreurs de permissions. Les alertes npm antérieures au lot et les limites de la qualification sont relevées dans le dossier de livraison.
+
 ## Décisions, sources et écarts
 
 - Le brief du propriétaire du 22 novembre fixe la promesse vocale, les 15 priorités, les reports, les contraintes financières et la cible de production. Le cahier des charges maître consolidé de 22 modules est désormais versionné dans [`docs/product/DEVISIA_CAHIER_DES_CHARGES_MAITRE.md`](docs/product/DEVISIA_CAHIER_DES_CHARGES_MAITRE.md) (1 704 lignes, 22 modules et annexe détaillée tâches/pointage). Il s'agit de la référence fonctionnelle, pas d'un ordre de tout développer ; la roadmap approuvée et l'architecture cible restent à arrêter après audit.
@@ -41,6 +58,6 @@ Le précédent lot documentaire préparait les règles permanentes et la reprise
 
 ## Blocages, autorisations et prochaine action
 
-- **En cours** — branche P0-B publiée. GitHub refuse la création du brouillon via son API (403). [Ouvrir la PR pour revue](https://github.com/crashboom34/devisia/pull/new/fix/p0-b-financial-integrity). L’accord du propriétaire demeure requis pour fusionner, déployer ou appliquer la migration en production.
-- **Prochaine action** — vérifier la migration et l’état des références v1 sur une instance explicitement autorisée de développement ou de test. Vérifier le rapprochement écran/capture et examiner séparément toute incohérence historique.
+- **Production en attente** — Le dossier combiné remplace la PR #25 comme référence d’intégration. La production observée le 23 novembre servait P0-A, avec 40 migrations enregistrées. L’historique distant diverge du dépôt et aucune restauration hébergée n’a été vérifiée.
+- **Prochaine action** — qualifier la séquence sur une instance Supabase de test autorisée, vérifier l’historique, les ACL PostgREST et la restauration. Les migrations de production P0-B phase 1 et P1, la fusion et le déploiement exigent des accords distincts. La phase 2 exige aussi son propre accord, le retrait des anciens clients et un artefact de repli compatible.
 - **Dépendances** — revue des permissions de devis et du lien salarié-compte avant pointage mobile, taux datés et clé de rejeu des dépenses, puis contrats de ventilation des tâches et des consommations.

@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { FileText, Plus, TrendingUp, Euro, CircleCheck as CheckCircle2, Eye, Download, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import DuplicateQuoteDialog from '@/components/DuplicateQuoteDialog';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { KpiCard } from '@/components/dashboard/KpiCard';
 import { PageHeader } from '@/components/dashboard/PageHeader';
@@ -18,6 +19,10 @@ import { estimateTtcAfterDiscount } from '@/lib/manual-estimate';
 interface Estimate {
   id: string;
   project_id: string;
+  organization_id: string;
+  quote_title: string | null;
+  client_name: string | null;
+  estimate_number: string | null;
   scenario_type: string;
   total_ttc: number;
   discount_amount?: number | null;
@@ -25,6 +30,7 @@ interface Estimate {
   quote_status: string;
   projects?: {
     title: string;
+    client_name: string | null;
   };
 }
 
@@ -33,6 +39,7 @@ export default function QuotesPage() {
   const { user, loading: authLoading } = useAuthGuard();
   const [estimates, setEstimates] = useState<Estimate[]>([]);
   const [filteredEstimates, setFilteredEstimates] = useState<Estimate[]>([]);
+  const [adminOrganizations, setAdminOrganizations] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [searchValue, setSearchValue] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -49,20 +56,18 @@ export default function QuotesPage() {
   const loadEstimates = async () => {
     if (!user) return;
     try {
-      const { data, error } = await supabase
-        .from('estimates')
-        .select(`
-          *,
-          projects (
-            title
-          )
-        `)
-        .eq('user_id', user.id)
-        .eq('estimate_kind', 'quote')
-        .order('created_at', { ascending: false });
-
+      const [{ data, error }, memberships] = await Promise.all([
+        supabase.from('estimates')
+          .select('id, project_id, organization_id, quote_title, client_name, estimate_number, scenario_type, total_ttc, discount_amount, created_at, quote_status, projects(title, client_name)')
+          .eq('user_id', user.id)
+          .eq('estimate_kind', 'quote')
+          .order('created_at', { ascending: false }),
+        supabase.from('organization_members').select('organization_id')
+          .eq('user_id', user.id).in('role', ['owner', 'admin']),
+      ]);
       if (error) throw error;
-      setEstimates(data || []);
+      setEstimates((data ?? []) as unknown as Estimate[]);
+      setAdminOrganizations(new Set(memberships.error ? [] : memberships.data?.map((row) => row.organization_id)));
     } catch (err) {
       console.error('Error loading estimates:', err);
     } finally {
@@ -75,6 +80,8 @@ export default function QuotesPage() {
 
     if (searchValue) {
       filtered = filtered.filter(est =>
+        est.quote_title?.toLowerCase().includes(searchValue.toLowerCase()) ||
+        est.estimate_number?.toLowerCase().includes(searchValue.toLowerCase()) ||
         est.projects?.title?.toLowerCase().includes(searchValue.toLowerCase()) ||
         est.id.toLowerCase().includes(searchValue.toLowerCase())
       );
@@ -105,6 +112,13 @@ export default function QuotesPage() {
   };
 
   const stats = calculateStats();
+
+  function duplicateAction(estimate: Estimate, className?: string) {
+    if (!adminOrganizations.has(estimate.organization_id)) return null;
+    return <DuplicateQuoteDialog estimateId={estimate.id} projectId={estimate.project_id}
+      projectTitle={estimate.projects?.title} quoteTitle={estimate.quote_title}
+      clientName={estimate.client_name || estimate.projects?.client_name} className={className} />;
+  }
 
   const getStatusStyle = (status: string) => {
     const styles: Record<string, string> = {
@@ -173,12 +187,12 @@ export default function QuotesPage() {
                 <p className="text-center text-sm text-slate-500 py-8">Aucun devis avec ces filtres</p>
               ) : (
                 filteredEstimates.map((estimate) => (
-                  <Link key={estimate.id} href={`/project/${estimate.project_id}`}>
-                    <div className="p-3.5 rounded-xl bg-slate-800/50 border border-slate-700/40 active:scale-[0.99] transition-all">
+                  <div key={estimate.id} className="space-y-3 rounded-xl border border-slate-700/40 bg-slate-800/50 p-3.5">
+                    <Link className="block" href={`/project/${estimate.project_id}?devis=${estimate.id}`}>
                       <div className="flex items-start justify-between mb-2">
                         <div className="min-w-0 flex-1 mr-3">
-                          <p className="font-medium text-sm text-white truncate">{estimate.projects?.title || 'N/A'}</p>
-                          <p className="text-[10px] text-slate-500 mt-0.5">#{estimate.id.slice(0, 8)}</p>
+                          <p className="font-medium text-sm text-white truncate">{estimate.quote_title || estimate.projects?.title || 'Projet'}</p>
+                          <p className="mt-0.5 truncate text-[10px] text-slate-500">{estimate.estimate_number || `#${estimate.id.slice(0, 8)}`}</p>
                         </div>
                         <span className={`inline-flex px-2 py-0.5 text-[10px] font-medium rounded-full ${getStatusStyle(estimate.quote_status)}`}>
                           {estimate.quote_status || 'draft'}
@@ -192,8 +206,9 @@ export default function QuotesPage() {
                           {estimateTtcAfterDiscount(estimate).toFixed(2)} EUR
                         </span>
                       </div>
-                    </div>
-                  </Link>
+                    </Link>
+                    {duplicateAction(estimate, 'w-full')}
+                  </div>
                 ))
               )}
               {filteredEstimates.length > 0 && (
@@ -227,9 +242,10 @@ export default function QuotesPage() {
                       filteredEstimates.map((estimate) => (
                         <tr key={estimate.id} className="hover:bg-slate-900/40 transition-colors">
                           <td className="px-6 py-3.5 whitespace-nowrap">
-                            <span className="text-sm font-medium text-white">#{estimate.id.slice(0, 8)}</span>
+                            <span className="block text-sm font-medium text-white">{estimate.quote_title || estimate.estimate_number || `#${estimate.id.slice(0, 8)}`}</span>
+                            {estimate.quote_title && estimate.estimate_number && <span className="text-xs text-slate-400">{estimate.estimate_number}</span>}
                           </td>
-                          <td className="px-6 py-3.5"><span className="text-sm text-slate-300">{estimate.projects?.title || 'N/A'}</span></td>
+                          <td className="px-6 py-3.5"><span className="text-sm text-slate-300">{estimate.client_name || estimate.projects?.client_name || estimate.projects?.title || 'N/A'}</span></td>
                           <td className="px-6 py-3.5 whitespace-nowrap"><span className="text-sm text-slate-400">{new Date(estimate.created_at).toLocaleDateString('fr-FR')}</span></td>
                           <td className="px-6 py-3.5 whitespace-nowrap"><span className="text-sm text-slate-400">{new Date(new Date(estimate.created_at).getTime() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')}</span></td>
                           <td className="px-6 py-3.5 whitespace-nowrap text-right"><span className="text-sm font-semibold text-white">{estimateTtcAfterDiscount(estimate).toFixed(2)} EUR</span></td>
@@ -238,7 +254,8 @@ export default function QuotesPage() {
                           </td>
                           <td className="px-6 py-3.5 whitespace-nowrap text-right">
                             <div className="flex items-center justify-end gap-1">
-                              <Link href={`/project/${estimate.project_id}`}>
+                              {duplicateAction(estimate)}
+                              <Link aria-label="Ouvrir le devis" href={`/project/${estimate.project_id}?devis=${estimate.id}`}>
                                 <Button size="xs" variant="ghost" className="text-slate-400 hover:text-white"><Eye className="h-4 w-4" /></Button>
                               </Link>
                               <Button size="xs" variant="ghost" className="text-slate-400 hover:text-white"><Download className="h-4 w-4" /></Button>

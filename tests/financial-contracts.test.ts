@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { PGlite } from '@electric-sql/pglite';
 import { calculateJobIntelligence } from '../lib/job-intelligence';
@@ -14,6 +14,81 @@ const migrations = [
   '20261007060051_team_cost_catalog',
   '20261010143718_guard_quote_cost_alignment_and_totals',
 ];
+
+const integrityMigration = 'supabase/migrations/20261122120000_p0_b_job_financial_integrity.sql';
+const duplicationMigration = 'supabase/migrations/20261123130000_duplicate_quote.sql';
+const accessMigration = 'supabase/deferred/20261123140000_p0_b_financial_access_cutover.sql';
+const budgetDiagnostic = 'scripts/p0-b-budget-v1-diagnostic.sql';
+
+describe('mise en service financière P0-B', () => {
+  it('garde la restriction des accès hors des migrations automatiques', () => {
+    const automaticMigrations = readdirSync('supabase/migrations');
+    expect(automaticMigrations.filter(name => name.endsWith('_p0_b_financial_access_cutover.sql'))).toEqual([]);
+  });
+
+  it('maintient les parcours existants pendant le basculement puis retire le taux historique', async () => {
+    const db = new PGlite();
+    try {
+      await db.exec(readFileSync('tests/fixtures/p0-finance-prerequisites.sql', 'utf8'));
+      for (const name of migrations) {
+        await db.exec(readFileSync(`supabase/migrations/${name}.sql`, 'utf8'));
+      }
+      const owner = randomUUID();
+      const project = randomUUID();
+      const estimate = randomUUID();
+      const employee = randomUUID();
+      await db.query("insert into auth.users(id, email) values ($1, 'test@example.test')", [owner]);
+      await db.query("insert into user_subscriptions select $1, id, 'active', now(), now() from subscription_tiers", [owner]);
+      await db.query("insert into projects(id, user_id, title) values ($1, $2, 'Chantier test')", [project, owner]);
+      await db.query(`insert into estimates (id, user_id, project_id, estimate_kind, total_ht, total_ttc)
+        values ($1, $2, $3, 'quote', 100, 120)`, [estimate, owner, project]);
+      await db.query("select set_config('test.user_id', $1, false)", [owner]);
+      await db.exec('set role authenticated');
+      const job = (await db.query<{ id: string }>('select accept_estimate_and_create_job($1) as id', [estimate])).rows[0].id;
+      await expect(db.query('select get_job_financial_summary($1)', [job])).rejects.toMatchObject({ code: '42883' });
+
+      await db.exec('reset role');
+      const accessSql = readFileSync(accessMigration, 'utf8');
+      await expect(db.exec(accessSql)).rejects.toThrow('Install the P0-B financial contract');
+      expect((await db.query(readFileSync(budgetDiagnostic, 'utf8'))).rows).toEqual([]);
+      await db.exec(readFileSync(integrityMigration, 'utf8'));
+      await expect(db.exec(accessSql)).rejects.toThrow('Install P1 quote duplication');
+      await db.exec(readFileSync(duplicationMigration, 'utf8'));
+      await db.exec('set role authenticated');
+
+      await db.query("insert into employees(id, organization_id, first_name, last_name) values ($1, $2, 'Phase', 'Test')", [employee, owner]);
+      await db.query(`insert into time_entries(organization_id, employee_id, job_id, work_date, minutes, hourly_cost_cents_snapshot)
+        values ($1, $2, $3, date '2026-11-01', 60, 2400)`, [owner, employee, job]);
+      await db.query(`insert into job_cost_entries(organization_id, job_id, category, description, amount_ht_cents)
+        values ($1, $2, 'material', 'Cause test', 300)`, [owner, job]);
+      await db.query(`insert into job_change_orders(organization_id, job_id, title, status, sold_delta_cents, approved_on)
+        values ($1, $2, 'Avenant test', 'approved', 100, current_date)`, [owner, job]);
+      const legacyTimeRequest = 'select minutes, hourly_cost_cents_snapshot from time_entries where job_id = $1';
+      expect((await db.query(legacyTimeRequest, [job])).rows).toEqual([{ minutes: 60, hourly_cost_cents_snapshot: 2400 }]);
+      await db.query('select capture_job_performance_snapshot($1, 33.333)', [job]);
+
+      const summaryRequest = 'select get_job_financial_summary($1) as summary';
+      const transitionSummary = (await db.query(summaryRequest, [job])).rows[0];
+      expect(transitionSummary).toMatchObject({ summary: { initial_budget_cents: 0, revised_sold_total_ht_cents: 10100, actual_cost_cents: 2700 } });
+
+      await db.exec('reset role');
+      await db.exec(accessSql);
+      await db.exec('set role authenticated');
+      await expect(db.query(legacyTimeRequest, [job])).rejects.toMatchObject({ code: '42501' });
+      expect((await db.query('select minutes from time_entries where job_id = $1', [job])).rows).toEqual([{ minutes: 60 }]);
+      expect((await db.query(summaryRequest, [job])).rows[0]).toEqual(transitionSummary);
+      await expect(db.query('select capture_job_performance_snapshot($1, 33.333)', [job])).rejects.toThrow('two decimals');
+      await db.query("update jobs set name = 'Chantier renommé' where id = $1", [job]);
+      await db.query('select capture_job_performance_snapshot($1, 100, true)', [job]);
+      expect((await db.query('select name, status from jobs where id = $1', [job])).rows)
+        .toEqual([{ name: 'Chantier renommé', status: 'completed' }]);
+      expect((await db.query('select version, actual_cost_cents from job_performance_snapshots where job_id = $1 order by version', [job])).rows)
+        .toEqual([{ version: 1, actual_cost_cents: 2700 }, { version: 2, actual_cost_cents: 2700 }]);
+    } finally {
+      await db.close();
+    }
+  }, 30_000);
+});
 
 describe('contrats financiers du chantier (PostgreSQL local)', () => {
   const db = new PGlite();
@@ -54,8 +129,11 @@ describe('contrats financiers du chantier (PostgreSQL local)', () => {
       values ($1, $2, $3, 'Budget v1 absent', $1) returning id`, [owner, legacyEstimate, project])).rows[0].id;
     await db.query(`insert into job_budget_snapshots(organization_id, job_id, version, sold_total_ht_cents)
       values ($1, $2, 2, 0)`, [owner, legacyJob]);
-    const hardening = 'supabase/migrations/20261122120000_p0_b_job_financial_integrity.sql';
-    await db.exec(readFileSync(hardening, 'utf8'));
+    expect((await db.query(readFileSync(budgetDiagnostic, 'utf8'))).rows)
+      .toMatchObject([{ id: legacyJob, budget_v1_id: null }]);
+    await db.exec(readFileSync(integrityMigration, 'utf8'));
+    await db.exec(readFileSync(duplicationMigration, 'utf8'));
+    await db.exec(readFileSync(accessMigration, 'utf8'));
     await db.exec('set role authenticated');
   }, 30_000);
 

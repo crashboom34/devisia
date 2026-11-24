@@ -14,7 +14,11 @@ create table estimates (
   id uuid primary key, user_id uuid, project_id uuid references projects, estimate_kind text,
   categories jsonb, total_ht numeric, total_tva numeric, total_ttc numeric, total_amount numeric,
   discount_percent numeric, discount_amount numeric, client_name text, payment_terms text,
-  execution_delay text, deposit_required numeric, special_conditions text
+  execution_delay text, deposit_required numeric, special_conditions text,
+  scenario_type text, estimate_number text, estimate_date timestamptz default now(),
+  created_at timestamptz default now(), validity_days integer default 30,
+  is_active boolean default true, estimate_data jsonb default '{}', line_items jsonb default '[]',
+  regenerated_from_id uuid, model_used text, accepted_at timestamptz
 );
 create table clients (id uuid primary key, user_id uuid);
 create table api_usage_logs (user_id uuid);

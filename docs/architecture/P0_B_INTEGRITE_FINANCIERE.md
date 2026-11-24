@@ -25,30 +25,9 @@ Le contrôle des droits vit dans PostgreSQL. Il combine le rôle de l’organisa
 
 Sur une base explicitement autorisée, contrôler l’existence de v1, la concordance des montants et des organisations, et le devis accepté d’origine. La requête suivante est en lecture seule.
 
-```sql
-select j.id, j.organization_id, b.id as budget_v1_id,
-       j.sold_total_ht_cents as job_sold, b.sold_total_ht_cents as snapshot_sold,
-       j.initial_budget_cents as job_budget,
-       b.material_cents::numeric + b.labor_cents + b.subcontract_cents
-         + b.equipment_cents + b.other_cents as snapshot_budget,
-       e.quote_status, e.organization_id as estimate_org, p.organization_id as project_org
-from public.jobs j
-left join public.job_budget_snapshots b on b.job_id = j.id and b.version = 1
-left join public.estimates e on e.id = j.source_estimate_id
-left join public.projects p on p.id = j.source_project_id
-where b.id is null
-   or b.organization_id is distinct from j.organization_id
-   or b.sold_total_ht_cents is distinct from j.sold_total_ht_cents
-   or j.initial_budget_cents is distinct from
-      b.material_cents::numeric + b.labor_cents + b.subcontract_cents + b.equipment_cents + b.other_cents
-   or least(b.material_cents, b.labor_cents, b.subcontract_cents, b.equipment_cents, b.other_cents) < 0
-   or e.quote_status is distinct from 'accepted' or e.estimate_kind is distinct from 'quote'
-   or e.project_id is distinct from j.source_project_id
-   or e.organization_id is distinct from j.organization_id
-   or p.organization_id is distinct from j.organization_id;
-```
+[Requête de diagnostic SQL](../../scripts/p0-b-budget-v1-diagnostic.sql)
 
-Pour chaque anomalie, préserver les versions existantes et rapprocher le devis accepté, l’origine de la v1 et les décisions commerciales. Faire approuver un plan de correction identifié par chantier, avec acteur, justificatifs, valeurs avant/après et vérification dans une transaction dédiée. Réserver l’avenant à une modification commerciale approuvée. Une future migration de correction devra être revue séparément si la référence contractuelle elle-même est incohérente. Déployer ensemble les consommateurs et la nouvelle RPC dans un environnement autorisé. Un retour applicatif peut conserver les garde-fous SQL et la RPC. Une version d’écran qui relit le taux historique directement requiert une adaptation avant ce retour.
+Pour chaque anomalie, préserver les versions existantes et rapprocher le devis accepté, l’origine de la v1 et les décisions commerciales. Faire approuver un plan de correction identifié par chantier, avec acteur, justificatifs, valeurs avant/après et vérification dans une transaction dédiée. Réserver l’avenant à une modification commerciale approuvée. Une future migration de correction devra être revue séparément si la référence contractuelle elle-même est incohérente. Le runbook décrit les deux étapes SQL, le basculement du frontend et les versions de retour compatibles. [Plan de mise en service](../operations/P0_B_RELEASE_GATE.md)
 
 ## Reproduction des vérifications
 

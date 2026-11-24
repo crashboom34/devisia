@@ -24,9 +24,10 @@ if run("select to_regclass('public.jobs') is null and to_regnamespace('auth') is
 
 run(Path("tests/fixtures/p0-finance-prerequisites.sql").read_text())
 for version in ["20260928170413", "20260928201500", "20260929064354", "20260929064443",
-                "20260929072006", "20260929174152", "20261007060051", "20261010143718", "20261122120000"]:
+                "20260929072006", "20260929174152", "20261007060051", "20261010143718", "20261122120000", "20261123130000"]:
     path, = Path("supabase/migrations").glob(f"{version}_*.sql")
     run(path.read_text())
+run(Path("supabase/deferred/20261123140000_p0_b_financial_access_cutover.sql").read_text())
 
 owner = "00000000-0000-0000-0000-000000000001"
 project = "00000000-0000-0000-0000-000000000002"

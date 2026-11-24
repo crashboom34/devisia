@@ -1,4 +1,5 @@
--- Preserve all existing rows. Reject an inconsistent baseline at the point of use.
+-- Phase 1: install the common financial contract before switching frontend traffic.
+-- Preserve existing rows and the legacy read privileges until phase 2.
 revoke insert, update, delete, truncate on public.jobs from public, anon, authenticated;
 grant update (name, client_name, address, started_on, updated_at)
   on public.jobs to authenticated;
@@ -45,25 +46,6 @@ $$;
 revoke all on function private.protect_contract_project_organization() from public, anon, authenticated;
 create trigger protect_contract_project_organization before update of organization_id on public.projects
 for each row execute function private.protect_contract_project_organization();
-
--- The current membership model has owner/admin/member. Reserve financial
--- records for owner/admin while preserving selected time data for members.
-drop policy "Members read jobs" on public.jobs;
-drop policy "Members read budget snapshots" on public.job_budget_snapshots;
-create policy "Admins read budget snapshots" on public.job_budget_snapshots for select to authenticated
-using ((select private.is_org_admin(organization_id)) and (select private.has_entitlement(organization_id, 'job_management')));
-drop policy "Members read job costs" on public.job_cost_entries;
-drop policy "Members read job change orders" on public.job_change_orders;
-create policy "Admins read job change orders" on public.job_change_orders for select to authenticated
-using ((select private.is_org_admin(organization_id)) and (select private.has_entitlement(organization_id, 'job_management')));
-drop policy "Members read job performance snapshots" on public.job_performance_snapshots;
-create policy "Admins read job performance snapshots" on public.job_performance_snapshots for select to authenticated
-using ((select private.is_org_admin(organization_id)) and (select private.has_entitlement(organization_id, 'historical_cost_learning')));
-
-revoke select on public.time_entries from public, anon, authenticated;
-revoke select (hourly_cost_cents_snapshot) on public.time_entries from public, anon, authenticated;
-grant select (id, organization_id, employee_id, job_id, work_date, minutes, source, notes, created_by, created_at, updated_at)
-  on public.time_entries to authenticated;
 
 create function private.job_budget_category(p_category text)
 returns text language sql immutable strict set search_path = '' as $$
@@ -224,6 +206,18 @@ $$;
 revoke all on function public.get_job_financial_summary(uuid) from public, anon, authenticated;
 grant execute on function public.get_job_financial_summary(uuid) to authenticated;
 
+-- During the frontend transition, retain the precision accepted by old clients.
+create function private.validate_job_snapshot_progress(p_progress_percent numeric)
+returns void language plpgsql immutable set search_path = '' as $$
+begin
+  if p_progress_percent is null or p_progress_percent <= 0 or p_progress_percent > 100 then
+    raise exception 'Progress must be between 0 and 100';
+  end if;
+end;
+$$;
+
+revoke all on function private.validate_job_snapshot_progress(numeric) from public, anon, authenticated;
+
 create or replace function private.capture_job_performance_snapshot(
   p_job_id uuid, p_progress_percent numeric, p_complete boolean default false
 )
@@ -234,16 +228,12 @@ declare
   v_summary record;
   v_snapshot_id uuid;
   v_version integer;
-  v_progress_basis_points integer;
   v_forecast bigint;
   v_projected_margin bigint;
   v_classification jsonb;
 begin
   if v_user_id is null then raise exception 'Authentication required'; end if;
-  if p_progress_percent is null or p_progress_percent <= 0 or p_progress_percent > 100
-     or p_progress_percent <> round(p_progress_percent, 2) then
-    raise exception 'Progress must be between 0.01 and 100 with at most two decimals';
-  end if;
+  perform private.validate_job_snapshot_progress(p_progress_percent);
   if p_complete is null or (p_complete and p_progress_percent <> 100) then
     raise exception 'A completed job must be captured at 100 percent';
   end if;
@@ -261,9 +251,9 @@ begin
   end if;
 
   select * into strict v_summary from private.calculate_job_financial_summary(v_job);
-  v_progress_basis_points := p_progress_percent * 100;
-  v_forecast := div(v_summary.actual_cost_cents::numeric * 10000 + v_progress_basis_points / 2,
-                    v_progress_basis_points)::bigint;
+  -- Round nonnegative monetary amounts to the nearest cent, ties upwards.
+  v_forecast := div(v_summary.actual_cost_cents::numeric * 200 + p_progress_percent,
+                    p_progress_percent * 2)::bigint;
   v_projected_margin := v_summary.revised_sold_total_ht_cents - v_forecast;
   select jsonb_build_object(
     'project_type', qc.project_type, 'trades', qc.trades, 'lots', qc.lots,
@@ -394,3 +384,5 @@ begin
   return case when tg_op = 'DELETE' then old else new end;
 end;
 $$;
+
+notify pgrst, 'reload schema';
