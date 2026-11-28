@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Eye, EyeOff, Download, ChevronDown, ChevronUp, Edit2, Save, X, Trash2, History, BriefcaseBusiness, Plus } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import EditableEstimateRow from './EditableEstimateRow';
+import DuplicateQuoteDialog from './DuplicateQuoteDialog';
 import { toast } from 'sonner';
 import { buildClientEstimateExport } from '@/lib/client-estimate-export';
 import { estimateTtcAfterDiscount, isValidManualEstimate, recalculateManualEstimate, withStableCostLineKeys } from '@/lib/manual-estimate';
@@ -31,6 +32,7 @@ interface EstimateData {
   revision: number;
   scenario_type: string;
   estimate_number?: string;
+  quote_title?: string | null;
   client_name?: string;
   estimate_date?: string;
   validity_days?: number;
@@ -52,12 +54,15 @@ interface EstimateData {
 interface EstimateTableProps {
   estimate: EstimateData;
   projectTitle?: string;
+  projectId: string;
+  projectClientName?: string | null;
+  canDuplicateQuote?: boolean;
   projectDescription?: string;
   onRegenerate?: () => void;
   canCreateJob?: boolean;
 }
 
-export default function EstimateTable({ estimate, projectTitle, projectDescription, onRegenerate, canCreateJob = false }: EstimateTableProps) {
+export default function EstimateTable({ estimate, projectTitle, projectId, projectClientName, canDuplicateQuote, projectDescription, onRegenerate, canCreateJob = false }: EstimateTableProps) {
   const router = useRouter();
   const [viewMode, setViewMode] = useState<ViewMode>('detailed');
   const [expandedCategories, setExpandedCategories] = useState<Set<number>>(new Set([0]));
@@ -240,6 +245,7 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
           discount_percent: finalized.discount_percent ?? 0,
           discount_amount: finalized.discount_amount,
           client_name: finalized.client_name || null,
+          quote_title: finalized.quote_title?.trim() || null,
           payment_terms: finalized.payment_terms || null,
           execution_delay: finalized.execution_delay || null,
           deposit_required: finalized.deposit_required ?? 0,
@@ -281,7 +287,7 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2">
-              <CardTitle className="text-lg sm:text-xl text-white">Scénario {getScenarioLabel(estimate.scenario_type)}</CardTitle>
+              <CardTitle className="break-words text-lg sm:text-xl text-white">{displayEstimate.quote_title || `Scénario ${getScenarioLabel(estimate.scenario_type)}`}</CardTitle>
               <Badge className={`${getScenarioBadgeColor(estimate.scenario_type)} text-sm sm:text-base whitespace-nowrap`}>
                 {formatCurrency(estimateTtcAfterDiscount(displayEstimate))}
               </Badge>
@@ -297,7 +303,7 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
               </CardDescription>
             )}
             {estimate.estimate_number && (
-              <CardDescription className="text-xs sm:text-sm flex flex-col sm:flex-row sm:gap-2 text-gray-400">
+              <CardDescription className="break-all text-xs sm:text-sm flex flex-col sm:flex-wrap sm:flex-row sm:gap-2 text-gray-400">
                 <span><span className="font-semibold text-gray-300">N° Devis:</span> {estimate.estimate_number}</span>
                 <span><span className="font-semibold text-gray-300">Date:</span> {formatDate(estimate.estimate_date)}</span>
                 <span><span className="font-semibold text-gray-300">Validité:</span> {estimate.validity_days || 30} jours</span>
@@ -311,6 +317,9 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
           </div>
 
           <div className="flex flex-wrap gap-2">
+            {canDuplicateQuote && !isEditing && <DuplicateQuoteDialog estimateId={estimate.id} projectId={projectId}
+              projectTitle={projectTitle} quoteTitle={estimate.quote_title}
+              clientName={estimate.client_name || projectClientName} />}
             {(estimate.quote_status === 'draft' || estimate.quote_status === 'sent') && canCreateJob && (
               <Button
                 variant="primary"
@@ -379,6 +388,10 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
         </div>
 
         {isEditing && <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-xl border border-cyan-500/30 bg-cyan-500/5 p-3 sm:p-4">
+          <div><Label htmlFor={`estimate-title-${estimate.id}`}>Titre du devis</Label><Input id={`estimate-title-${estimate.id}`}
+            value={editedEstimate.quote_title ?? ''} maxLength={160}
+            onChange={(event) => setEditedEstimate((current) => ({ ...current, quote_title: event.target.value }))}
+            className="bg-brand-dark border-gray-700 text-white" /></div>
           <div><Label htmlFor="estimate-client-name">Client</Label><Input id="estimate-client-name" value={editedEstimate.client_name || ''} onChange={(event) => setEditedEstimate((current) => ({ ...current, client_name: event.target.value }))} className="bg-brand-dark border-gray-700 text-white" /></div>
           <div><Label htmlFor="estimate-discount">Remise (%)</Label><Input id="estimate-discount" type="number" inputMode="decimal" min="0" max="100" step="0.1" value={editedEstimate.discount_percent ?? 0} onChange={(event) => setEditedEstimate((current) => withTotals({ ...current, discount_percent: Number(event.target.value), discount_amount: Number(event.target.value) === 0 ? 0 : current.discount_amount }, current.categories))} className="bg-brand-dark border-gray-700 text-white" /></div>
           {(editedEstimate.discount_percent ?? 0) === 0 && <div><Label htmlFor="estimate-fixed-discount">Remise fixe (€ TTC)</Label><Input id="estimate-fixed-discount" type="number" inputMode="decimal" min="0" step="0.01" value={editedEstimate.discount_amount ?? 0} onChange={(event) => setEditedEstimate((current) => ({ ...current, discount_amount: Number(event.target.value) }))} className="bg-brand-dark border-gray-700 text-white" /></div>}
@@ -676,7 +689,9 @@ export default function EstimateTable({ estimate, projectTitle, projectDescripti
             </div>
           </div>
           <div className="mt-5 grid grid-cols-2 gap-6 text-sm">
-            <div><p className="font-semibold">Projet</p><p>{clientExport.projectTitle || 'Travaux'}</p></div>
+            <div><p className="font-semibold">Projet</p><p>{clientExport.projectTitle || 'Travaux'}</p>
+              {estimate.quote_title && <p className="break-words">{estimate.quote_title}</p>}
+            </div>
             <div><p className="font-semibold">Client</p><p>{clientExport.clientName || 'À préciser'}</p></div>
           </div>
         </header>

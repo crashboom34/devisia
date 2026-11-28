@@ -50,19 +50,21 @@ import type { Project } from '@/lib/supabase';
 
 interface ProjectDetailClientProps {
   projectId: string;
+  focusedQuoteId?: string;
 }
 
-export default function ProjectDetailClient({ projectId }: ProjectDetailClientProps) {
+export default function ProjectDetailClient({ projectId, focusedQuoteId }: ProjectDetailClientProps) {
   const router = useRouter();
   const { user, loading: authLoading } = useAuthGuard();
   const [project, setProject] = useState<Project | null>(null);
   const [estimates, setEstimates] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState('cadrage');
+  const [activeTab, setActiveTab] = useState(focusedQuoteId ? 'devis' : 'cadrage');
   const [refinementVersion, setRefinementVersion] = useState<number | undefined>();
   const onRefinementChanged = useCallback((version: number) => setRefinementVersion(version), []);
   const [loading, setLoading] = useState(true);
-  const [expandedEstimate, setExpandedEstimate] = useState<string | null>(null);
-  const [expandedScenarios, setExpandedScenarios] = useState<Set<string>>(new Set(['eco', 'standard']));
+  const [expandedEstimates, setExpandedEstimates] = useState<Set<string> | null>(
+    () => focusedQuoteId ? new Set([focusedQuoteId]) : null,
+  );
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showDeleteEstimateDialog, setShowDeleteEstimateDialog] = useState(false);
   const [estimateToDelete, setEstimateToDelete] = useState<string | null>(null);
@@ -73,13 +75,19 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
   const [isDeletingEstimate, setIsDeletingEstimate] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [canCreateJob, setCanCreateJob] = useState(false);
+  const [canDuplicateQuote, setCanDuplicateQuote] = useState(false);
 
   useEffect(() => {
     if (authLoading || !user) return;
     loadProject();
   }, [authLoading, user]);
 
+  useEffect(() => {
+    if (!loading && focusedQuoteId) document.getElementById(`devis-${focusedQuoteId}`)?.scrollIntoView();
+  }, [loading, focusedQuoteId]);
+
   const loadProject = async () => {
+    if (!user) return;
     try {
       const { data, error } = await supabase
         .from('projects')
@@ -103,8 +111,13 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
       if (estimatesData) {
         setEstimates(estimatesData);
       }
-      const access = await getOrganizationEntitlements(data.organization_id);
+      const [access, membership] = await Promise.all([
+        getOrganizationEntitlements(data.organization_id),
+        supabase.from('organization_members').select('role')
+          .eq('organization_id', data.organization_id).eq('user_id', user.id).maybeSingle(),
+      ]);
       setCanCreateJob(hasEntitlement(access.entitlements, 'job_management'));
+      setCanDuplicateQuote(!membership.error && ['owner', 'admin'].includes(membership.data?.role));
       const { data: refinement } = await supabase.from('project_refinements').select('version')
         .eq('project_id', projectId).maybeSingle();
       setRefinementVersion(refinement?.version);
@@ -167,14 +180,15 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
     }
   };
 
-  const toggleScenario = (scenarioType: string) => {
-    const newExpanded = new Set(expandedScenarios);
-    if (newExpanded.has(scenarioType)) {
-      newExpanded.delete(scenarioType);
-    } else {
-      newExpanded.add(scenarioType);
-    }
-    setExpandedScenarios(newExpanded);
+  const expandedIds = expandedEstimates ?? new Set(
+    estimates.filter((estimate) => ['eco', 'standard'].includes(estimate.scenario_type)).map((estimate) => estimate.id),
+  );
+  const allExpanded = estimates.length > 0 && estimates.every((estimate) => expandedIds.has(estimate.id));
+
+  const toggleEstimate = (id: string) => {
+    const next = new Set(expandedIds);
+    if (!next.delete(id)) next.add(id);
+    setExpandedEstimates(next);
   };
 
   const getScenarioLabel = (type: string) => {
@@ -418,29 +432,25 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      const uniqueScenarios = new Set(estimates.map(e => e.scenario_type));
-                      if (expandedScenarios.size === uniqueScenarios.size) {
-                        setExpandedScenarios(new Set());
-                      } else {
-                        setExpandedScenarios(uniqueScenarios);
-                      }
+                      setExpandedEstimates(allExpanded ? new Set() : new Set(estimates.map((estimate) => estimate.id)));
                     }}
                     className="text-xs border-gray-700 text-gray-300 hover:bg-brand-darkCard"
                   >
-                    {expandedScenarios.size === new Set(estimates.map(e => e.scenario_type)).size ? 'Tout replier' : 'Tout déplier'}
+                    {allExpanded ? 'Tout replier' : 'Tout déplier'}
                   </Button>
                 </div>
                 {estimates.map((estimate) => {
-                  const isExpanded = expandedScenarios.has(estimate.scenario_type);
+                  const isExpanded = expandedIds.has(estimate.id);
                   return (
-                    <div key={estimate.id} className="border border-gray-800 bg-brand-darkCard rounded-lg overflow-hidden">
+                    <div key={estimate.id} id={`devis-${estimate.id}`} className="scroll-mt-24 border border-gray-800 bg-brand-darkCard rounded-lg overflow-hidden">
                       <div className="flex items-center gap-1 pr-2">
-                        <button type="button" onClick={() => toggleScenario(estimate.scenario_type)}
+                        <button type="button" onClick={() => toggleEstimate(estimate.id)}
                           aria-expanded={isExpanded} aria-controls={`estimate-panel-${estimate.id}`}
                           className="min-w-0 flex-1 px-3 sm:px-4 py-3 flex items-center justify-between gap-2 text-left hover:bg-brand-darkLight transition-colors">
                           <span className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
                             <span className={`px-3 py-1 rounded-full border ${getScenarioColor(estimate.scenario_type)}`}>{getScenarioLabel(estimate.scenario_type)}</span>
                             <span className="font-bold text-base sm:text-lg text-white break-words">{(estimate.estimate_kind === 'preliminary' ? estimate.total_ht : estimateTtcAfterDiscount(estimate)).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })} {estimate.estimate_kind === 'preliminary' && <span className="text-xs text-amber-300">HT · préliminaire</span>}</span>
+                            {estimate.quote_title && <span className="min-w-0 break-words text-sm text-white">{estimate.quote_title}</span>}
                             {estimate.model_used && <span className="text-xs text-gray-500 hidden sm:inline">• {estimate.model_used}</span>}
                           </span>
                           {isExpanded ? <ChevronUp className="h-5 w-5 shrink-0 text-gray-400" /> : <ChevronDown className="h-5 w-5 shrink-0 text-gray-400" />}
@@ -459,6 +469,7 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
                               revision: estimate.revision,
                               scenario_type: estimate.scenario_type,
                               estimate_number: estimate.estimate_number,
+                              quote_title: estimate.quote_title,
                               client_name: estimate.client_name,
                               estimate_date: estimate.estimate_date,
                               validity_days: estimate.validity_days,
@@ -477,6 +488,9 @@ export default function ProjectDetailClient({ projectId }: ProjectDetailClientPr
                               quote_status: estimate.quote_status,
                             }}
                             projectTitle={project.title}
+                            projectId={project.id}
+                            projectClientName={project.client_name}
+                            canDuplicateQuote={canDuplicateQuote}
                             projectDescription={project.description}
                             onRegenerate={() => user && loadProject()}
                             canCreateJob={canCreateJob}

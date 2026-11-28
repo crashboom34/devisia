@@ -85,27 +85,34 @@ export function calculateJobIntelligence({
   }
 
   let approvedChangeOrderCount = 0;
-  let approvedSoldDeltaCents = 0;
-  let approvedBudgetDeltaCents = 0;
+  let approvedSoldDelta = BigInt(0);
+  let approvedBudgetDelta = BigInt(0);
+  const budgetDeltas = new Map<CostCategory, bigint>();
 
   for (const changeOrder of changeOrders) {
     if (changeOrder.status !== 'approved') continue;
     const soldDelta = safeInteger(changeOrder.soldDeltaCents, 'Variation du vendu');
     const budgetDelta = safeInteger(changeOrder.plannedCostDeltaCents, 'Variation du budget');
     approvedChangeOrderCount += 1;
-    approvedSoldDeltaCents = safeInteger(approvedSoldDeltaCents + soldDelta, 'Total des avenants');
-    approvedBudgetDeltaCents = safeInteger(approvedBudgetDeltaCents + budgetDelta, 'Budget des avenants');
-    const category = byCategory[budgetCategory(changeOrder.category)];
-    category.plannedCents = safeInteger(category.plannedCents + budgetDelta, 'Budget révisé');
-    if (category.plannedCents < 0) throw new Error('Le budget révisé d’une catégorie ne peut pas être négatif');
+    approvedSoldDelta += BigInt(soldDelta);
+    approvedBudgetDelta += BigInt(budgetDelta);
+    const category = budgetCategory(changeOrder.category);
+    budgetDeltas.set(category, (budgetDeltas.get(category) ?? BigInt(0)) + BigInt(budgetDelta));
   }
 
+  const approvedSoldDeltaCents = safeInteger(Number(approvedSoldDelta), 'Total des avenants');
+  const approvedBudgetDeltaCents = safeInteger(Number(approvedBudgetDelta), 'Budget des avenants');
   const soldCents = safeInteger(initialSoldCents + approvedSoldDeltaCents, 'Vendu révisé');
   if (soldCents < 0) throw new Error('Le vendu révisé ne peut pas être négatif');
 
   let plannedCostCents = 0;
   for (const category of categories) {
     const value = byCategory[category];
+    value.plannedCents = safeInteger(
+      Number(BigInt(value.plannedCents) + (budgetDeltas.get(category) ?? BigInt(0))),
+      'Budget révisé',
+    );
+    if (value.plannedCents < 0) throw new Error('Le budget révisé d’une catégorie ne peut pas être négatif');
     value.varianceCents = safeInteger(value.actualCents - value.plannedCents, 'Écart de catégorie');
     plannedCostCents = safeInteger(plannedCostCents + value.plannedCents, 'Budget révisé');
   }
