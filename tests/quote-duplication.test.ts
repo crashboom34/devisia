@@ -158,6 +158,42 @@ describe('duplication transactionnelle de devis', () => {
     await asUser(owner, async () => { expect((await copy(source, rejectedCopy)).rows).toEqual([{ id: rejectedCopy }]); });
   });
 
+  it('refuse une source inexistante ou liée à un autre projet, sans récursion RLS', async () => {
+    const policy = await db.query<{ with_check: string }>(`
+      select with_check from pg_policies
+      where schemaname = 'public' and tablename = 'estimates'
+        and policyname = 'Protect duplicate quote source'
+    `);
+    expect(policy.rows).toHaveLength(1);
+    expect(policy.rows[0].with_check).toContain('is_valid_duplicate_quote_source');
+    expect(policy.rows[0].with_check).not.toMatch(/\\bfrom\\s+(?:public\\.)?estimates\\b/i);
+
+    const functionSecurity = await db.query<{ prosecdef: boolean }>(
+      "select prosecdef from pg_proc where oid = to_regprocedure('private.is_valid_duplicate_quote_source(uuid,uuid,uuid)')"
+    );
+    expect(functionSecurity.rows).toEqual([{ prosecdef: true }]);
+
+    const otherProject = randomUUID();
+    await db.query("insert into projects(id, user_id, title) values ($1, $2, 'Autre projet')", [otherProject, owner]);
+    for (const [projectId, sourceId] of [[otherProject, draft], [project, randomUUID()]]) {
+      const proposedId = randomUUID();
+      await asUser(owner, async () => {
+        await expect(db.query(`
+          insert into estimates (
+            id, user_id, organization_id, project_id, estimate_kind, quote_status,
+            scenario_type, is_active, duplicate_source_id, categories,
+            total_ht, total_tva, total_ttc, total_amount
+          ) values (
+            $1, $2, $2, $3, 'quote', 'draft',
+            'standard', false, $4, $5::jsonb, 35.51, 6.65, 42.16, 42.16
+          )
+        `, [proposedId, owner, projectId, sourceId, JSON.stringify(categories)]))
+          .rejects.toMatchObject({ code: '42501' });
+      });
+      expect((await db.query('select id from estimates where id = $1', [proposedId])).rows).toEqual([]);
+    }
+  });
+
   it('refuse un membre, une autre organisation et le rôle anonyme', async () => {
     const id = randomUUID();
     for (const user of [member, otherOwner]) {

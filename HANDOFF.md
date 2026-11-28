@@ -1,6 +1,6 @@
 # Devisia — handoff opérationnel
 
-Mis à jour le **24 novembre 2026**. Commencer chaque tour par le protocole de [AGENTS.md](AGENTS.md).
+Mis à jour le **27 novembre 2026**. Commencer chaque tour par le protocole de [AGENTS.md](AGENTS.md).
 
 ## État vérifié
 
@@ -45,6 +45,13 @@ Le précédent lot documentaire préparait les règles permanentes et la reprise
 - L’action de duplication figure dans la liste et le détail des devis. Elle crée un brouillon dans le même projet, ouvre son éditeur et permet de renommer la copie. Le scénario, les centimes, les remises et les surcharges manuelles sont recopiés. Les postes reçoivent de nouvelles clés. Une relance dans le même dialogue réutilise l’identifiant de demande.
 - `release/devisia-p0b-p1` rassemble le P0-B publié, le séquencement et le runbook récupérés du ZIP, et P1. L’intégration séquence SQL phase 1, SQL P1, frontend, puis phase 2 différée. Les droits de copie sont portés par la migration et imposent un brouillon rattaché à un devis du même projet, dans la même entreprise. [Dossier de livraison et commandes](docs/operations/DEVISIA_P0B_P1_RELEASE.md)
 - 192 tests Vitest passent sur 25 fichiers. Chromium local à 390 px avec API simulée confirme la déduplication du clic et la gestion des erreurs de permissions. Les alertes npm antérieures au lot et les limites de la qualification sont relevées dans le dossier de livraison.
+
+### Correctif P1 RLS — 27 novembre 2026
+
+- La répétition de l'archive chiffrée sur un PostgreSQL Supabase 17 isolé a réussi, d'après le rapport de l'agent opérateur : 76 tables et 3 842 lignes, codes de restauration 0. P0-B phase 1 et P1 s'appliquent sur la copie.
+- Blocage vérifié lors de la première duplication authentifiée : code PostgreSQL `42P17`, récursion de la politique `Protect duplicate quote source` sur `public.estimates`. La migration P1 est modifiée avant toute application en production : la politique appelle désormais une fonction privée à privilèges minimisés pour vérifier l'existence du devis source dans la même organisation et le même projet.
+- **Le correctif reste à retester sur PostgreSQL 17 Supabase restauré**, notamment la duplication authentifiée, la soumission directe malveillante, les permissions inter-entreprises et les coûts manuels. Les 192 tests antérieurs ne prouvent pas la correction. Le SHA du candidat de release change ; l'ancien SHA approuvé ne vaut pas approbation du nouveau.
+- Aucune migration, fusion ni publication en production autorisée sur ce correctif tant que les tests réels et l'approbation du nouveau SHA ne sont pas obtenus. P0-B phase 2 reste interdite.
 
 ## Décisions, sources et écarts
 

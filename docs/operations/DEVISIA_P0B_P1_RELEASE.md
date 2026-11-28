@@ -10,6 +10,12 @@ gh pr view release/devisia-p0b-p1 --repo crashboom34/devisia --json baseRefName,
 
 Les patchs de transfert récupèrent les changements de `de5418f23f8dce9095ce870baf44fd7168a5daa8` et de `d463cd0c99b33167d70d84e7826ced76e3997cb9`. Leurs SHA identifient les sources d’origine. Le commit de livraison identifie l’intégration testée.
 
+## Gate complémentaire — correction RLS P1 du 27 novembre 2026
+
+La restauration isolée Supabase PostgreSQL 17 a mis en évidence le défaut `42P17` au premier appel authentifié à `public.duplicate_quote` : la politique restrictive INSERT de `public.estimates` relisait la même table. Le candidat inclut désormais une fonction `private.is_valid_duplicate_quote_source(uuid,uuid,uuid)` `SECURITY DEFINER`, qui renvoie seulement un booléen sous contrôle de l'identité et du droit d'administration de l'organisation. La politique continue d'imposer auteur courant, devis brouillon et projet/organisation identiques.
+
+**GO conditionnel :** rejouer les tests authentifiés sur la restauration Linux PostgreSQL 17, vérifier la non-récursion, les insertions directes frauduleuses, les accès inter-organisations, la conservation des coûts et les sommes financières, puis actualiser l'autorisation sur le nouveau SHA. Les anciens résultats de 192 tests PGlite ne suffisent pas. Ne pas lancer la phase 2.
+
 ## Qualification du candidat
 
 - 192 tests Vitest passent sur 25 fichiers. Les tests rejouent P0-B phase 1, P1 puis la phase 2 sur PGlite. Ils vérifient la compatibilité du contrat hérité, les calculs et captures, la duplication et l’isolation inter-entreprises. La copie P1 réussit avant et après le retrait des droits historiques. Les droits d’insertion sont limités aux colonnes nécessaires. La RLS exige un brouillon lié à un devis du même projet et de la même organisation.

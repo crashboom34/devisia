@@ -17,6 +17,33 @@ create policy "Admins insert duplicated quotes" on public.estimates
 
 -- Existing permissive INSERT policies must also respect this boundary when a
 -- row claims to be a duplicate. Other legacy INSERTs retain their own checks.
+-- Reading estimates from its own INSERT RLS policy causes 42P17 on
+-- PostgreSQL 17. Resolve the source through a narrowly scoped definer helper.
+-- Authenticated callers can only get a boolean for an organization they manage;
+-- the private schema is not exposed through the Supabase Data API.
+create function private.is_valid_duplicate_quote_source(
+  p_source_id uuid, p_organization_id uuid, p_project_id uuid
+)
+returns boolean
+language sql stable security definer set search_path = ''
+as $
+  select p_source_id is not null
+    and (select auth.uid()) is not null
+    and private.is_org_admin(p_organization_id)
+    and exists (
+      select 1 from public.estimates source
+      where source.id = p_source_id
+        and source.organization_id = p_organization_id
+        and source.project_id = p_project_id
+        and source.estimate_kind = 'quote'
+    );
+$;
+
+revoke all on function private.is_valid_duplicate_quote_source(uuid,uuid,uuid)
+  from public, anon, authenticated, service_role;
+grant execute on function private.is_valid_duplicate_quote_source(uuid,uuid,uuid)
+  to authenticated;
+
 create policy "Protect duplicate quote source" on public.estimates
   as restrictive for insert to authenticated
   with check (
@@ -24,12 +51,8 @@ create policy "Protect duplicate quote source" on public.estimates
       user_id = (select auth.uid())
       and estimate_kind = 'quote' and quote_status = 'draft' and not is_active
       and private.is_org_admin(organization_id)
-      and exists (
-        select 1 from public.estimates source
-        where source.id = estimates.duplicate_source_id
-          and source.organization_id = estimates.organization_id
-          and source.project_id = estimates.project_id
-          and source.estimate_kind = 'quote'
+      and private.is_valid_duplicate_quote_source(
+        duplicate_source_id, organization_id, project_id
       )
     )
   );
